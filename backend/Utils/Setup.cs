@@ -61,7 +61,6 @@ namespace backend.Utils
 
                 Console.WriteLine(file.FullName + "|" + count);
 
-
                 using var fileStream = file.Open();
                 using var reader = new StreamReader(fileStream);
                 
@@ -331,6 +330,19 @@ namespace backend.Utils
             Console.WriteLine("VehicleCouplings");
             db.VehicleCouplings.AddRange(newVehicleCouplings);
             db.SaveChanges();
+
+            Console.WriteLine("Checking");
+
+            Console.WriteLine(db.Agencies.Count() + "|" + existingAgencyIds.Count);
+            Console.WriteLine(db.Calendars.Count() + "|" + existingCalendarIds.Count);
+            Console.WriteLine(db.Routes.Count() + "|" + existingRouteIds.Count);
+            Console.WriteLine(db.Shapes.Count() + "|" + existingShapeIds.Count);
+            Console.WriteLine(db.Trips.Count() + "|" + existingTripIds.Count);
+            Console.WriteLine(db.Stops.Count() + "|" + existingStopIds.Count);
+            Console.WriteLine(db.StopTimes.Count() + "|" + existingStopTimeIds.Count);
+            Console.WriteLine(db.VehicleCategories.Count() + "|" + existingVehicleCategoryIds.Count);
+            Console.WriteLine(db.VehicleBoardings.Count() + "|" + existingVehicleBoardingIds.Count);
+            Console.WriteLine(db.VehicleCouplings.Count() + "|" + existingVehicleCouplingIds.Count);
 
             Console.WriteLine("Finish");
         }
