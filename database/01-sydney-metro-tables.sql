@@ -4,11 +4,13 @@ CREATE TABLE agency (
     agency_url VARCHAR(255) NOT NULL DEFAULT 'http://transportnsw.info',
     agency_timezone VARCHAR(255) NOT NULL DEFAULT 'Australia/Sydney',
     agency_lang VARCHAR(255) NOT NULL DEFAULT 'EN',
-    agency_phone VARCHAR(255) NOT NULL DEFAULT '131500'
+    agency_phone VARCHAR(255) NOT NULL DEFAULT '131500',
+    agency_fare_url VARCHAR(255) DEFAULT 'http://transportnsw.info',
+    agency_email VARCHAR(255) DEFAULT 'information@transport.nsw.gov.au'
 );
 
 CREATE TABLE calendar (
-    service_id VARCHAR(255) PRIMARY KEY,
+    service_id INT PRIMARY KEY,
     monday TINYINT(1) NOT NULL,
     tuesday TINYINT(1) NOT NULL,
     wednesday TINYINT(1) NOT NULL,
@@ -20,6 +22,12 @@ CREATE TABLE calendar (
     end_date DATE NOT NULL
 );
 
+CREATE TABLE calendar_dates (
+    service_id INT PRIMARY KEY,
+    date DATE NOT NULL,
+    exception_type TEXT NOT NULL
+);
+
 CREATE TABLE routes (
     route_id VARCHAR(255) PRIMARY KEY,
     agency_id VARCHAR(255) NOT NULL,
@@ -27,14 +35,14 @@ CREATE TABLE routes (
     route_long_name VARCHAR(255) NOT NULL,
     route_desc VARCHAR(255) NOT NULL,
     route_type INT NOT NULL,
-    route_url VARCHAR(255) NOT NULL,
     route_color VARCHAR(6) NOT NULL DEFAULT '00B5EF',
     route_text_color VARCHAR(6) NOT NULL DEFAULT 'FFFFFF',
+    route_url VARCHAR(255) NOT NULL,
     FOREIGN KEY (agency_id) REFERENCES agency(agency_id)
 );
 
 CREATE TABLE shapes (
-    shape_id VARCHAR(255) NOT NULL,
+    shape_id INT NOT NULL,
     shape_pt_lat DECIMAL(11,8) NOT NULL,
     shape_pt_lon DECIMAL(11,8) NOT NULL,
     shape_pt_sequence INT NOT NULL,
@@ -42,49 +50,56 @@ CREATE TABLE shapes (
     PRIMARY KEY (shape_id, shape_pt_sequence)
 );
 
+CREATE TABLE notes (
+    note_id VARCHAR(255) PRIMARY KEY,
+    note_text TEXT NOT NULL
+);
+
 CREATE TABLE trips (
     route_id VARCHAR(255) NOT NULL,
-    service_id VARCHAR(255) NOT NULL,
+    service_id INT NOT NULL,
     trip_id VARCHAR(255) PRIMARY KEY,
-    shape_id VARCHAR(255) NOT NULL,
+    shape_id INT NOT NULL,
     trip_headsign VARCHAR(255) NOT NULL,
-    trip_short_name VARCHAR(255) NOT NULL,
     direction_id TINYINT(1) NOT NULL,
-    block_id VARCHAR(255) NOT NULL,
+    trip_short_name VARCHAR(255) NOT NULL,
+    block_id VARCHAR(255),
     wheelchair_accessible TINYINT(1) NOT NULL,
-    vehicle_category_id VARCHAR(255) NOT NULL,
+    trip_note VARCHAR(255),
+    route_direction TEXT NOT NULL,
+    bikes_allowed TINYINT(1),
     FOREIGN KEY (route_id) REFERENCES routes(route_id),
     FOREIGN KEY (service_id) REFERENCES calendar(service_id)
+    -- FOREIGN KEY (trip_note) REFERENCES notes(note_id)
 );
 
 CREATE TABLE stops (
-    stop_id VARCHAR(255) PRIMARY KEY,
-    stop_code VARCHAR(255) NOT NULL,
+    stop_id INT PRIMARY KEY,
     stop_name VARCHAR(255) NOT NULL,
-    stop_desc VARCHAR(255) NOT NULL,
     stop_lat DECIMAL(11,8) NOT NULL,
     stop_lon DECIMAL(11,8) NOT NULL,
-    zone_id VARCHAR(255) NOT NULL,
-    stop_url VARCHAR(255) NOT NULL,
     location_type VARCHAR(255) NOT NULL,
-    parent_station VARCHAR(255) NOT NULL,
-    stop_timezone VARCHAR(255) NOT NULL,
-    wheelchair_boarding VARCHAR(1) NOT NULL
+    parent_station INT,
+    wheelchair_boarding boolean NOT NULL,
+    platform_code INT
 );
 
 CREATE TABLE stop_times (
     trip_id VARCHAR(255) NOT NULL,
     arrival_time TIME NOT NULL,
     departure_time TIME NOT NULL,
-    stop_id VARCHAR(255) NOT NULL,
+    stop_id INT NOT NULL,
     stop_sequence INT NOT NULL,
     stop_headsign VARCHAR(255),
     pickup_type TINYINT(1) NOT NULL,
     drop_off_type TINYINT(1) NOT NULL,
     shape_dist_traveled DECIMAL(18,2) NOT NULL,
+    timepoint TINYINT(1) NOT NULL,
+    stop_note VARCHAR(255),
     PRIMARY KEY (trip_id, stop_sequence),
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
     FOREIGN KEY (stop_id) REFERENCES stops(stop_id)
+    -- FOREIGN KEY (stop_note) REFERENCES notes(note_id)
 );
 
 CREATE TABLE vehicle_categories (

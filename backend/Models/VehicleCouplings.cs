@@ -1,0 +1,24 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace backend.Models;
+
+[Table("vehicle_couplings")]
+public class VehicleCoupling
+{
+    [Column("parent_id")]
+    [Required]
+    public string ParentId { get; set; } = null!;
+    
+    [Column("child_id")]
+    [Required]
+    public string ChildId { get; set; } = null!;
+    
+    [Column("child_sequence")]
+    [Required]
+    public string ChildSequence { get; set; } = null!;
+    
+    [Column("child_label")]
+    [Required]
+    public string ChildLabel { get; set; } = null!;
+}
