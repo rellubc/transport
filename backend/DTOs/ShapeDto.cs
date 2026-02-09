@@ -1,31 +1,24 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace backend.Models;
+namespace backend.DTOs;
 
-[Table("shapes")]
-public class Shape
+public class ShapeDto
 {
-    [Column("shape_id")]
     [Required]
     public int Id { get; set; }
 
-    [Column("shape_pt_lat")]
     [Required]
     [Precision(11, 8)]
     public decimal Latitude { get; set; }
 
-    [Column("shape_pt_lon")]
     [Required]
     [Precision(11, 8)]
     public decimal Longitude { get; set; }
 
-    [Column("shape_pt_sequence")]
     [Required]
     public int Sequence { get; set; }
 
-    [Column("shape_dist_traveled")]
     [Required]
     [Precision(18, 2)]
     public decimal DistanceTraveled { get; set; }

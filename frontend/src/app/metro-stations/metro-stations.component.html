@@ -1,0 +1,14 @@
+<h1>metro-stations works!</h1>
+<div>
+    <p> {{ count }} </p>
+    <button (click)="increaseCount()">Click</button>
+    <p *ngIf="count >= 10"> {{count}} is greater than 10</p>
+    <p>Total stations: {{ stations.length }}</p>
+    <div *ngFor="let station of stations">
+        <p>{{ station.name }}</p>
+    </div>
+    <p>Total stations: {{ platforms.length }}</p>
+    <div *ngFor="let platform of platforms">
+        <p>{{ platform.name }}</p>
+    </div>
+</div>

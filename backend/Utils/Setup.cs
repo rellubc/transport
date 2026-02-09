@@ -29,15 +29,15 @@ public static class Setup
         using var memoryStream = new MemoryStream(zipBytes);
         using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
 
-        var existingAgencyIds = new HashSet<string>(db.Agencies.Select(a => a.AgencyId));
+        var existingAgencyIds = new HashSet<string>(db.Agencies.Select(a => a.Id));
         var existingCalendarIds = new HashSet<int>(db.Calendars.Select(c => c.ServiceId));
         var existingCalendarDateIds = new HashSet<int>(db.CalendarDates.Select(cd => cd.ServiceId));
-        var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.NoteId));
-        var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.RouteId));
-        var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.ShapeId + "|" + s.ShapePtSequence));
-        var existingStopIds = new HashSet<int>(db.Stops.Select(s => s.StopId));
+        var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.Id));
+        var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
+        var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence));
+        var existingStopIds = new HashSet<int>(db.Stops.Select(s => s.Id));
         var existingStopTimeIds = new HashSet<string>(db.StopTimes.Select(s => s.TripId + "|" + s.StopSequence));
-        var existingTripIds = new HashSet<string>(db.Trips.Select(t => t.TripId));
+        var existingTripIds = new HashSet<string>(db.Trips.Select(t => t.Id));
 
         var newAgencies = new List<Agency>();
         var newCalendars = new List<Models.Calendar>();
@@ -78,14 +78,14 @@ public static class Setup
                         {
                             var entity = new Agency
                             {
-                                AgencyId = cols[0],
-                                AgencyName = cols[1],
-                                AgencyUrl = cols[2],
-                                AgencyTimezone = cols[3],
-                                AgencyLang = cols[4],
-                                AgencyPhone = cols[5],
-                                AgencyFareUrl = cols[6],
-                                AgencyEmail = cols[7],
+                                Id = cols[0],
+                                Name = cols[1],
+                                Url = cols[2],
+                                Timezone = cols[3],
+                                Lang = cols[4],
+                                Phone = cols[5],
+                                FareUrl = cols[6],
+                                Email = cols[7],
                             };
                             newAgencies.Add(entity);
                         }
@@ -105,8 +105,8 @@ public static class Setup
                                 Friday = cols[5] == "1",
                                 Saturday = cols[6] == "1",
                                 Sunday = cols[7] == "1",
-                                StartDate = DateOnly.ParseExact(cols[8], "yyyyMMdd", CultureInfo.InvariantCulture),
-                                EndDate = DateOnly.ParseExact(cols[9], "yyyyMMdd", CultureInfo.InvariantCulture),
+                                StartDate = DateTime.ParseExact(cols[8], "yyyyMMdd", CultureInfo.InvariantCulture),
+                                EndDate = DateTime.ParseExact(cols[9], "yyyyMMdd", CultureInfo.InvariantCulture),
                             };
                             newCalendars.Add(entity);
                         }
@@ -123,8 +123,8 @@ public static class Setup
                         {
                             var entity = new Note
                             {
-                                NoteId = cols[0],
-                                NoteText = cols[1],
+                                Id = cols[0],
+                                Text = cols[1],
                             };
                             newNotes.Add(entity);
                         }
@@ -136,15 +136,15 @@ public static class Setup
                         {
                             var entity = new Models.Route
                             {
-                                RouteId = cols[0],
+                                Id = cols[0],
                                 AgencyId = cols[1],
-                                RouteShortName = cols[2],
-                                RouteLongName = cols[3],
-                                RouteDesc = cols[4],
-                                RouteType = int.Parse(cols[5]),
-                                RouteColor = cols[6],
-                                RouteTextColor = cols[7],
-                                RouteUrl = cols[8],
+                                ShortName = cols[2],
+                                LongName = cols[3],
+                                Description = cols[4],
+                                Type = int.Parse(cols[5]),
+                                Color = cols[6],
+                                TextColor = cols[7],
+                                Url = cols[8],
                             };
                             newRoutes.Add(entity);
                         }
@@ -158,11 +158,11 @@ public static class Setup
 
                             var entity = new Shape
                             {
-                                ShapeId = int.Parse(cols[0]),
-                                ShapePtLat = float.Parse(cols[1]),
-                                ShapePtLon = float.Parse(cols[2]),
-                                ShapePtSequence = int.Parse(cols[3]),
-                                ShapeDistTraveled = float.Parse(cols[4]),
+                                Id = int.Parse(cols[0]),
+                                Latitude = decimal.Parse(cols[1]),
+                                Longitude = decimal.Parse(cols[2]),
+                                Sequence = int.Parse(cols[3]),
+                                DistanceTraveled = decimal.Parse(cols[4]),
                             };
                             newShapes.Add(entity);
                         }
@@ -174,12 +174,12 @@ public static class Setup
                         {
                             var entity = new Stop
                             {
-                                StopId = int.Parse(cols[0]),
-                                StopName = cols[1],
-                                StopLat = float.Parse(cols[2]),
-                                StopLon = float.Parse(cols[3]),
+                                Id = int.Parse(cols[0]),
+                                Name = cols[1],
+                                Latitude = decimal.Parse(cols[2]),
+                                Longitude = decimal.Parse(cols[3]),
                                 LocationType = cols[4] == "1" ? "Station" : "Platform",
-                                ParentStation = cols[5].Length == 0 ? null : int.Parse(cols[5]),
+                                ParentStationId = cols[5].Length == 0 ? null : int.Parse(cols[5]),
                                 WheelchairBoarding = cols[6] == "1",
                                 PlatformCode = cols[7].Length == 0 ? null : int.Parse(cols[7]),
                             };
@@ -201,14 +201,14 @@ public static class Setup
                             var entity = new StopTime
                             {
                                 TripId = cols[0],
-                                ArrivalTime = TimeOnly.ParseExact(cols[1], "HH:mm:ss", CultureInfo.InvariantCulture),
-                                DepartureTime = TimeOnly.ParseExact(cols[2], "HH:mm:ss", CultureInfo.InvariantCulture),
+                                ArrivalTime = TimeSpan.ParseExact(cols[1], "HH:mm:ss", CultureInfo.InvariantCulture),
+                                DepartureTime = TimeSpan.ParseExact(cols[2], "HH:mm:ss", CultureInfo.InvariantCulture),
                                 StopId = int.Parse(cols[3]),
                                 StopSequence = int.Parse(cols[4]),
-                                StopHeadsign = cols[5],
+                                StopHeadSign = cols[5],
                                 PickupType = cols[6] == "1",
                                 DropOffType = cols[7] == "1",
-                                ShapeDistTraveled = float.Parse(cols[8]),
+                                ShapeDistanceTraveled = decimal.Parse(cols[8]),
                                 Timepoint = cols[9] == "1",
                                 StopNote = cols[10],
                             };
@@ -224,11 +224,11 @@ public static class Setup
                             {
                                 RouteId = cols[0],
                                 ServiceId = int.Parse(cols[1]),
-                                TripId = cols[2],
+                                Id = cols[2],
                                 ShapeId = int.Parse(cols[3]),
-                                TripHeadsign = cols[4],
+                                HeadSign = cols[4],
                                 DirectionId = cols[5] == "1",
-                                TripShortName = cols[5],
+                                ShortName = cols[5],
                                 BlockId = cols[7],
                                 WheelchairAccessible = true,
                                 TripNote = cols[8],

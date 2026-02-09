@@ -70,7 +70,7 @@ CREATE TABLE trips (
     bikes_allowed TINYINT(1),
     FOREIGN KEY (route_id) REFERENCES routes(route_id),
     FOREIGN KEY (service_id) REFERENCES calendar(service_id)
-    -- FOREIGN KEY (trip_note) REFERENCES notes(note_id)
+    FOREIGN KEY (trip_note) REFERENCES notes(note_id)
 );
 
 CREATE TABLE stops (
@@ -99,7 +99,7 @@ CREATE TABLE stop_times (
     PRIMARY KEY (trip_id, stop_sequence),
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
     FOREIGN KEY (stop_id) REFERENCES stops(stop_id)
-    -- FOREIGN KEY (stop_note) REFERENCES notes(note_id)
+    FOREIGN KEY (stop_note) REFERENCES notes(note_id)
 );
 
 CREATE TABLE vehicle_categories (

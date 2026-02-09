@@ -1,13 +1,12 @@
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 
 using DotNetEnv;
-using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
 
 using backend.Data;
-using backend.Routes;
 using backend.Utils;
 
-DotNetEnv.Env.Load();
+Env.Load();
 var apikey = Environment.GetEnvironmentVariable("API_KEY") ?? throw new InvalidOperationException("API_KEY not found in .env");
 var mysqlHost = Environment.GetEnvironmentVariable("MYSQL_HOST") ?? throw new InvalidOperationException("MYSQL_HOST not found");
 var mysqlPort = Environment.GetEnvironmentVariable("MYSQL_PORT") ?? "3306";
@@ -18,27 +17,45 @@ var mysqlConnString = $"Server={mysqlHost};Port={mysqlPort};Database={mysqlDatab
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
-builder.Services.AddHttpClient("TransportNSW", client => client.DefaultRequestHeaders.Add("Authorization", $"apikey {apikey}"));
-builder.Services.AddDbContext<TransportDbContext>(options => options.UseMySql(mysqlConnString, ServerVersion.AutoDetect(mysqlConnString)));
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient("TransportNSW", client => 
+    client.DefaultRequestHeaders.Add("Authorization", $"apikey {apikey}"));
+builder.Services.AddDbContext<TransportDbContext>(options => 
+    options.UseMySql(mysqlConnString, ServerVersion.AutoDetect(mysqlConnString)));
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", 
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.UseSwaggerUi(options =>
-    {
-        options.DocumentPath = "/openapi/v1.json";
-    });
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAngular");
+app.UseAuthorization();
+
+app.MapControllers();
+app.UseExceptionHandler("/error");
+app.Map("/error", (HttpContext http) =>
+{
+    var feature = http.Features.Get<IExceptionHandlerFeature>();
+    var message = feature?.Error?.Message ?? "An unexpected error occurred.";
+    return Results.Problem(detail: message);
+});
 
 await app.PopulateSydneyMetro();
-
-SydneyMetroEndpoints.GetSydneyMetro(app);
 
 Console.WriteLine("******************************************");
 Console.WriteLine("               Start Server               ");

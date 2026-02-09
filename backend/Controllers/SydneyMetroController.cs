@@ -1,90 +1,73 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
 using backend.Data;
-using backend.Models;
+using backend.DTOs;
 
 namespace backend.Controllers;
 
-public static class SydneyMetroController
+[ApiController]
+[Route("api/sydney/metro")]
+public class SydneyMetroController : ControllerBase
 {
-    async public static Task<List<Agency>> GetSydneyMetroAgencies(TransportDbContext db)
-    {
-        var sydneyMetroAgencies = await db.Agencies
-            .Distinct()
-            .ToListAsync();
+    private readonly TransportDbContext _db;
 
-        return sydneyMetroAgencies;
-    }
-    
-    async public static Task<List<Calendar>> GetSydneyMetroCalendars(TransportDbContext db)
+    public SydneyMetroController(TransportDbContext db)
     {
-        var sydneyMetroCalendars = await db.Calendars
-            .Distinct()
-            .ToListAsync();
-
-        return sydneyMetroCalendars;
-    }
-    
-    async public static Task<List<CalendarDate>> GetSydneyMetroCalendarDates(TransportDbContext db)
-    {
-        var sydneyMetroCalendarDates = await db.CalendarDates
-            .Distinct()
-            .ToListAsync();
-
-        return sydneyMetroCalendarDates;
-    }
-    
-    async public static Task<List<Note>> GetSydneyMetroNotes(TransportDbContext db)
-    {
-        var sydneyMetroNotes = await db.Notes
-            .Distinct()
-            .ToListAsync();
-
-        return sydneyMetroNotes;
-    }
-    
-    async public static Task<List<Models.Route>> GetSydneyMetroRoutes(TransportDbContext db)
-    {
-        var sydneyMetroRoutes = await db.Routes
-            .Distinct()
-            .ToListAsync();
-
-        return sydneyMetroRoutes;
-    }
-    
-    async public static Task<List<Shape>> GetSydneyMetroShapes(TransportDbContext db)
-    {
-        var sydneyMetroShapes = await db.Shapes
-            .Distinct()
-            .ToListAsync();
-
-        return sydneyMetroShapes;
-    }
-    
-    async public static Task<List<Stop>> GetSydneyMetroStops(TransportDbContext db)
-    {
-        var sydneyMetroStops = await db.Stops
-            .Distinct()
-            .ToListAsync();
-
-        return sydneyMetroStops;
-    }
-    
-    async public static Task<List<StopTime>> GetSydneyMetroStopTimes(TransportDbContext db)
-    {
-        var sydneyMetroStopTimes = await db.StopTimes
-            .Distinct()
-            .ToListAsync();
-
-        return sydneyMetroStopTimes;
+        _db = db;
     }
 
-    async public static Task<List<Trip>> GetSydneyMetroTrips(TransportDbContext db)
-    {
-        var sydneyMetroTrips = await db.Trips
-            .Distinct()
-            .ToListAsync();
+    [HttpGet("agencies")]
+    public async Task<ActionResult<List<AgencyDto>>> GetSydneyMetroAgencies() =>
+        Ok(await _db.Agencies.ToListAsync());
 
-        return sydneyMetroTrips;
+    [HttpGet("calendars")]
+    public async Task<ActionResult<List<CalendarDto>>> GetSydneyMetroCalendars() =>
+        Ok(await _db.Calendars.ToListAsync());
+
+    [HttpGet("calendar-dates")]
+    public async Task<ActionResult<List<CalendarDateDto>>> GetSydneyMetroCalendarDates() =>
+        Ok(await _db.CalendarDates.ToListAsync());
+
+    [HttpGet("notes")]
+    public async Task<ActionResult<List<NoteDto>>> GetSydneyMetroNotes() =>
+        Ok(await _db.Notes.ToListAsync());
+
+    [HttpGet("routes")]
+    public async Task<ActionResult<List<DTOs.RouteDto>>> GetSydneyMetroRoutes() =>
+        Ok(await _db.Routes.ToListAsync());
+
+    [HttpGet("shapes")]
+    public async Task<ActionResult<List<ShapeDto>>> GetSydneyMetroShapes() =>
+        Ok(await _db.Shapes.ToListAsync());
+
+    [HttpGet("stops")]
+    public async Task<ActionResult<List<StopDto>>> GetSydneyMetroStops() {
+        var stops = await _db.Stops.ToListAsync();
+
+        Console.WriteLine($"Found {stops.Count} stops");
+
+        var stopsDto = stops.Select(s => new StopDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Latitude = s.Latitude,
+            Longitude = s.Longitude,
+            LocationType = s.LocationType,
+            ParentStationId = s.ParentStationId,
+            WheelchairBoarding = s.WheelchairBoarding,
+            PlatformCode = s.PlatformCode,
+        }).ToList();
+
+        Console.WriteLine($"Returning {stopsDto.Count} stops");
+
+        return Ok(stopsDto);
     }
+
+    [HttpGet("stop-times")]
+    public async Task<ActionResult<List<StopTimeDto>>> GetSydneyMetroStopTimes() =>
+        Ok(await _db.StopTimes.ToListAsync());
+
+    [HttpGet("trips")]
+    public async Task<ActionResult<List<TripDto>>> GetSydneyMetroTrips() =>
+        Ok(await _db.Trips.ToListAsync());
 }

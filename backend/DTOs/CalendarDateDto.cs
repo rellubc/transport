@@ -1,21 +1,16 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace backend.Models;
+namespace backend.DTOs;
 
-[Table("calendar_dates")]
-public class CalendarDate
+public class CalendarDateDto
 {
-    [Key]
-    [Column("service_id")]
+    [Required]
     public int ServiceId { get; set; }
 
-    [Column("date")]
     [Required]
     [DataType(DataType.Date)]
     public DateTime Date { get; set; }
 
-    [Column("exception_type")]
     [Required]
     [StringLength(50)]
     public string ExceptionType { get; set; } = null!;
