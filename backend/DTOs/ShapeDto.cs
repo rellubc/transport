@@ -21,5 +21,5 @@ public class ShapeDto
 
     [Required]
     [Precision(18, 2)]
-    public decimal DistanceTraveled { get; set; }
+    public decimal DistanceTravelled { get; set; }
 }

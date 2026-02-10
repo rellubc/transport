@@ -32,7 +32,7 @@ public class StopTimeDto
 
     [Required]
     [Precision(18, 2)]
-    public decimal ShapeDistanceTraveled { get; set; }
+    public decimal ShapeDistanceTravelled { get; set; }
 
     [Required]
     public bool Timepoint { get; set; }

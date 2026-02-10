@@ -46,7 +46,7 @@ CREATE TABLE shapes (
     shape_pt_lat DECIMAL(11,8) NOT NULL,
     shape_pt_lon DECIMAL(11,8) NOT NULL,
     shape_pt_sequence INT NOT NULL,
-    shape_dist_traveled DECIMAL(18,2) NOT NULL,
+    shape_dist_travelled DECIMAL(18,2) NOT NULL,
     PRIMARY KEY (shape_id, shape_pt_sequence)
 );
 
@@ -93,7 +93,7 @@ CREATE TABLE stop_times (
     stop_headsign VARCHAR(255),
     pickup_type TINYINT(1) NOT NULL,
     drop_off_type TINYINT(1) NOT NULL,
-    shape_dist_traveled DECIMAL(18,2) NOT NULL,
+    shape_dist_travelled DECIMAL(18,2) NOT NULL,
     timepoint TINYINT(1) NOT NULL,
     stop_note VARCHAR(255),
     PRIMARY KEY (trip_id, stop_sequence),

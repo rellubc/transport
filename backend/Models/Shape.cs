@@ -25,8 +25,8 @@ public class Shape
     [Required]
     public int Sequence { get; set; }
 
-    [Column("shape_dist_traveled")]
+    [Column("shape_dist_travelled")]
     [Required]
     [Precision(18, 2)]
-    public decimal DistanceTraveled { get; set; }
+    public decimal DistanceTravelled { get; set; }
 }

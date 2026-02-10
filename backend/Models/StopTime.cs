@@ -40,10 +40,10 @@ public class StopTime
     [Required]
     public bool DropOffType { get; set; }
 
-    [Column("shape_dist_traveled")]
+    [Column("shape_dist_travelled")]
     [Required]
     [Precision(18, 2)]
-    public decimal ShapeDistanceTraveled { get; set; }
+    public decimal ShapeDistanceTravelled { get; set; }
 
     [Column("timepoint")]
     [Required]

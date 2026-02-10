@@ -162,7 +162,7 @@ public static class Setup
                                 Latitude = decimal.Parse(cols[1]),
                                 Longitude = decimal.Parse(cols[2]),
                                 Sequence = int.Parse(cols[3]),
-                                DistanceTraveled = decimal.Parse(cols[4]),
+                                DistanceTravelled = decimal.Parse(cols[4]),
                             };
                             newShapes.Add(entity);
                         }
@@ -208,7 +208,7 @@ public static class Setup
                                 StopHeadSign = cols[5],
                                 PickupType = cols[6] == "1",
                                 DropOffType = cols[7] == "1",
-                                ShapeDistanceTraveled = decimal.Parse(cols[8]),
+                                ShapeDistanceTravelled = decimal.Parse(cols[8]),
                                 Timepoint = cols[9] == "1",
                                 StopNote = cols[10],
                             };
