@@ -1,0 +1,12 @@
+<div id="map" class="map-container"></div>
+
+<div *ngIf="sidebarOpen" class="sidebar" id="map-sidebar">
+	<div class="sidebar-header">
+		<strong>Feature details</strong>
+		<button class="close-btn" (click)="closeSidebar()"><lucide-icon [img]="XIcon"></lucide-icon></button>
+	</div>
+	<div class="sidebar-body">
+		<p><strong>Name: </strong> <span id="sidebar-name">{{ selectedProps?.name }}</span></p>
+		<p><strong>ID: </strong> <span id="sidebar-id">{{ selectedProps?.stopId }}</span></p>
+	</div>
+</div>

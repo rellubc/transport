@@ -70,7 +70,7 @@ CREATE TABLE trips (
     bikes_allowed TINYINT(1),
     FOREIGN KEY (route_id) REFERENCES routes(route_id),
     FOREIGN KEY (service_id) REFERENCES calendar(service_id)
-    FOREIGN KEY (trip_note) REFERENCES notes(note_id)
+    -- FOREIGN KEY (trip_note) REFERENCES notes(note_id)
 );
 
 CREATE TABLE stops (
@@ -99,7 +99,7 @@ CREATE TABLE stop_times (
     PRIMARY KEY (trip_id, stop_sequence),
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
     FOREIGN KEY (stop_id) REFERENCES stops(stop_id)
-    FOREIGN KEY (stop_note) REFERENCES notes(note_id)
+    -- FOREIGN KEY (stop_note) REFERENCES notes(note_id)
 );
 
 CREATE TABLE vehicle_categories (
@@ -124,4 +124,37 @@ CREATE TABLE vehicle_couplings (
     PRIMARY KEY (parent_id, child_id, child_sequence),
     FOREIGN KEY (parent_id) REFERENCES vehicle_categories(vehicle_category_id),
     FOREIGN KEY (child_id) REFERENCES vehicle_categories(vehicle_category_id)
+);
+
+
+CREATE TABLE realtime_stop_time_updates (
+    entity_id VARCHAR(255) NOT NULL,
+    trip_id VARCHAR(255) NOT NULL,
+    stop_sequence INT NOT NULL,
+    stop_id INT,
+    arrival_time DATETIME,
+    departure_time DATETIME,
+    schedule_relationship VARCHAR(50),
+    inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (entity_id, trip_id, stop_sequence)
+);
+
+CREATE TABLE realtime_vehicle_positions (
+    entity_id VARCHAR(255) NOT NULL,
+    vehicle_id VARCHAR(255),
+    label VARCHAR(255),
+    license_plate VARCHAR(255),
+    latitude DECIMAL(11,8),
+    longitude DECIMAL(11,8),
+    bearing DECIMAL(9,6),
+    speed DECIMAL(9,6),
+    trip_id VARCHAR(255),
+    current_stop_sequence INT,
+    stop_id INT,
+    current_status VARCHAR(100),
+    timestamp DATETIME,
+    congestion_level VARCHAR(50),
+    occupancy_status VARCHAR(50),
+    inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (entity_id, vehicle_id)
 );
