@@ -32,7 +32,7 @@ public class TransportDbContext : DbContext
             .HasKey(st => new { st.TripId, st.StopSequence });
 
         modelBuilder.Entity<RealtimeStopTimeUpdate>()
-            .HasKey(rt => new { rt.EntityId, rt.TripId, rt.StopSequence });
+            .HasKey(rt => new { rt.TripId, rt.StopSequence });
 
         modelBuilder.Entity<RealtimeVehiclePosition>()
             .HasKey(rv => rv.VehicleId);

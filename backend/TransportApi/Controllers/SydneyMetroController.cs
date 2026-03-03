@@ -157,9 +157,10 @@ public class SydneyMetroController : ControllerBase
         Ok(await _db.Trips.ToListAsync());
 
     [HttpGet("realtime-stop-times")]
-    public async Task<ActionResult<List<StopTimeDto>>> GetSydneyMetroRealTimeStopTimes(int stopId)
+    public async Task<ActionResult<List<StopTimeDto>>> GetSydneyMetroRealTimeStopTimes(string tripId)
     {
-        var realtimeStopTimeUpdates = await _db.RealtimeStopTimeUpdates.ToListAsync();
+        await _services.RealtimeSydneyMetroTripUpdate();
+        var realtimeStopTimeUpdates = await _db.RealtimeStopTimeUpdates.Where(rtsu => rtsu.TripId == tripId).ToListAsync();
 
         var realtimeStopTimeUpdatesDto = realtimeStopTimeUpdates
         .Select(rtsu => new RealtimeStopTimeUpdateDto

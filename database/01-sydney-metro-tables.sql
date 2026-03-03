@@ -126,7 +126,6 @@ CREATE TABLE vehicle_couplings (
     FOREIGN KEY (child_id) REFERENCES vehicle_categories(vehicle_category_id)
 );
 
-
 CREATE TABLE realtime_stop_time_updates (
     entity_id VARCHAR(255) NOT NULL,
     trip_id VARCHAR(255) NOT NULL,
@@ -136,12 +135,12 @@ CREATE TABLE realtime_stop_time_updates (
     departure_time DATETIME,
     schedule_relationship VARCHAR(50),
     inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (entity_id, trip_id, stop_sequence)
+    PRIMARY KEY (trip_id, stop_sequence)
 );
 
 CREATE TABLE realtime_vehicle_positions (
     entity_id VARCHAR(255) NOT NULL,
-    vehicle_id VARCHAR(255),
+    vehicle_id VARCHAR(255) PRIMARY KEY,
     label VARCHAR(255),
     license_plate VARCHAR(255),
     latitude DECIMAL(11,8),
@@ -155,6 +154,5 @@ CREATE TABLE realtime_vehicle_positions (
     timestamp DATETIME,
     congestion_level VARCHAR(50),
     occupancy_status VARCHAR(50),
-    inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (entity_id, vehicle_id)
+    inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

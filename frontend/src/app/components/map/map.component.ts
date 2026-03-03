@@ -21,7 +21,7 @@ import { Stop, StopPlatformDto, StopStationDto } from '../../../shared/models/St
 import CircleStyle from 'ol/style/Circle';
 import { Fill, Text } from 'ol/style';
 import { LucideAngularModule, X } from 'lucide-angular';
-import { getStationStopTimes } from '../../metro/metro-helpers';
+import { getRealTimeStopTimes, getStationStopTimes } from '../../metro/metro-helpers';
 import { RealtimeVehiclePositionDto } from '../../../shared/models/Realtime';
 
 @Component({
@@ -140,9 +140,9 @@ export class MapComponent {
       source: stopSource,
       style: new Style({
         image: new CircleStyle({
-          radius: 6,
+          radius: 3,
           fill: new Fill({ color: '#168388' }),
-          stroke: new Stroke({ color: '#ffffff', width: 2 }),
+          stroke: new Stroke({ color: '#ffffff', width: 1 }),
         }),
       }),
     });
@@ -184,6 +184,8 @@ export class MapComponent {
       const feature = new Feature({
         geometry: new Point(coord),
         vehicleId: vehicle.vehicleId,
+        entityId: vehicle.entityId,
+        tripId: vehicle.tripId,
       });
 
       this.vehicleSource!.addFeature(feature);
@@ -191,9 +193,17 @@ export class MapComponent {
   }
 
   async openSidebar(props: any) {
+    console.log(props)
     this.selectedProps = props
-    const stopTimes = await getStationStopTimes(props.stopId)
-    console.log(stopTimes)
+
+    if (props["vehicleId"]) {
+      console.log(props.tripId)
+      const stopTimes = await getRealTimeStopTimes(props.tripId)
+      console.log(stopTimes)
+    } else if (props["stopId"]) {
+      const stopTimes = await getStationStopTimes(props.stopId)
+      console.log(stopTimes)
+    }
 
     this.sidebarOpen = true
   }

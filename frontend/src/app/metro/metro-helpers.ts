@@ -61,9 +61,10 @@ export const getStationStopTimes = async (stopId: number): Promise<StopTimeDto[]
   }
 }
 
-export const getRealTimeStopTimes = async (): Promise<RealtimeStopTimeUpdateDto[]>=> {
+export const getRealTimeStopTimes = async (tripId: string): Promise<RealtimeStopTimeUpdateDto[]>=> {
   try {
-    const res = await fetch(`https://localhost:7284/api/sydney/metro/realtime-stop-times`)
+    console.log(tripId)
+    const res = await fetch(`https://localhost:7284/api/sydney/metro/realtime-stop-times?tripId=${tripId}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: RealtimeStopTimeUpdateDto[] = await res.json()

@@ -235,9 +235,9 @@ export class MetroStationsComponent {
       source: platformSource,
       style: new Style({
         image: new CircleStyle({
-          radius: 6,
+          radius: 3,
           fill: new Fill({ color: '#168388' }),
-          stroke: new Stroke({ color: '#ffffff', width: 2 }),
+          stroke: new Stroke({ color: '#ffffff', width: 1 }),
         }),
       }),
     });

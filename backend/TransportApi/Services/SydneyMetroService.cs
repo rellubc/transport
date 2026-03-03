@@ -30,6 +30,7 @@ public class SydneyMetroService : ISydneyMetroService
 
     public async Task RealtimeSydneyMetroTripUpdate()
     {
+        _logger.LogInformation("Updating vehicle trip details...");
         var client = _factory.CreateClient("TransportNSW");
         var response = await client.GetAsync("https://api.transport.nsw.gov.au/v2/gtfs/realtime/metro");
 
@@ -42,8 +43,6 @@ public class SydneyMetroService : ISydneyMetroService
         await using var responseStream = await response.Content.ReadAsStreamAsync();
         var feed = FeedMessage.Parser.ParseFrom(responseStream);
 
-        var existingRealtimeStopTimeIds = new HashSet<string>(_db.RealtimeStopTimeUpdates.Select(rtsu => rtsu.EntityId + "|" + rtsu.TripId + "|" + rtsu.StopSequence));
-
         var newRealtime = new List<RealtimeStopTimeUpdate>();
 
         foreach (var entity in feed.Entity)
@@ -53,40 +52,28 @@ public class SydneyMetroService : ISydneyMetroService
                 if (entity.TripUpdate == null) continue;
 
                 var tripUpdate = entity.TripUpdate;
-                var tripId = tripUpdate.Trip != null && tripUpdate.Trip.HasTripId ? tripUpdate.Trip.TripId : null;
 
                 foreach (var stu in tripUpdate.StopTimeUpdate)
                 {
-                    int? stopSequence = stu.HasStopSequence ? (int)stu.StopSequence : (int?)null;
-
-                    int? stopId = null;
-                    if (stu.HasStopId && !string.IsNullOrEmpty(stu.StopId))
-                    {
-                        if (int.TryParse(stu.StopId, out var parsed)) stopId = parsed;
-                    }
-
                     DateTime? arrival = null;
-                    try { if (stu.Arrival != null && stu.Arrival.HasTime) arrival = DateTimeOffset.FromUnixTimeSeconds(stu.Arrival.Time).UtcDateTime; } catch { }
+                    if (stu.Arrival != null && stu.Arrival.HasTime) arrival = DateTimeOffset.FromUnixTimeSeconds(stu.Arrival.Time).UtcDateTime;
 
                     DateTime? departure = null;
-                    try { if (stu.Departure != null && stu.Departure.HasTime) departure = DateTimeOffset.FromUnixTimeSeconds(stu.Departure.Time).UtcDateTime; } catch { }
+                    if (stu.Departure != null && stu.Departure.HasTime) departure = DateTimeOffset.FromUnixTimeSeconds(stu.Departure.Time).UtcDateTime;
 
-                    if (!existingRealtimeStopTimeIds.Contains(entity.Id + "|" + tripId + "|" + stopSequence))
+                    var entityRow = new RealtimeStopTimeUpdate
                     {
-                        var entityRow = new RealtimeStopTimeUpdate
-                        {
-                            EntityId = entity.Id ?? Guid.NewGuid().ToString(),
-                            TripId = tripId ?? string.Empty,
-                            StopSequence = stopSequence,
-                            StopId = stopId,
-                            ArrivalTime = arrival,
-                            DepartureTime = departure,
-                            ScheduleRelationship = stu.HasScheduleRelationship ? stu.ScheduleRelationship.ToString() : null,
-                            InsertedAt = DateTime.UtcNow,
-                        };
+                        EntityId = entity.Id,
+                        TripId = tripUpdate.Trip.TripId ?? "",
+                        StopSequence = (int)stu.StopSequence,
+                        StopId = int.Parse(stu.StopId),
+                        ArrivalTime = arrival,
+                        DepartureTime = departure,
+                        ScheduleRelationship = stu.HasScheduleRelationship ? stu.ScheduleRelationship.ToString() : null,
+                        InsertedAt = DateTime.UtcNow,
+                    };
 
-                        newRealtime.Add(entityRow);
-                    }
+                    newRealtime.Add(entityRow);
                 }
             }
             catch (Exception ex)
@@ -95,10 +82,19 @@ public class SydneyMetroService : ISydneyMetroService
             }
         }
 
+        Console.WriteLine($"Fetched {newRealtime.Count} realtime stop time updates.");
+        
         if (newRealtime.Count > 0)
         {
-            _logger.LogInformation("Saving {Count} realtime stop time updates", newRealtime.Count);
-            _db.RealtimeStopTimeUpdates.AddRange(newRealtime);
+            foreach (var st in newRealtime)
+            {
+                var existing = _db.RealtimeStopTimeUpdates.FirstOrDefault(rstu => rstu.TripId == st.TripId && rstu.StopSequence == st.StopSequence);
+                if (existing == null) {
+                    _db.RealtimeStopTimeUpdates.Add(st);
+                } else {
+                    _db.Entry(existing).CurrentValues.SetValues(st);
+                }
+            }
             await _db.SaveChangesAsync();
         }
     }
@@ -155,8 +151,6 @@ public class SydneyMetroService : ISydneyMetroService
                 _logger.LogWarning(ex, "Failed to process vehicle entity {EntityId}", entity.Id);
             }
         }
-
-        var vehicles = await _db.RealtimeVehiclePositions.OrderBy(rvp => rvp.VehicleId).ToListAsync();
         
         if (newVehiclePositions.Count > 0)
         {
