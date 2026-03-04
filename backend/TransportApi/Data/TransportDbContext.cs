@@ -18,8 +18,6 @@ public class TransportDbContext : DbContext
     public DbSet<Stop> Stops { get; set; } = null!;
     public DbSet<StopTime> StopTimes { get; set; } = null!;
     public DbSet<Shape> Shapes { get; set; } = null!;
-    public DbSet<RealtimeStopTimeUpdate> RealtimeStopTimeUpdates { get; set; } = null!;
-    public DbSet<RealtimeVehiclePosition> RealtimeVehiclePositions { get; set; } = null!;
     public DbSet<VehicleBoarding> VehicleBoardings { get; set; } = null!;
     public DbSet<VehicleCategory> VehicleCategories { get; set; } = null!;
     public DbSet<VehicleCoupling> VehicleCouplings { get; set; } = null!;
@@ -30,12 +28,6 @@ public class TransportDbContext : DbContext
 
         modelBuilder.Entity<StopTime>()
             .HasKey(st => new { st.TripId, st.StopSequence });
-
-        modelBuilder.Entity<RealtimeStopTimeUpdate>()
-            .HasKey(rt => new { rt.TripId, rt.StopSequence });
-
-        modelBuilder.Entity<RealtimeVehiclePosition>()
-            .HasKey(rv => rv.VehicleId);
 
         modelBuilder.Entity<Shape>()
             .HasKey(s => new { s.Id, s.Sequence });

@@ -22,7 +22,7 @@ import CircleStyle from 'ol/style/Circle';
 import { Fill, Text } from 'ol/style';
 import { LucideAngularModule, X } from 'lucide-angular';
 import { getRealTimeStopTimes, getStationStopTimes } from '../../metro/metro-helpers';
-import { RealtimeVehiclePositionDto } from '../../../shared/models/Realtime';
+import { RealtimeStopTimeUpdateDto, RealtimeVehiclePositionDto } from '../../../shared/models/Realtime';
 
 @Component({
   selector: 'app-map',
@@ -42,6 +42,9 @@ export class MapComponent {
 
   sidebarOpen: boolean = false
   selectedProps: any = null
+  propType: string = ''
+  vehicleInfo: RealtimeStopTimeUpdateDto[] = []
+  stationInfo: any[] = []
 
   createMap() {
     this.map = new Map({
@@ -179,13 +182,16 @@ export class MapComponent {
     this.vehicleSource.clear()
 
     vehicles.forEach((vehicle, index) => {
-      const coord = fromLonLat([vehicle.longitude, vehicle.latitude]);
+      if (vehicle.position?.latitude == null || vehicle.position?.longitude == null) return
+      if (vehicle.vehicle?.id == null) return
+      if (vehicle.trip?.tripId == null) return
+
+      const coord = fromLonLat([vehicle.position.longitude, vehicle.position.latitude]);
 
       const feature = new Feature({
         geometry: new Point(coord),
-        vehicleId: vehicle.vehicleId,
-        entityId: vehicle.entityId,
-        tripId: vehicle.tripId,
+        vehicleId: vehicle.vehicle.id,
+        tripId: vehicle.trip.tripId,
       });
 
       this.vehicleSource!.addFeature(feature);
@@ -196,13 +202,16 @@ export class MapComponent {
     console.log(props)
     this.selectedProps = props
 
-    if (props["vehicleId"]) {
-      console.log(props.tripId)
+    if (props['vehicleId']) {
+      this.propType = 'vehicle'
       const stopTimes = await getRealTimeStopTimes(props.tripId)
       console.log(stopTimes)
-    } else if (props["stopId"]) {
+      this.vehicleInfo = stopTimes
+    } else if (props['stopId']) {
+      this.propType = 'stop'
       const stopTimes = await getStationStopTimes(props.stopId)
       console.log(stopTimes)
+      this.stationInfo = stopTimes
     }
 
     this.sidebarOpen = true

@@ -6,7 +6,30 @@
 		<button class="close-btn" (click)="closeSidebar()"><lucide-icon [img]="XIcon"></lucide-icon></button>
 	</div>
 	<div class="sidebar-body">
-		<p><strong>Name: </strong> <span id="sidebar-name">{{ selectedProps?.name }}</span></p>
-		<p><strong>ID: </strong> <span id="sidebar-id">{{ selectedProps?.stopId }}</span></p>
+		<div *ngIf="propType == 'stop'" class="sidebar-body-header">
+			<p><strong>Name: </strong> <span id="sidebar-name">{{ selectedProps.name }}</span></p>
+			<p><strong>ID: </strong> <span id="sidebar-id">{{ selectedProps.stopId }}</span></p>
+		</div>
+		<div *ngIf="propType == 'vehicle'" class="sidebar-body-header">
+			<p><strong>ID: </strong> <span id="sidebar-id">{{ selectedProps.vehicleId }}</span></p>
+		</div>
+		<div class="sidebar-body-content">
+			<ng-container *ngIf="propType == 'vehicle'">
+				<div *ngFor="let field of vehicleInfo" class="sidebar-detail">
+					<p><strong>trip: </strong> {{ field.trip.directionId == 1 ? 'Sydenham' : 'Tallawong' }} {{ field.trip.routeId }} {{ field.trip.tripId }}</p>
+					<p><strong>start: </strong> {{ field.trip.startDate }} {{ field.trip.startTime }}</p>
+					<p><strong>scheduleRelationship: </strong> {{ field.trip.scheduleRelationship }}</p>
+
+					<div *ngFor="let stu of field.stopTimeUpdate">
+						<p><strong>stopSequence: </strong> {{ stu.stopSequence }} {{ stu.stopId }}</p>
+						<p><strong>arrival: </strong> {{ stu.arrival?.delay }} {{ stu.arrival?.time }} {{ stu.arrival?.uncertainty }}</p>
+						<p><strong>departure: </strong> {{ stu.departure?.delay }} {{ stu.departure?.time }} {{ stu.departure?.uncertainty }}</p>
+					</div>
+
+					<p><strong>delay: </strong> {{ field.delay }}</p>
+
+				</div>
+			</ng-container>
+		</div>
 	</div>
 </div>

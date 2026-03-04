@@ -3,8 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 using TransportApi.Data;
 using TransportApi.DTOs;
+using TransportApi.DTOs.Realtime;
 using TransportApi.Services;
 using TransportApi.Utils;
+
+using TransitRealtime;
 
 namespace TransportApi.Controllers;
 
@@ -157,54 +160,141 @@ public class SydneyMetroController : ControllerBase
         Ok(await _db.Trips.ToListAsync());
 
     [HttpGet("realtime-stop-times")]
-    public async Task<ActionResult<List<StopTimeDto>>> GetSydneyMetroRealTimeStopTimes(string tripId)
+    public async Task<ActionResult<List<RealtimeTripUpdateDto>>> GetSydneyMetroRealtimeStopTimes(string tripId)
     {
-        await _services.RealtimeSydneyMetroTripUpdate();
-        var realtimeStopTimeUpdates = await _db.RealtimeStopTimeUpdates.Where(rtsu => rtsu.TripId == tripId).ToListAsync();
-
-        var realtimeStopTimeUpdatesDto = realtimeStopTimeUpdates
-        .Select(rtsu => new RealtimeStopTimeUpdateDto
+        var tripUpdates = await _services.SydneyMetroTripUpdates(tripId);
+        var tripUpdatesDto = new List<RealtimeTripUpdateDto>();
+        
+        foreach (var tripUpdate in tripUpdates)
         {
-            EntityId = rtsu.EntityId,
-            TripId = rtsu.TripId,
-            StopSequence = rtsu.StopSequence,
-            StopId = rtsu.StopId,
-            ArrivalTime = rtsu.ArrivalTime,
-            DepartureTime = rtsu.DepartureTime,
-            ScheduleRelationship = rtsu.ScheduleRelationship,
-            InsertedAt = rtsu.InsertedAt,
-        }).ToList();
+            if (tripUpdate.Vehicle.GetExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor) != null)
+            {
+                Console.WriteLine("asdf");
+            }
 
-        return Ok(realtimeStopTimeUpdatesDto);
+            var newTripDescriptor = new TripDescriptorDto
+            {
+                TripId = tripUpdate.Trip.TripId,
+                RouteId = tripUpdate.Trip.RouteId,
+                DirectionId = tripUpdate.Trip.DirectionId,
+                StartTime = tripUpdate.Trip.StartTime,
+                StartDate = tripUpdate.Trip.StartDate,
+                ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipTripDescriptor(tripUpdate.Trip.ScheduleRelationship)
+            };
+
+            var newVehicleDescriptor = new VehicleDescriptorDto
+            {
+                Id = tripUpdate.Vehicle.Id,
+                Label = tripUpdate.Vehicle.Label,
+                LicensePlate = tripUpdate.Vehicle.LicensePlate,
+            };
+
+            var newStopTimeUpdates = new List<StopTimeUpdateDto>();
+            foreach(var stopTimeUpdate in tripUpdate.StopTimeUpdate)
+            {
+                var newArrival = new StopTimeEventDto();
+                if (stopTimeUpdate.Arrival != null) {
+                    newArrival = new StopTimeEventDto
+                    {
+                        Delay = stopTimeUpdate.Arrival.Delay,
+                        Time = stopTimeUpdate.Arrival.Time,
+                        Uncertainty = stopTimeUpdate.Arrival.Uncertainty
+                    };
+                }
+
+                var newDeparture = new StopTimeEventDto();
+                if (stopTimeUpdate.Departure != null) {
+                    newDeparture = new StopTimeEventDto
+                    {
+                        Delay = stopTimeUpdate.Departure.Delay,
+                        Time = stopTimeUpdate.Departure.Time,
+                        Uncertainty = stopTimeUpdate.Departure.Uncertainty
+                    };
+                }
+
+                var newStopTimeUpdate = new StopTimeUpdateDto
+                {
+                    StopSequence = stopTimeUpdate.StopSequence,
+                    StopId = stopTimeUpdate.StopId,
+                    Arrival = newArrival,
+                    Departure = newDeparture,
+                    ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipStopTimeUpdate(stopTimeUpdate.ScheduleRelationship),
+                    DepartureOccupancyStatus = RealtimeEnums.MapOccupancyStatusStopTimeUpdate(stopTimeUpdate.DepartureOccupancyStatus),
+                };
+
+                newStopTimeUpdates.Add(newStopTimeUpdate);
+            }
+
+            var newTripUpdateDto = new RealtimeTripUpdateDto
+            {
+                Trip = newTripDescriptor,
+                Vehicle = newVehicleDescriptor,
+                StopTimeUpdate = newStopTimeUpdates,
+                Timestamp = tripUpdate.Timestamp,
+                Delay = tripUpdate.Delay
+            };
+
+            tripUpdatesDto.Add(newTripUpdateDto);
+        }
+
+        return Ok(tripUpdatesDto);
     }
 
     [HttpGet("realtime-vehicle-positions")]
-    public async Task<ActionResult<List<RealtimeVehiclePositionDto>>> GetSydneyMetroRealTimeVehiclePositions()
+    public async Task<ActionResult<List<RealtimeVehiclePositionDto>>> GetSydneyMetroRealtimeVehiclePositions()
     {
-        await _services.RealtimeSydneyMetroVehiclePos();
-        var realtimeVehiclePositions = await _db.RealtimeVehiclePositions.ToListAsync();
-
-        var realtimeVehiclePositionsDto = realtimeVehiclePositions
-        .Select(rvp => new RealtimeVehiclePositionDto
+        var vehiclePositions = await _services.SydneyMetroVehiclePositions();
+        var vehiclePositionsDto = new List<RealtimeVehiclePositionDto>();
+        
+        foreach (var tripUpdate in vehiclePositions)
         {
-            EntityId = rvp.EntityId,
-            VehicleId = rvp.VehicleId,
-            Label = rvp.Label,
-            LicensePlate = rvp.LicensePlate,
-            Latitude = rvp.Latitude,
-            Longitude = rvp.Longitude,
-            Bearing = rvp.Bearing,
-            Speed = rvp.Speed,
-            TripId = rvp.TripId,
-            CurrentStopSequence = rvp.CurrentStopSequence,
-            StopId = rvp.StopId,
-            CurrentStatus = rvp.CurrentStatus,
-            Timestamp = rvp.Timestamp,
-            CongestionLevel = rvp.CongestionLevel,
-            OccupancyStatus = rvp.OccupancyStatus,
-            InsertedAt = rvp.InsertedAt,
-        }).ToList();
+            if (tripUpdate.Vehicle.GetExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor) != null)
+            {
+                Console.WriteLine("yes");
+            }
 
-        return Ok(realtimeVehiclePositionsDto);
+            var newVehicleDescriptor = new VehicleDescriptorDto
+            {
+                Id = tripUpdate.Vehicle.Id,
+                Label = tripUpdate.Vehicle.Label,
+                LicensePlate = tripUpdate.Vehicle.LicensePlate,
+            };
+
+            var newPosition = new PositionDto
+            {
+                Latitude = tripUpdate.Position.Latitude,
+                Longitude = tripUpdate.Position.Longitude,
+                Bearing = tripUpdate.Position.Bearing,
+                Odometer = tripUpdate.Position.Odometer,
+                Speed = tripUpdate.Position.Speed
+            };
+
+            var newTripDescriptor = new TripDescriptorDto
+            {
+                TripId = tripUpdate.Trip.TripId,
+                RouteId = tripUpdate.Trip.RouteId,
+                DirectionId = tripUpdate.Trip.DirectionId,
+                StartTime = tripUpdate.Trip.StartTime,
+                StartDate = tripUpdate.Trip.StartDate,
+                ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipTripDescriptor(tripUpdate.Trip.ScheduleRelationship)
+            };
+
+            var newVehiclePosition = new RealtimeVehiclePositionDto
+            {
+                Vehicle = newVehicleDescriptor,
+                Position = newPosition,
+                Trip = newTripDescriptor,
+                CurrentStopSequence = tripUpdate.CurrentStopSequence,
+                StopId = tripUpdate.StopId,
+                CurrentStatus = RealtimeEnums.MapVehicleStopStatus(tripUpdate.CurrentStatus),
+                Timestamp = tripUpdate.Timestamp,
+                CongestionLevel = RealtimeEnums.MapCongestionLevel(tripUpdate.CongestionLevel),
+                OccupancyStatus = RealtimeEnums.MapOccupancyStatusVehiclePosition(tripUpdate.OccupancyStatus)
+            };
+
+            vehiclePositionsDto.Add(newVehiclePosition);
+        }
+        return Ok(vehiclePositionsDto);
+        // return Ok(await _services.SydneyMetroVehiclePositions());
     }
 }

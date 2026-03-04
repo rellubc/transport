@@ -126,33 +126,33 @@ CREATE TABLE vehicle_couplings (
     FOREIGN KEY (child_id) REFERENCES vehicle_categories(vehicle_category_id)
 );
 
-CREATE TABLE realtime_stop_time_updates (
-    entity_id VARCHAR(255) NOT NULL,
-    trip_id VARCHAR(255) NOT NULL,
-    stop_sequence INT NOT NULL,
-    stop_id INT,
-    arrival_time DATETIME,
-    departure_time DATETIME,
-    schedule_relationship VARCHAR(50),
-    inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (trip_id, stop_sequence)
-);
+-- CREATE TABLE realtime_trip_updates (
+--     entity_id VARCHAR(255) NOT NULL,
+--     trip_id VARCHAR(255) NOT NULL,
+--     stop_sequence INT NOT NULL,
+--     stop_id INT,
+--     arrival_time DATETIME,
+--     departure_time DATETIME,
+--     schedule_relationship VARCHAR(50),
+--     inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     PRIMARY KEY (trip_id, stop_sequence)
+-- );
 
-CREATE TABLE realtime_vehicle_positions (
-    entity_id VARCHAR(255) NOT NULL,
-    vehicle_id VARCHAR(255) PRIMARY KEY,
-    label VARCHAR(255),
-    license_plate VARCHAR(255),
-    latitude DECIMAL(11,8),
-    longitude DECIMAL(11,8),
-    bearing DECIMAL(9,6),
-    speed DECIMAL(9,6),
-    trip_id VARCHAR(255),
-    current_stop_sequence INT,
-    stop_id INT,
-    current_status VARCHAR(100),
-    timestamp DATETIME,
-    congestion_level VARCHAR(50),
-    occupancy_status VARCHAR(50),
-    inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+-- CREATE TABLE realtime_vehicle_positions (
+--     entity_id VARCHAR(255) NOT NULL,
+--     vehicle_id VARCHAR(255) PRIMARY KEY,
+--     label VARCHAR(255),
+--     license_plate VARCHAR(255),
+--     latitude DECIMAL(11,8),
+--     longitude DECIMAL(11,8),
+--     bearing DECIMAL(9,6),
+--     speed DECIMAL(9,6),
+--     trip_id VARCHAR(255),
+--     current_stop_sequence INT,
+--     stop_id INT,
+--     current_status VARCHAR(100),
+--     timestamp DATETIME,
+--     congestion_level VARCHAR(50),
+--     occupancy_status VARCHAR(50),
+--     inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- );

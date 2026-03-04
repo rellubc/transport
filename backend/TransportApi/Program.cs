@@ -57,7 +57,7 @@ app.Map("/error", (HttpContext http) =>
     return Results.Problem(detail: message);
 });
 
-await app.PopulateSydneyMetro();
+// await app.PopulateSydneyMetro();
 
 app.Logger.LogInformation("Start Server");
 app.Run();

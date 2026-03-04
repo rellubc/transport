@@ -21,7 +21,7 @@ public static class Setup
 
         if (!response.IsSuccessStatusCode)
         {
-            app.Logger.LogInformation($"Failed to fetch data: {response.StatusCode}");
+            app.Logger.LogWarning($"Failed to fetch data: {response.StatusCode}");
             return;
         }
 
