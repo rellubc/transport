@@ -227,13 +227,13 @@ public static class Setup
                                 Id = cols[2],
                                 ShapeId = int.Parse(cols[3]),
                                 HeadSign = cols[4],
-                                DirectionId = cols[5] == "1",
+                                DirectionId = int.Parse(cols[5]),
                                 ShortName = cols[5],
                                 BlockId = cols[7],
-                                WheelchairAccessible = true,
+                                WheelchairAccessible = int.Parse(cols[6]),
                                 TripNote = cols[8],
                                 RouteDirection = cols[9],
-                                BikesAllowed = true,
+                                BikesAllowed = int.Parse(cols[10]),
                             };
                             newTrips.Add(entity);
                         }

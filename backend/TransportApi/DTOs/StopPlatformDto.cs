@@ -16,6 +16,7 @@ public class StopPlatformDto
 
     [Precision(11, 8)]
     public decimal Longitude { get; set; }
+    public string LocationType { get; set; } = null!;
 
     public int? ParentStationId { get; set; }
 

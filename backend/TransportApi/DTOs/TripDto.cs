@@ -20,7 +20,7 @@ public class TripDto
     [StringLength(255)]
     public string HeadSign { get; set; } = null!;
 
-    public bool DirectionId { get; set; } // TINYINT(1) → bool
+    public int DirectionId { get; set; }
 
     [Required]
     [StringLength(255)]
@@ -29,7 +29,7 @@ public class TripDto
     [StringLength(255)]
     public string? BlockId { get; set; }
 
-    public bool WheelchairAccessible { get; set; }
+    public int WheelchairAccessible { get; set; }
 
     [StringLength(255)]
     public string? TripNote { get; set; }
@@ -37,5 +37,5 @@ public class TripDto
     [Required]
     public string RouteDirection { get; set; } = null!;
 
-    public bool? BikesAllowed { get; set; }
+    public int? BikesAllowed { get; set; }
 }

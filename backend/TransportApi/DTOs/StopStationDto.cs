@@ -16,4 +16,5 @@ public class StopStationDto
 
     [Precision(11, 8)]
     public decimal Longitude { get; set; }
+    public string LocationType { get; set; } = null!;
 }

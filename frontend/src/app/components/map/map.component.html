@@ -1,35 +1,37 @@
-<div id="map" class="map-container"></div>
+<div class="map">
+	<div id="map" class="map-container"></div>
 
-<div *ngIf="sidebarOpen" class="sidebar" id="map-sidebar">
-	<div class="sidebar-header">
-		<strong>Feature details</strong>
-		<button class="close-btn" (click)="closeSidebar()"><lucide-icon [img]="XIcon"></lucide-icon></button>
-	</div>
-	<div class="sidebar-body">
-		<div *ngIf="propType == 'stop'" class="sidebar-body-header">
-			<p><strong>Name: </strong> <span id="sidebar-name">{{ selectedProps.name }}</span></p>
-			<p><strong>ID: </strong> <span id="sidebar-id">{{ selectedProps.stopId }}</span></p>
+	<div *ngIf="sidebarOpen" class="sidebar" id="map-sidebar">
+		<div class="sidebar-header">
+			<div *ngIf="propType == 'stop'">
+				<p><strong>Name: </strong> {{ selectedProps.name }} </p>
+				<p><strong>ID: </strong> {{ selectedProps.stopId }} </p>
+			</div>
+			<div *ngIf="propType == 'vehicle' && currentVehicleSchedule">
+				<p> {{ currentVehicleSchedule.trip.routeId!.split('_')[1] }} {{ currentVehicleSchedule.trip.directionId == 1 ? 'Sydenham' : 'Tallawong' }} {{ currentVehicleSchedule.vehicle?.id }} </p>
+			</div>
+			<button class="close-btn" (click)="closeSidebar()"><lucide-icon [img]="XIcon"></lucide-icon></button>
 		</div>
-		<div *ngIf="propType == 'vehicle'" class="sidebar-body-header">
-			<p><strong>ID: </strong> <span id="sidebar-id">{{ selectedProps.vehicleId }}</span></p>
-		</div>
-		<div class="sidebar-body-content">
-			<ng-container *ngIf="propType == 'vehicle'">
-				<div *ngFor="let field of vehicleInfo" class="sidebar-detail">
-					<p><strong>trip: </strong> {{ field.trip.directionId == 1 ? 'Sydenham' : 'Tallawong' }} {{ field.trip.routeId }} {{ field.trip.tripId }}</p>
-					<p><strong>start: </strong> {{ field.trip.startDate }} {{ field.trip.startTime }}</p>
-					<p><strong>scheduleRelationship: </strong> {{ field.trip.scheduleRelationship }}</p>
+		<div class="sidebar-body">
+			<div class="sidebar-body-content">
+				<ng-container *ngIf="propType == 'vehicle' && currentVehicleSchedule">
+					<!-- <p><strong>start: </strong> {{ currentVehicleSchedule.trip.startDate }} {{ currentVehicleSchedule.trip.startTime }}</p> -->
+					<!-- <p><strong>scheduleRelationship: </strong> {{ currentVehicleSchedule.trip.scheduleRelationship }}</p> -->
+					<!-- <p><strong>Delay: </strong> {{ currentVehicleSchedule.delay }}</p> -->
 
-					<div *ngFor="let stu of field.stopTimeUpdate">
-						<p><strong>stopSequence: </strong> {{ stu.stopSequence }} {{ stu.stopId }}</p>
-						<p><strong>arrival: </strong> {{ stu.arrival?.delay }} {{ stu.arrival?.time }} {{ stu.arrival?.uncertainty }}</p>
-						<p><strong>departure: </strong> {{ stu.departure?.delay }} {{ stu.departure?.time }} {{ stu.departure?.uncertainty }}</p>
+					<div *ngFor="let stu of currentVehicleSchedule.stopTimeUpdate; let i = index; let last = last" class="sidebar-body-schedule">
+						<div class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicleInfo?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
+							<div class="sidebar-body-innerdot"></div>
+						</div>
+						<div class="sidebar-body-stop">
+							<p> {{ stu.stopName!.split(',')[0] }} {{ (last ? stu.arrival?.time : stu.departure?.time) | date:'HH:mm' }} </p>
+							<p> {{ stu.stopName!.split(',')[1] }} </p>
+						</div>
 					</div>
-
-					<p><strong>delay: </strong> {{ field.delay }}</p>
-
-				</div>
-			</ng-container>
+				</ng-container>
+				<div class="sidebar-body-bar"></div>
+				<div class="sidebar-body-bar-cover"></div>
+			</div>
 		</div>
 	</div>
 </div>

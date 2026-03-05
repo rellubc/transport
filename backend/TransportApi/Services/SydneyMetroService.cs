@@ -13,7 +13,7 @@ namespace TransportApi.Services;
 
 public interface ISydneyMetroService
 {
-    Task<List<TripUpdate>> SydneyMetroTripUpdates(string TripId);
+    Task<TripUpdate> SydneyMetroTripUpdates(string TripId);
     Task<List<VehiclePosition>> SydneyMetroVehiclePositions();
 }
 
@@ -23,7 +23,7 @@ public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factor
     private readonly TransportDbContext _db = db;
     private readonly ILogger<SydneyMetroService> _logger = logger;
 
-    public async Task<List<TripUpdate>> SydneyMetroTripUpdates(string tripId)
+    public async Task<TripUpdate> SydneyMetroTripUpdates(string tripId)
     {
         _logger.LogInformation("Updating vehicle trip details...");
         var client = _factory.CreateClient("TransportNSW");
@@ -32,15 +32,15 @@ public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factor
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("Failed to fetch data: {Response}", response.StatusCode);
-            return [];
+            return new TripUpdate();
         }
 
         await using var responseStream = await response.Content.ReadAsStreamAsync();
         var feed = TransitRealtime.FeedMessage.Parser.ParseFrom(responseStream);
 
-        var newTripUpdates = new List<TripUpdate>();
+        var newTripUpdate = new TripUpdate();
 
-        if (feed == null) return [];
+        if (feed == null) return new TripUpdate();
 
         foreach (var entity in feed.Entity)
         {
@@ -48,7 +48,8 @@ public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factor
             {
                 if (entity.TripUpdate == null) continue;
                 if (entity.TripUpdate.Trip.TripId != tripId) continue;
-                newTripUpdates.Add(entity.TripUpdate);
+                newTripUpdate = entity.TripUpdate;
+                break;
             }
             catch (Exception ex)
             {
@@ -56,7 +57,7 @@ public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factor
             }
         }
 
-        return newTripUpdates;
+        return newTripUpdate;
     }
 
     public async Task<List<VehiclePosition>> SydneyMetroVehiclePositions()

@@ -5,7 +5,7 @@ public class RealtimeTripUpdateDto
     public TripDescriptorDto Trip { get; set; } = null!;
     public VehicleDescriptorDto? Vehicle { get; set; }
     public List<StopTimeUpdateDto> StopTimeUpdate { get; set; } = [];
-    public ulong? Timestamp { get; set; }
+    public DateTime? Timestamp { get; set; }
     public int? Delay { get; set; }
 }
 
@@ -17,7 +17,7 @@ public class RealtimeVehiclePositionDto
     public uint? CurrentStopSequence { get; set; }
     public string? StopId { get; set; }
     public RealtimeEnums.VehicleStopStatusEnum? CurrentStatus { get; set; } = RealtimeEnums.VehicleStopStatusEnum.IN_TRANSIT_TO;
-    public ulong? Timestamp { get; set; }
+    public DateTime? Timestamp { get; set; }
     public RealtimeEnums.CongestionLevelEnum? CongestionLevel { get; set; }
     public RealtimeEnums.OccupancyStatusEnum? OccupancyStatus { get; set; }
     public CarriageDescriptorDto? Consist { get; set; }
@@ -54,6 +54,7 @@ public class PositionDto
 public class StopTimeUpdateDto
 {
     public uint? StopSequence { get; set; }
+    public string? StopName { get; set; }
     public string? StopId { get; set; }
     public StopTimeEventDto? Arrival { get; set; }
     public StopTimeEventDto? Departure { get; set; }
@@ -65,7 +66,7 @@ public class StopTimeUpdateDto
 public class StopTimeEventDto
 {
     public int? Delay { get; set; }
-    public long? Time { get; set; }
+    public DateTime? Time { get; set; }
     public int? Uncertainty { get; set; }
 }
 

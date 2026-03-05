@@ -35,7 +35,7 @@ public class Trip
 
     [Column("direction_id")]
     [Required]
-    public bool DirectionId { get; set; } // TINYINT(1) → bool
+    public int DirectionId { get; set; }
 
     [Column("trip_short_name")]
     [Required]
@@ -48,7 +48,7 @@ public class Trip
 
     [Column("wheelchair_accessible")]
     [Required]
-    public bool WheelchairAccessible { get; set; }
+    public int WheelchairAccessible { get; set; }
 
     [Column("trip_note")]
     [StringLength(255)]
@@ -59,5 +59,5 @@ public class Trip
     public string RouteDirection { get; set; } = null!;
 
     [Column("bikes_allowed")]
-    public bool? BikesAllowed { get; set; }
+    public int? BikesAllowed { get; set; }
 }

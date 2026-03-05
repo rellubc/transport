@@ -2,18 +2,18 @@ export interface RealtimeStopTimeUpdateDto {
   trip: TripDescriptor
   vehicle?: VehicleDescriptor
   stopTimeUpdate: StopTimeUpdate[]
-  timestamp?: number
+  timestamp?: Date
   delay?: number
 }
 
-export interface RealtimeVehiclePositionDto {
+export interface RealtimeVehicle {
   vehicle?: VehicleDescriptor
   position?: Position
   trip?: TripDescriptor
   currentStopSequence?: number
   stopId?: string
   currentStatus?: number
-  timestamp?: number
+  timestamp?: Date
   congestionLevel?: number
   occupancyStatus?: number
   consist?: CarriageDescriptor
@@ -64,6 +64,7 @@ export interface TfnswVehicleDescriptor {
 
 export class StopTimeUpdate {
   stopSequence?: number
+  stopName?: string
   stopId?: string
   arrival?: StopTimeEvent
   departure?: StopTimeEvent
@@ -74,6 +75,6 @@ export class StopTimeUpdate {
 
 export class StopTimeEvent {
   delay?: number
-  time?: number
+  time?: Date
   uncertainty?: number
 }

@@ -1,10 +1,10 @@
 import { Component, ViewChild } from '@angular/core';
 import { MapComponent } from '../components/map/map.component';
 
-import { getMetroPlatforms, getMetroShapes, getMetroStations, getRealTimeStopTimes, getRealTimeVehiclePositions } from './metro-helpers';
-import { StopPlatformDto, StopStationDto } from '../../shared/models/Stop';
-import { Shape } from '../../shared/models/Shape';
-import { RealtimeVehiclePositionDto } from '../../shared/models/Realtime';
+import { getMetroShapes, getMetroStops, getRealTimeVehiclePositions } from './metro-helpers';
+import { Stop } from '../../shared/models/stop';
+import { Shape } from '../../shared/models/shape';
+import { RealtimeVehicle } from '../../shared/models/realtime';
 
 @Component({
   selector: 'app-metro',
@@ -15,30 +15,30 @@ import { RealtimeVehiclePositionDto } from '../../shared/models/Realtime';
 export class MetroComponent {
   @ViewChild(MapComponent) map!: MapComponent
 
-  stations: StopStationDto[] = []
-  platforms: StopPlatformDto[] = []
+  stops: Stop[] = []
   shapes: Shape = {}
   shapeIds: number[] = []
-  vehicles: RealtimeVehiclePositionDto[] = []
+  vehicles: RealtimeVehicle[] = []
 
   async ngOnInit(): Promise<void> {
-    this.platforms = await getMetroPlatforms()
-    this.stations = await getMetroStations()
+    this.stops = await getMetroStops()
+    this.map.stops = this.stops
     this.shapes = await getMetroShapes()
-    this.vehicles = await getRealTimeVehiclePositions();
+    this.map.shapes = this.shapes
 
     this.shapeIds = Object.keys(this.shapes).map(id => parseInt(id))
 
     this.map.addShape(this.shapes, this.shapeIds, 0, 1)
-    this.map.addStops(this.stations)
-    this.map.addStops(this.platforms)
-    
-    this.map.updateVehiclePositions(this.vehicles)
-    
+    this.map.addStops(this.stops)
+
+    this.vehicles = await getRealTimeVehiclePositions()
+    this.map.vehicles = this.vehicles
+    this.map.refresh()
+
     setInterval(async () => {
-      console.log('Updating vehicle positions...')
       this.vehicles = await getRealTimeVehiclePositions();
-      this.map.updateVehiclePositions(this.vehicles)
+      this.map.vehicles = this.vehicles
+      this.map.refresh()
     }, 15000)
   }
 }

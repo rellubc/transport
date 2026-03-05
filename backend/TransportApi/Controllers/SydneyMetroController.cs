@@ -5,7 +5,6 @@ using TransportApi.Data;
 using TransportApi.DTOs;
 using TransportApi.DTOs.Realtime;
 using TransportApi.Services;
-using TransportApi.Utils;
 
 using TransitRealtime;
 
@@ -29,8 +28,27 @@ public class SydneyMetroController : ControllerBase
         Ok(await _db.Agencies.ToListAsync());
 
     [HttpGet("calendars")]
-    public async Task<ActionResult<List<CalendarDto>>> GetSydneyMetroCalendars() =>
-        Ok(await _db.Calendars.ToListAsync());
+    public async Task<ActionResult<List<CalendarDto>>> GetSydneyMetroCalendars()
+    {
+        var calendars = await _db.Calendars.ToListAsync();
+
+        var calendarsDto = calendars
+        .Select(c => new CalendarDto
+        {
+            ServiceId = c.ServiceId,
+            Monday = c.Monday,
+            Tuesday = c.Tuesday,
+            Wednesday = c.Wednesday,
+            Thursday = c.Thursday,
+            Friday = c.Friday,
+            Saturday = c.Saturday,
+            Sunday = c.Sunday,
+            StartDate = c.StartDate,
+            EndDate = c.EndDate
+        }).ToList();
+
+        return Ok(calendarsDto);
+    }
 
     [HttpGet("calendar-dates")]
     public async Task<ActionResult<List<CalendarDateDto>>> GetSydneyMetroCalendarDates() =>
@@ -67,7 +85,7 @@ public class SydneyMetroController : ControllerBase
 
         foreach (var shapeId in shapesDictionary.Keys)
         {
-            shapesDictionary[shapeId] = [.. shapesDictionary[shapeId].OrderBy(s => s.Sequence)];
+            shapesDictionary[shapeId] = [.. shapesDictionary[shapeId].OrderBy(s => s.DistanceTravelled)];
         }
 
         return Ok(shapesDictionary);
@@ -105,6 +123,7 @@ public class SydneyMetroController : ControllerBase
             Name = s.Name,
             Latitude = s.Latitude,
             Longitude = s.Longitude,
+            LocationType = s.LocationType,
         }).ToList();
 
         return Ok(stopsDto);
@@ -122,6 +141,7 @@ public class SydneyMetroController : ControllerBase
             Name = s.Name,
             Latitude = s.Latitude,
             Longitude = s.Longitude,
+            LocationType = s.LocationType,
             ParentStationId = s.ParentStationId,
             WheelchairBoarding = s.WheelchairBoarding,
             PlatformCode = s.PlatformCode,
@@ -156,88 +176,126 @@ public class SydneyMetroController : ControllerBase
     }
 
     [HttpGet("trips")]
-    public async Task<ActionResult<List<TripDto>>> GetSydneyMetroTrips() =>
-        Ok(await _db.Trips.ToListAsync());
-
-    [HttpGet("realtime-stop-times")]
-    public async Task<ActionResult<List<RealtimeTripUpdateDto>>> GetSydneyMetroRealtimeStopTimes(string tripId)
+    public async Task<ActionResult<TripDto>> GetSydneyMetroTrips(string tripId)
     {
-        var tripUpdates = await _services.SydneyMetroTripUpdates(tripId);
-        var tripUpdatesDto = new List<RealtimeTripUpdateDto>();
-        
-        foreach (var tripUpdate in tripUpdates)
+        var trip = await _db.Trips.Where(t => t.Id == tripId).SingleOrDefaultAsync();
+
+        Console.WriteLine(tripId);
+        Console.WriteLine(trip);
+
+        // invalid tripId
+        if (trip == null)
         {
-            if (tripUpdate.Vehicle.GetExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor) != null)
-            {
-                Console.WriteLine("asdf");
-            }
-
-            var newTripDescriptor = new TripDescriptorDto
-            {
-                TripId = tripUpdate.Trip.TripId,
-                RouteId = tripUpdate.Trip.RouteId,
-                DirectionId = tripUpdate.Trip.DirectionId,
-                StartTime = tripUpdate.Trip.StartTime,
-                StartDate = tripUpdate.Trip.StartDate,
-                ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipTripDescriptor(tripUpdate.Trip.ScheduleRelationship)
-            };
-
-            var newVehicleDescriptor = new VehicleDescriptorDto
-            {
-                Id = tripUpdate.Vehicle.Id,
-                Label = tripUpdate.Vehicle.Label,
-                LicensePlate = tripUpdate.Vehicle.LicensePlate,
-            };
-
-            var newStopTimeUpdates = new List<StopTimeUpdateDto>();
-            foreach(var stopTimeUpdate in tripUpdate.StopTimeUpdate)
-            {
-                var newArrival = new StopTimeEventDto();
-                if (stopTimeUpdate.Arrival != null) {
-                    newArrival = new StopTimeEventDto
-                    {
-                        Delay = stopTimeUpdate.Arrival.Delay,
-                        Time = stopTimeUpdate.Arrival.Time,
-                        Uncertainty = stopTimeUpdate.Arrival.Uncertainty
-                    };
-                }
-
-                var newDeparture = new StopTimeEventDto();
-                if (stopTimeUpdate.Departure != null) {
-                    newDeparture = new StopTimeEventDto
-                    {
-                        Delay = stopTimeUpdate.Departure.Delay,
-                        Time = stopTimeUpdate.Departure.Time,
-                        Uncertainty = stopTimeUpdate.Departure.Uncertainty
-                    };
-                }
-
-                var newStopTimeUpdate = new StopTimeUpdateDto
-                {
-                    StopSequence = stopTimeUpdate.StopSequence,
-                    StopId = stopTimeUpdate.StopId,
-                    Arrival = newArrival,
-                    Departure = newDeparture,
-                    ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipStopTimeUpdate(stopTimeUpdate.ScheduleRelationship),
-                    DepartureOccupancyStatus = RealtimeEnums.MapOccupancyStatusStopTimeUpdate(stopTimeUpdate.DepartureOccupancyStatus),
-                };
-
-                newStopTimeUpdates.Add(newStopTimeUpdate);
-            }
-
-            var newTripUpdateDto = new RealtimeTripUpdateDto
-            {
-                Trip = newTripDescriptor,
-                Vehicle = newVehicleDescriptor,
-                StopTimeUpdate = newStopTimeUpdates,
-                Timestamp = tripUpdate.Timestamp,
-                Delay = tripUpdate.Delay
-            };
-
-            tripUpdatesDto.Add(newTripUpdateDto);
+            return NotFound();
         }
 
-        return Ok(tripUpdatesDto);
+        var tripDto = new TripDto
+        {
+            Id = trip.Id,
+            RouteId = trip.RouteId,
+            ServiceId = trip.ServiceId,
+            ShapeId = trip.ShapeId,
+            HeadSign = trip.HeadSign,
+            DirectionId = trip.DirectionId,
+            ShortName = trip.ShortName,
+            BlockId = trip.BlockId,
+            WheelchairAccessible = trip.WheelchairAccessible,
+            TripNote = trip.TripNote,
+            RouteDirection = trip.RouteDirection,
+            BikesAllowed = trip.BikesAllowed,
+        };
+
+        return Ok(tripDto);
+    }
+
+    [HttpGet("realtime-stop-times")]
+    public async Task<ActionResult<RealtimeTripUpdateDto>> GetSydneyMetroRealtimeStopTimes(string tripId)
+    {
+        var tripUpdate = await _services.SydneyMetroTripUpdates(tripId);
+        var tripUpdateDto = new RealtimeTripUpdateDto();
+
+        TimeZoneInfo tz;
+        DateTime utc;
+        DateTime sydneyTime;
+
+        var newTripDescriptor = new TripDescriptorDto
+        {
+            TripId = tripUpdate.Trip.TripId,
+            RouteId = tripUpdate.Trip.RouteId,
+            DirectionId = tripUpdate.Trip.DirectionId,
+            StartTime = tripUpdate.Trip.StartTime,
+            StartDate = tripUpdate.Trip.StartDate,
+            ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipTripDescriptor(tripUpdate.Trip.ScheduleRelationship)
+        };
+
+        var newVehicleDescriptor = new VehicleDescriptorDto
+        {
+            Id = tripUpdate.Vehicle.Id,
+            Label = tripUpdate.Vehicle.Label,
+            LicensePlate = tripUpdate.Vehicle.LicensePlate,
+        };
+
+        var newStopTimeUpdates = new List<StopTimeUpdateDto>();
+        foreach(var stopTimeUpdate in tripUpdate.StopTimeUpdate)
+        {
+            var newArrival = new StopTimeEventDto();
+            if (stopTimeUpdate.Arrival != null) {
+                tz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
+                utc = DateTimeOffset.FromUnixTimeSeconds(stopTimeUpdate.Arrival.Time).UtcDateTime;
+                sydneyTime = TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
+                newArrival = new StopTimeEventDto
+                {
+                    Delay = stopTimeUpdate.Arrival.Delay,
+                    Time = sydneyTime,
+                    Uncertainty = stopTimeUpdate.Arrival.Uncertainty
+                };
+            }
+
+            var newDeparture = new StopTimeEventDto();
+            if (stopTimeUpdate.Departure != null) {
+                tz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
+                utc = DateTimeOffset.FromUnixTimeSeconds(stopTimeUpdate.Departure.Time).UtcDateTime;
+                sydneyTime = TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
+                newDeparture = new StopTimeEventDto
+                {
+                    Delay = stopTimeUpdate.Departure.Delay,
+                    Time = sydneyTime,
+                    Uncertainty = stopTimeUpdate.Departure.Uncertainty
+                };
+            }
+
+            var stopName = await _db.Stops.Where(s => s.Id == int.Parse(stopTimeUpdate.StopId)).Select(s => s.Name).FirstOrDefaultAsync();
+
+            var newStopTimeUpdate = new StopTimeUpdateDto
+            {
+                StopSequence = stopTimeUpdate.StopSequence,
+                StopId = stopTimeUpdate.StopId,
+                StopName = stopName,
+                Arrival = newArrival,
+                Departure = newDeparture,
+                ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipStopTimeUpdate(stopTimeUpdate.ScheduleRelationship),
+                DepartureOccupancyStatus = RealtimeEnums.MapOccupancyStatusStopTimeUpdate(stopTimeUpdate.DepartureOccupancyStatus),
+            };
+
+            newStopTimeUpdates.Add(newStopTimeUpdate);
+        }
+
+        tz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
+        utc = DateTimeOffset.FromUnixTimeSeconds((long)tripUpdate.Timestamp).UtcDateTime;
+        sydneyTime = TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
+
+        var newTripUpdateDto = new RealtimeTripUpdateDto
+        {
+            Trip = newTripDescriptor,
+            Vehicle = newVehicleDescriptor,
+            StopTimeUpdate = newStopTimeUpdates,
+            Timestamp = sydneyTime,
+            Delay = tripUpdate.Delay
+        };
+
+        tripUpdateDto = newTripUpdateDto;
+
+        return Ok(tripUpdateDto);
     }
 
     [HttpGet("realtime-vehicle-positions")]
@@ -279,6 +337,10 @@ public class SydneyMetroController : ControllerBase
                 ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipTripDescriptor(tripUpdate.Trip.ScheduleRelationship)
             };
 
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
+            var utc = DateTimeOffset.FromUnixTimeSeconds((long)tripUpdate.Timestamp).UtcDateTime;
+            var sydneyTime = TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
+
             var newVehiclePosition = new RealtimeVehiclePositionDto
             {
                 Vehicle = newVehicleDescriptor,
@@ -287,7 +349,7 @@ public class SydneyMetroController : ControllerBase
                 CurrentStopSequence = tripUpdate.CurrentStopSequence,
                 StopId = tripUpdate.StopId,
                 CurrentStatus = RealtimeEnums.MapVehicleStopStatus(tripUpdate.CurrentStatus),
-                Timestamp = tripUpdate.Timestamp,
+                Timestamp = sydneyTime,
                 CongestionLevel = RealtimeEnums.MapCongestionLevel(tripUpdate.CongestionLevel),
                 OccupancyStatus = RealtimeEnums.MapOccupancyStatusVehiclePosition(tripUpdate.OccupancyStatus)
             };
@@ -295,6 +357,5 @@ public class SydneyMetroController : ControllerBase
             vehiclePositionsDto.Add(newVehiclePosition);
         }
         return Ok(vehiclePositionsDto);
-        // return Ok(await _services.SydneyMetroVehiclePositions());
     }
 }
