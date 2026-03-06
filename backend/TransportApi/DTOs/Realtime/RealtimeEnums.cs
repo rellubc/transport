@@ -95,181 +95,176 @@ public static class RealtimeEnums
         IN_TRANSIT_TO = 2,
     }
 
-
-
-
-
-
-    public static CauseEnum? MapCause(TransitRealtime.Alert.Types.Cause c) 
+    public static CauseEnum? MapCause(Alert.Types.Cause c) 
     {
         return c switch
         {
-            TransitRealtime.Alert.Types.Cause.UnknownCause => CauseEnum.UNKNOWN_CAUSE,
-            TransitRealtime.Alert.Types.Cause.OtherCause => CauseEnum.OTHER_CAUSE,
-            TransitRealtime.Alert.Types.Cause.TechnicalProblem => CauseEnum.TECHNICAL_PROBLEM,
-            TransitRealtime.Alert.Types.Cause.Strike => CauseEnum.STRIKE,
-            TransitRealtime.Alert.Types.Cause.Demonstration => CauseEnum.DEMONSTRATION,
-            TransitRealtime.Alert.Types.Cause.Accident => CauseEnum.ACCIDENT,
-            TransitRealtime.Alert.Types.Cause.Holiday => CauseEnum.HOLIDAY,
-            TransitRealtime.Alert.Types.Cause.Weather => CauseEnum.WEATHER,
-            TransitRealtime.Alert.Types.Cause.Maintenance => CauseEnum.MAINTENANCE,
-            TransitRealtime.Alert.Types.Cause.Construction => CauseEnum.CONSTRUCTION,
-            TransitRealtime.Alert.Types.Cause.PoliceActivity => CauseEnum.POLICE_ACTIVITY,
+            Alert.Types.Cause.UnknownCause => CauseEnum.UNKNOWN_CAUSE,
+            Alert.Types.Cause.OtherCause => CauseEnum.OTHER_CAUSE,
+            Alert.Types.Cause.TechnicalProblem => CauseEnum.TECHNICAL_PROBLEM,
+            Alert.Types.Cause.Strike => CauseEnum.STRIKE,
+            Alert.Types.Cause.Demonstration => CauseEnum.DEMONSTRATION,
+            Alert.Types.Cause.Accident => CauseEnum.ACCIDENT,
+            Alert.Types.Cause.Holiday => CauseEnum.HOLIDAY,
+            Alert.Types.Cause.Weather => CauseEnum.WEATHER,
+            Alert.Types.Cause.Maintenance => CauseEnum.MAINTENANCE,
+            Alert.Types.Cause.Construction => CauseEnum.CONSTRUCTION,
+            Alert.Types.Cause.PoliceActivity => CauseEnum.POLICE_ACTIVITY,
             _ => null
         };
     }
 
-    public static CongestionLevelEnum? MapCongestionLevel(TransitRealtime.VehiclePosition.Types.CongestionLevel cl) 
+    public static CongestionLevelEnum? MapCongestionLevel(VehiclePosition.Types.CongestionLevel cl) 
     {
         return cl switch
         {
-            TransitRealtime.VehiclePosition.Types.CongestionLevel.UnknownCongestionLevel => CongestionLevelEnum.UNKNOWN_CONGESTION_LEVEL,
-            TransitRealtime.VehiclePosition.Types.CongestionLevel.RunningSmoothly => CongestionLevelEnum.RUNNING_SMOOTHLY,
-            TransitRealtime.VehiclePosition.Types.CongestionLevel.StopAndGo => CongestionLevelEnum.STOP_AND_GO,
-            TransitRealtime.VehiclePosition.Types.CongestionLevel.Congestion => CongestionLevelEnum.CONGESTION,
-            TransitRealtime.VehiclePosition.Types.CongestionLevel.SevereCongestion => CongestionLevelEnum.SEVERE_CONGESTION,
+            VehiclePosition.Types.CongestionLevel.UnknownCongestionLevel => CongestionLevelEnum.UNKNOWN_CONGESTION_LEVEL,
+            VehiclePosition.Types.CongestionLevel.RunningSmoothly => CongestionLevelEnum.RUNNING_SMOOTHLY,
+            VehiclePosition.Types.CongestionLevel.StopAndGo => CongestionLevelEnum.STOP_AND_GO,
+            VehiclePosition.Types.CongestionLevel.Congestion => CongestionLevelEnum.CONGESTION,
+            VehiclePosition.Types.CongestionLevel.SevereCongestion => CongestionLevelEnum.SEVERE_CONGESTION,
             _ => null
         };
     }
 
-    public static EffectEnum? MapEffect(TransitRealtime.Alert.Types.Effect e) 
+    public static EffectEnum? MapEffect(Alert.Types.Effect e) 
     {
         return e switch
         {
-            TransitRealtime.Alert.Types.Effect.NoService => EffectEnum.NO_SERVICE,
-            TransitRealtime.Alert.Types.Effect.ReducedService => EffectEnum.REDUCED_SERVICE,
-            TransitRealtime.Alert.Types.Effect.SignificantDelays => EffectEnum.SIGNIFICANT_DELAYS,
-            TransitRealtime.Alert.Types.Effect.Detour => EffectEnum.DETOUR,
-            TransitRealtime.Alert.Types.Effect.AdditionalService => EffectEnum.ADDITIONAL_SERVICE,
-            TransitRealtime.Alert.Types.Effect.ModifiedService => EffectEnum.MODIFIED_SERVICE,
-            TransitRealtime.Alert.Types.Effect.OtherEffect => EffectEnum.OTHER_EFFECT,
-            TransitRealtime.Alert.Types.Effect.UnknownEffect => EffectEnum.UNKNOWN_EFFECT,
-            TransitRealtime.Alert.Types.Effect.StopMoved => EffectEnum.STOP_MOVED,
-            TransitRealtime.Alert.Types.Effect.NoEffect => EffectEnum.NO_EFFECT,
-            TransitRealtime.Alert.Types.Effect.AccessibilityIssue => EffectEnum.ACCESSIBILITY_ISSUE,
+            Alert.Types.Effect.NoService => EffectEnum.NO_SERVICE,
+            Alert.Types.Effect.ReducedService => EffectEnum.REDUCED_SERVICE,
+            Alert.Types.Effect.SignificantDelays => EffectEnum.SIGNIFICANT_DELAYS,
+            Alert.Types.Effect.Detour => EffectEnum.DETOUR,
+            Alert.Types.Effect.AdditionalService => EffectEnum.ADDITIONAL_SERVICE,
+            Alert.Types.Effect.ModifiedService => EffectEnum.MODIFIED_SERVICE,
+            Alert.Types.Effect.OtherEffect => EffectEnum.OTHER_EFFECT,
+            Alert.Types.Effect.UnknownEffect => EffectEnum.UNKNOWN_EFFECT,
+            Alert.Types.Effect.StopMoved => EffectEnum.STOP_MOVED,
+            Alert.Types.Effect.NoEffect => EffectEnum.NO_EFFECT,
+            Alert.Types.Effect.AccessibilityIssue => EffectEnum.ACCESSIBILITY_ISSUE,
             _ => null
         };
     }
 
-    public static IncrementalityEnum? MapIncrementality(TransitRealtime.FeedHeader.Types.Incrementality i) 
+    public static IncrementalityEnum? MapIncrementality(FeedHeader.Types.Incrementality i) 
     {
         return i switch
         {
-            TransitRealtime.FeedHeader.Types.Incrementality.FullDataset => IncrementalityEnum.FULL_DATASET,
-            TransitRealtime.FeedHeader.Types.Incrementality.Differential => IncrementalityEnum.DIFFERENTIAL,
+            FeedHeader.Types.Incrementality.FullDataset => IncrementalityEnum.FULL_DATASET,
+            FeedHeader.Types.Incrementality.Differential => IncrementalityEnum.DIFFERENTIAL,
             _ => null
         };
     }
 
-    public static OccupancyStatusEnum? MapOccupancyStatusStopTimeUpdate(TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus os) 
+    public static OccupancyStatusEnum? MapOccupancyStatusStopTimeUpdate(TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus os) 
     {
         return os switch
         {
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.Empty => OccupancyStatusEnum.EMPTY,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.ManySeatsAvailable => OccupancyStatusEnum.MANY_SEATS_AVAILABLE,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.FewSeatsAvailable => OccupancyStatusEnum.FEW_SEATS_AVAILABLE,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.StandingRoomOnly => OccupancyStatusEnum.STANDING_ROOM_ONLY,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.CrushedStandingRoomOnly => OccupancyStatusEnum.CRUSHED_STANDING_ROOM_ONLY,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.Full => OccupancyStatusEnum.FULL,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.NotAcceptingPassengers => OccupancyStatusEnum.NOT_ACCEPTING_PASSENGERS,
+            TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.Empty => OccupancyStatusEnum.EMPTY,
+            TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.ManySeatsAvailable => OccupancyStatusEnum.MANY_SEATS_AVAILABLE,
+            TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.FewSeatsAvailable => OccupancyStatusEnum.FEW_SEATS_AVAILABLE,
+            TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.StandingRoomOnly => OccupancyStatusEnum.STANDING_ROOM_ONLY,
+            TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.CrushedStandingRoomOnly => OccupancyStatusEnum.CRUSHED_STANDING_ROOM_ONLY,
+            TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.Full => OccupancyStatusEnum.FULL,
+            TripUpdate.Types.StopTimeUpdate.Types.OccupancyStatus.NotAcceptingPassengers => OccupancyStatusEnum.NOT_ACCEPTING_PASSENGERS,
             _ => null
         };
     }
 
-    public static OccupancyStatusEnum? MapOccupancyStatusVehiclePosition(TransitRealtime.VehiclePosition.Types.OccupancyStatus os) 
+    public static OccupancyStatusEnum? MapOccupancyStatusVehiclePosition(VehiclePosition.Types.OccupancyStatus os) 
     {
         return os switch
         {
-            TransitRealtime.VehiclePosition.Types.OccupancyStatus.Empty => OccupancyStatusEnum.EMPTY,
-            TransitRealtime.VehiclePosition.Types.OccupancyStatus.ManySeatsAvailable => OccupancyStatusEnum.MANY_SEATS_AVAILABLE,
-            TransitRealtime.VehiclePosition.Types.OccupancyStatus.FewSeatsAvailable => OccupancyStatusEnum.FEW_SEATS_AVAILABLE,
-            TransitRealtime.VehiclePosition.Types.OccupancyStatus.StandingRoomOnly => OccupancyStatusEnum.STANDING_ROOM_ONLY,
-            TransitRealtime.VehiclePosition.Types.OccupancyStatus.CrushedStandingRoomOnly => OccupancyStatusEnum.CRUSHED_STANDING_ROOM_ONLY,
-            TransitRealtime.VehiclePosition.Types.OccupancyStatus.Full => OccupancyStatusEnum.FULL,
-            TransitRealtime.VehiclePosition.Types.OccupancyStatus.NotAcceptingPassengers => OccupancyStatusEnum.NOT_ACCEPTING_PASSENGERS,
+            VehiclePosition.Types.OccupancyStatus.Empty => OccupancyStatusEnum.EMPTY,
+            VehiclePosition.Types.OccupancyStatus.ManySeatsAvailable => OccupancyStatusEnum.MANY_SEATS_AVAILABLE,
+            VehiclePosition.Types.OccupancyStatus.FewSeatsAvailable => OccupancyStatusEnum.FEW_SEATS_AVAILABLE,
+            VehiclePosition.Types.OccupancyStatus.StandingRoomOnly => OccupancyStatusEnum.STANDING_ROOM_ONLY,
+            VehiclePosition.Types.OccupancyStatus.CrushedStandingRoomOnly => OccupancyStatusEnum.CRUSHED_STANDING_ROOM_ONLY,
+            VehiclePosition.Types.OccupancyStatus.Full => OccupancyStatusEnum.FULL,
+            VehiclePosition.Types.OccupancyStatus.NotAcceptingPassengers => OccupancyStatusEnum.NOT_ACCEPTING_PASSENGERS,
             _ => null
         };
     }
 
-    public static OccupancyStatusEnum? MapOccupancyStatusCarriageDescriptor(TransitRealtime.CarriageDescriptor.Types.OccupancyStatus os) 
+    public static OccupancyStatusEnum? MapOccupancyStatusCarriageDescriptor(CarriageDescriptor.Types.OccupancyStatus os) 
     {
         return os switch
         {
-            TransitRealtime.CarriageDescriptor.Types.OccupancyStatus.Empty => OccupancyStatusEnum.EMPTY,
-            TransitRealtime.CarriageDescriptor.Types.OccupancyStatus.ManySeatsAvailable => OccupancyStatusEnum.MANY_SEATS_AVAILABLE,
-            TransitRealtime.CarriageDescriptor.Types.OccupancyStatus.FewSeatsAvailable => OccupancyStatusEnum.FEW_SEATS_AVAILABLE,
-            TransitRealtime.CarriageDescriptor.Types.OccupancyStatus.StandingRoomOnly => OccupancyStatusEnum.STANDING_ROOM_ONLY,
-            TransitRealtime.CarriageDescriptor.Types.OccupancyStatus.CrushedStandingRoomOnly => OccupancyStatusEnum.CRUSHED_STANDING_ROOM_ONLY,
-            TransitRealtime.CarriageDescriptor.Types.OccupancyStatus.Full => OccupancyStatusEnum.FULL,
+            CarriageDescriptor.Types.OccupancyStatus.Empty => OccupancyStatusEnum.EMPTY,
+            CarriageDescriptor.Types.OccupancyStatus.ManySeatsAvailable => OccupancyStatusEnum.MANY_SEATS_AVAILABLE,
+            CarriageDescriptor.Types.OccupancyStatus.FewSeatsAvailable => OccupancyStatusEnum.FEW_SEATS_AVAILABLE,
+            CarriageDescriptor.Types.OccupancyStatus.StandingRoomOnly => OccupancyStatusEnum.STANDING_ROOM_ONLY,
+            CarriageDescriptor.Types.OccupancyStatus.CrushedStandingRoomOnly => OccupancyStatusEnum.CRUSHED_STANDING_ROOM_ONLY,
+            CarriageDescriptor.Types.OccupancyStatus.Full => OccupancyStatusEnum.FULL,
             _ => null
         };
     }
 
-    public static ScheduleRelationshipStopTimeUpdateEnum? MapScheduleRelationshipStopTimeUpdate(TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship sr) 
+    public static ScheduleRelationshipStopTimeUpdateEnum? MapScheduleRelationshipStopTimeUpdate(TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship sr) 
     {
         return sr switch
         {
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship.Scheduled => ScheduleRelationshipStopTimeUpdateEnum.SCHEDULED,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship.Skipped => ScheduleRelationshipStopTimeUpdateEnum.SKIPPED,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship.NoData => ScheduleRelationshipStopTimeUpdateEnum.NO_DATA,
-            TransitRealtime.TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship.Unscheduled => ScheduleRelationshipStopTimeUpdateEnum.UNSCHEDULED,            
+            TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship.Scheduled => ScheduleRelationshipStopTimeUpdateEnum.SCHEDULED,
+            TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship.Skipped => ScheduleRelationshipStopTimeUpdateEnum.SKIPPED,
+            TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship.NoData => ScheduleRelationshipStopTimeUpdateEnum.NO_DATA,
+            TripUpdate.Types.StopTimeUpdate.Types.ScheduleRelationship.Unscheduled => ScheduleRelationshipStopTimeUpdateEnum.UNSCHEDULED,            
             _ => null
         };
     }
 
-    public static ScheduleRelationshipTripDescriptorEnum? MapScheduleRelationshipTripDescriptor(TransitRealtime.TripDescriptor.Types.ScheduleRelationship sr) 
+    public static ScheduleRelationshipTripDescriptorEnum? MapScheduleRelationshipTripDescriptor(TripDescriptor.Types.ScheduleRelationship sr) 
     {
         return sr switch
         {
-            TransitRealtime.TripDescriptor.Types.ScheduleRelationship.Scheduled => ScheduleRelationshipTripDescriptorEnum.SCHEDULED,
-            TransitRealtime.TripDescriptor.Types.ScheduleRelationship.Added => ScheduleRelationshipTripDescriptorEnum.ADDED,
-            TransitRealtime.TripDescriptor.Types.ScheduleRelationship.Unscheduled => ScheduleRelationshipTripDescriptorEnum.UNSCHEDULED,
-            TransitRealtime.TripDescriptor.Types.ScheduleRelationship.Canceled => ScheduleRelationshipTripDescriptorEnum.CANCELED,
-            TransitRealtime.TripDescriptor.Types.ScheduleRelationship.Replacement => ScheduleRelationshipTripDescriptorEnum.REPLACEMENT,
+            TripDescriptor.Types.ScheduleRelationship.Scheduled => ScheduleRelationshipTripDescriptorEnum.SCHEDULED,
+            TripDescriptor.Types.ScheduleRelationship.Added => ScheduleRelationshipTripDescriptorEnum.ADDED,
+            TripDescriptor.Types.ScheduleRelationship.Unscheduled => ScheduleRelationshipTripDescriptorEnum.UNSCHEDULED,
+            TripDescriptor.Types.ScheduleRelationship.Canceled => ScheduleRelationshipTripDescriptorEnum.CANCELED,
+            TripDescriptor.Types.ScheduleRelationship.Replacement => ScheduleRelationshipTripDescriptorEnum.REPLACEMENT,
             _ => null
         };
     }
 
-    public static SeverityLevelEnum? MapSeverityLevel(TransitRealtime.Alert.Types.SeverityLevel sl) 
+    public static SeverityLevelEnum? MapSeverityLevel(Alert.Types.SeverityLevel sl) 
     {
         return sl switch
         {
-            TransitRealtime.Alert.Types.SeverityLevel.UnknownSeverity => SeverityLevelEnum.UNKNOWN_SEVERITY,
-            TransitRealtime.Alert.Types.SeverityLevel.Info => SeverityLevelEnum.INFO,
-            TransitRealtime.Alert.Types.SeverityLevel.Warning => SeverityLevelEnum.WARNING,
-            TransitRealtime.Alert.Types.SeverityLevel.Severe => SeverityLevelEnum.SEVERE,
+            Alert.Types.SeverityLevel.UnknownSeverity => SeverityLevelEnum.UNKNOWN_SEVERITY,
+            Alert.Types.SeverityLevel.Info => SeverityLevelEnum.INFO,
+            Alert.Types.SeverityLevel.Warning => SeverityLevelEnum.WARNING,
+            Alert.Types.SeverityLevel.Severe => SeverityLevelEnum.SEVERE,
             _ => null
         };
     }
 
-    public static ToiletStatusEnum? MapToiletStatus(TransitRealtime.CarriageDescriptor.Types.ToiletStatus ts) 
+    public static ToiletStatusEnum? MapToiletStatus(CarriageDescriptor.Types.ToiletStatus ts) 
     {
         return ts switch
         {
-            TransitRealtime.CarriageDescriptor.Types.ToiletStatus.None => ToiletStatusEnum.NONE,
-            TransitRealtime.CarriageDescriptor.Types.ToiletStatus.Normal => ToiletStatusEnum.NORMAL,
-            TransitRealtime.CarriageDescriptor.Types.ToiletStatus.Accessible => ToiletStatusEnum.ACCESSIBLE,
+            CarriageDescriptor.Types.ToiletStatus.None => ToiletStatusEnum.NONE,
+            CarriageDescriptor.Types.ToiletStatus.Normal => ToiletStatusEnum.NORMAL,
+            CarriageDescriptor.Types.ToiletStatus.Accessible => ToiletStatusEnum.ACCESSIBLE,
             _ => null
         };
     }
 
-    public static TrackDirectionEnum? MapTrackDirection(TransitRealtime.TrackDirection td) 
+    public static TrackDirectionEnum? MapTrackDirection(TrackDirection td) 
     {
         return td switch
         {
-            TransitRealtime.TrackDirection.Up => TrackDirectionEnum.UP,
-            TransitRealtime.TrackDirection.Down => TrackDirectionEnum.DOWN,
+            TrackDirection.Up => TrackDirectionEnum.UP,
+            TrackDirection.Down => TrackDirectionEnum.DOWN,
             _ => null
         };
     }
 
-    public static VehicleStopStatusEnum? MapVehicleStopStatus(TransitRealtime.VehiclePosition.Types.VehicleStopStatus vss) 
+    public static VehicleStopStatusEnum? MapVehicleStopStatus(VehiclePosition.Types.VehicleStopStatus vss) 
     {
         return vss switch
         {
-            TransitRealtime.VehiclePosition.Types.VehicleStopStatus.IncomingAt => VehicleStopStatusEnum.INCOMING_AT,
-            TransitRealtime.VehiclePosition.Types.VehicleStopStatus.StoppedAt => VehicleStopStatusEnum.STOPPED_AT,
-            TransitRealtime.VehiclePosition.Types.VehicleStopStatus.InTransitTo => VehicleStopStatusEnum.IN_TRANSIT_TO,
+            VehiclePosition.Types.VehicleStopStatus.IncomingAt => VehicleStopStatusEnum.INCOMING_AT,
+            VehiclePosition.Types.VehicleStopStatus.StoppedAt => VehicleStopStatusEnum.STOPPED_AT,
+            VehiclePosition.Types.VehicleStopStatus.InTransitTo => VehicleStopStatusEnum.IN_TRANSIT_TO,
             _ => null
         };
     }

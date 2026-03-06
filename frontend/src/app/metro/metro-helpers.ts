@@ -1,4 +1,4 @@
-import { RealtimeStopTimeUpdateDto, RealtimeVehicle } from "../../shared/models/realtime"
+import { TripUpdate, VehiclePosition } from "../../shared/models/realtime"
 import { Shape } from "../../shared/models/shape"
 import { Stop } from "../../shared/models/stop"
 import { StopTimeDto } from "../../shared/models/stopTime"
@@ -61,26 +61,28 @@ export const getStationStopTimes = async (stopId: number): Promise<StopTimeDto[]
   }
 }
 
-export const getRealTimeStopTimes = async (tripId: string): Promise<RealtimeStopTimeUpdateDto>=> {
+export const getTripUpdates = async (tripId: string): Promise<TripUpdate>=> {
   try {
-    const res = await fetch(`https://localhost:7284/api/sydney/metro/realtime-stop-times?tripId=${tripId}`)
+    const res = await fetch(`https://localhost:7284/api/sydney/metro/realtime-trip-updates?tripId=${tripId}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-    const data: RealtimeStopTimeUpdateDto = await res.json()
+    const data: TripUpdate = await res.json()
 
     data.stopTimeUpdate.map((stu) => {
       if (stu.arrival?.time) {
-        stu.arrival.time = new Date(stu.arrival?.time)
+        stu.arrival.time = new Date(Number(stu.arrival?.time) * 1000)
       }
 
       if (stu.departure?.time) {
-        stu.departure.time = new Date(stu.departure?.time)
+        stu.departure.time = new Date(Number(stu.departure?.time) * 1000)
       }
     })
 
     if (data.timestamp) {
-      data.timestamp = new Date(data.timestamp)
+      data.timestamp = new Date(Number(data.timestamp) * 1000)
     }
+
+    console.log(data)
 
     return data
   } catch (error) {
@@ -89,18 +91,20 @@ export const getRealTimeStopTimes = async (tripId: string): Promise<RealtimeStop
   }
 }
 
-export const getRealTimeVehiclePositions = async (): Promise<RealtimeVehicle[]>=> {
+export const getVehiclePositions = async (): Promise<VehiclePosition[]>=> {
   try {
     const res = await fetch(`https://localhost:7284/api/sydney/metro/realtime-vehicle-positions`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-    const data: RealtimeVehicle[] = await res.json()
+    const data: VehiclePosition[] = await res.json()
 
     data.map((vehicle) => {
       if (vehicle.timestamp) {
-        vehicle.timestamp = new Date(vehicle.timestamp)
+        vehicle.timestamp = new Date(Number(vehicle.timestamp) * 1000)
       }
     })
+
+    console.log(data)
 
     return data
   } catch (error) {

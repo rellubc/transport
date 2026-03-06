@@ -30,8 +30,34 @@
 .sidebar-header {
     display: flex;
     flex-direction: row;
+    gap: 1rem;
     justify-content: space-between;
     align-items: center;
+    color: #168388;
+    h1 {
+        margin: 0;
+    }
+
+    p {
+        justify-self: end;
+    }
+}
+
+.sidebar-header-route {
+    background-color: #168388;
+    padding: 0.5rem;
+    border-radius: 10%;
+    h1 {
+        color: #fff;
+        margin: 0;
+    }
+}
+
+.sidebar-header-right-cluster {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
 }
 
 .sidebar-body-content {
@@ -46,6 +72,39 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: space-between;
+}
+
+.sidebar-body-schedule-status {
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 0.1rem;
+}
+
+.sidebar-body-schedule-occupancy {
+    display: flex;
+    flex-direction: row;
+    gap: 0.1rem;
+}
+
+.sidebar-body-schedule-occupancy-carriage {
+    width: 1rem;
+    height: 1rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    border-radius: 100%;
+    padding: 0.1rem;
+    p {
+        height: 1rem;
+        width: 1rem;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 }
 
 .sidebar-body-dot {

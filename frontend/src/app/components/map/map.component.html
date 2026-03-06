@@ -7,25 +7,36 @@
 				<p><strong>Name: </strong> {{ selectedProps.name }} </p>
 				<p><strong>ID: </strong> {{ selectedProps.stopId }} </p>
 			</div>
-			<div *ngIf="propType == 'vehicle' && currentVehicleSchedule">
-				<p> {{ currentVehicleSchedule.trip.routeId!.split('_')[1] }} {{ currentVehicleSchedule.trip.directionId == 1 ? 'Sydenham' : 'Tallawong' }} {{ currentVehicleSchedule.vehicle?.id }} </p>
+			<div *ngIf="propType == 'vehicle' && currentVehicleSchedule" class="sidebar-header">
+				<div class="sidebar-header-route">
+					<h1> {{ currentVehicleSchedule.trip.routeId!.split('_')[1] }} </h1>
+				</div>
+				<h1> {{ currentVehicleSchedule.trip.directionId == 1 ? 'Sydenham' : 'Tallawong' }} </h1>
+				<!-- <p> {{ currentVehicleSchedule.vehicle?.id }} </p> -->
 			</div>
-			<button class="close-btn" (click)="closeSidebar()"><lucide-icon [img]="XIcon"></lucide-icon></button>
+			<div class="sidebar-header-right-cluster">
+				<p> {{ selectedProps.id }} </p>
+				<button class="close-btn" (click)="closeSidebar()"><lucide-icon [img]="XIcon"></lucide-icon></button>
+			</div>
 		</div>
 		<div class="sidebar-body">
 			<div class="sidebar-body-content">
 				<ng-container *ngIf="propType == 'vehicle' && currentVehicleSchedule">
-					<!-- <p><strong>start: </strong> {{ currentVehicleSchedule.trip.startDate }} {{ currentVehicleSchedule.trip.startTime }}</p> -->
-					<!-- <p><strong>scheduleRelationship: </strong> {{ currentVehicleSchedule.trip.scheduleRelationship }}</p> -->
-					<!-- <p><strong>Delay: </strong> {{ currentVehicleSchedule.delay }}</p> -->
-
 					<div *ngFor="let stu of currentVehicleSchedule.stopTimeUpdate; let i = index; let last = last" class="sidebar-body-schedule">
 						<div class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicleInfo?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
 							<div class="sidebar-body-innerdot"></div>
 						</div>
 						<div class="sidebar-body-stop">
-							<p> {{ stu.stopName!.split(',')[0] }} {{ (last ? stu.arrival?.time : stu.departure?.time) | date:'HH:mm' }} </p>
+							<p> {{ stu.stopName!.split(',')[0] }} </p>
 							<p> {{ stu.stopName!.split(',')[1] }} </p>
+						</div>
+						<div class="sidebar-body-schedule-status">
+							<p> {{ (last ? stu.arrival?.time : stu.departure?.time) | date:'HH:mm' }} </p>
+							<div *ngIf="i + 1 === currentVehicleInfo?.currentStopSequence" class="sidebar-body-schedule-occupancy">
+								<div *ngFor="let occupancy of currentVehicleInfo?.consist; let i = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
+									<p> {{ len - i - 1 }} </p>
+								</div>
+							</div>
 						</div>
 					</div>
 				</ng-container>

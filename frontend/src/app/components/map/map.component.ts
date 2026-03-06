@@ -20,9 +20,9 @@ import { Shape } from '../../../shared/models/shape';
 import { Stop } from '../../../shared/models/stop';
 import CircleStyle from 'ol/style/Circle';
 import { Fill, Icon, Text } from 'ol/style';
-import { GalleryThumbnailsIcon, LucideAngularModule, ThumbsDown, X } from 'lucide-angular';
-import { getMetroTrip, getRealTimeStopTimes, getRealTimeVehiclePositions, getStationStopTimes } from '../../metro/metro-helpers';
-import { RealtimeStopTimeUpdateDto, RealtimeVehicle } from '../../../shared/models/realtime';
+import { LucideAngularModule, X } from 'lucide-angular';
+import { getMetroTrip, getStationStopTimes, getTripUpdates } from '../../metro/metro-helpers';
+import { TripUpdate, VehiclePosition } from '../../../shared/models/realtime';
 import { Trip } from '../../../shared/models/trip';
 
 @Component({
@@ -35,7 +35,7 @@ import { Trip } from '../../../shared/models/trip';
 
 export class MapComponent {
   @Input() stops: Stop[] = [];
-  @Input() vehicles: RealtimeVehicle[] = [];
+  @Input() vehicles: VehiclePosition[] = [];
   @Input() shapes: Shape = {};
 
   readonly XIcon = X
@@ -51,8 +51,8 @@ export class MapComponent {
   selectedProps: any = null
   propType: string = ''
 
-  currentVehicleInfo: RealtimeVehicle | null = null
-  currentVehicleSchedule: RealtimeStopTimeUpdateDto | null = null
+  currentVehicleInfo: VehiclePosition | null = null
+  currentVehicleSchedule: TripUpdate | null = null
   currentTripInfo: Trip | null = null
   currentTripEnd: number | null = null
 
@@ -217,7 +217,7 @@ export class MapComponent {
             stroke: new Stroke({ color: '#ffffff', width: 2 }),
           }),
           text: new Text({
-            text: feature.get('vehicleId') || '',
+            text: feature.get('id') || '',
             font: '12px Calibri,sans-serif',
             fill: new Fill({ color: '#000' }),
             stroke: new Stroke({ color: '#fff', width: 2 }),
@@ -240,7 +240,7 @@ export class MapComponent {
 
       const feature = new Feature({
         geometry: new Point(coord),
-        vehicleId: vehicle.vehicle.id,
+        id: vehicle.vehicle.id,
         tripId: vehicle.trip.tripId,
       });
 
@@ -254,23 +254,26 @@ export class MapComponent {
     if (this.sidebarOpen) {
       console.log('Updating current schedule...')
 
-      this.currentVehicleInfo = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.selectedProps.vehicleId)!
-      this.currentVehicleSchedule = await getRealTimeStopTimes(this.selectedProps.tripId)
+      this.currentVehicleInfo = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.selectedProps.id)!
+      this.currentVehicleSchedule = await getTripUpdates(this.selectedProps.tripId)
 
       this.updateBar()
     }
   }
 
   async openSidebar(props: any) {
+    if (this.sidebarOpen && this.currentVehicleInfo?.vehicle?.id === props.id) return
+
     console.log(props)
     
     this.selectedProps = props
     this.sidebarOpen = true
 
-    if (props['vehicleId']) {
+    if (props['id']) {
       this.propType = 'vehicle'
-      this.currentVehicleInfo = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.selectedProps.vehicleId)!
-      this.currentVehicleSchedule = await getRealTimeStopTimes(props.tripId)
+      this.currentVehicleInfo = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.selectedProps.id)!
+      this.currentVehicleInfo.consist = this.currentVehicleInfo.trip?.directionId === 1 ? this.currentVehicleInfo.consist?.reverse() : this.currentVehicleInfo.consist
+      this.currentVehicleSchedule = await getTripUpdates(props.tripId)
       this.currentTripInfo = await getMetroTrip(this.selectedProps.tripId)
       this.currentTripEnd = this.shapes[this.currentTripInfo!.shapeId][0].sequence === 0 ? this.shapes[this.currentTripInfo!.shapeId][this.shapes[this.currentTripInfo!.shapeId].length - 1].distanceTravelled : this.shapes[this.currentTripInfo!.shapeId][0].distanceTravelled
       this.updateBar()
@@ -345,17 +348,25 @@ export class MapComponent {
       startBestDiff = endBestDiff;
       endBestDiff = tempBestDiff;
     }
+
     const progress = (this.shapes[this.currentTripInfo!.shapeId][currentBestIndex].distanceTravelled - this.shapes[this.currentTripInfo!.shapeId][startBestIndex].distanceTravelled) / (this.shapes[this.currentTripInfo!.shapeId][endBestIndex].distanceTravelled - this.shapes[this.currentTripInfo!.shapeId][startBestIndex].distanceTravelled);
     const percent = progress * 100;
     const increment = parseInt(getComputedStyle(bar).getPropertyValue('height')) / 20
     const currentProgress = increment * (nextIndex - 1) + increment * (percent / 100)
 
-    // console.log(increment * (nextIndex - 1));
-    // console.log(increment * percent / 100);
-    // console.log(currentProgress)
-    // console.log(parseInt(getComputedStyle(bar).getPropertyValue('height')))
-
     barCover.style.height = `calc(${currentProgress}px)`
+  }
+
+  getOccupancyColour(status: number): string {
+    if (status === 2 || status === 3) {
+      return 'yellow'
+    } else if (status === 4 || status === 5) {
+      return 'red'
+    } else if (status === 6) {
+      return 'black'
+    } else {
+      return 'green'
+    }
   }
 
   ngOnInit(): void {

@@ -1,4 +1,4 @@
-export interface RealtimeStopTimeUpdateDto {
+export interface TripUpdate {
   trip: TripDescriptor
   vehicle?: VehicleDescriptor
   stopTimeUpdate: StopTimeUpdate[]
@@ -6,17 +6,36 @@ export interface RealtimeStopTimeUpdateDto {
   delay?: number
 }
 
-export interface RealtimeVehicle {
+export interface VehiclePosition {
   vehicle?: VehicleDescriptor
   position?: Position
   trip?: TripDescriptor
   currentStopSequence?: number
   stopId?: string
   currentStatus?: number
-  timestamp?: Date
+  timestamp?: Date | number | string
   congestionLevel?: number
   occupancyStatus?: number
-  consist?: CarriageDescriptor
+  consist?: CarriageDescriptor[]
+}
+
+export interface Alert {
+  activePeriod: TimeRange[]
+  informedEntity: EntitySelector[]
+  cause?: number
+  effect?: number
+  url?: TranslatedString
+  headerText?: TranslatedString
+  descriptionText?: TranslatedString
+  ttsHeader?: TranslatedString
+  ttsDescription?: TranslatedString
+  severityLevel?: number
+}
+
+export interface UpdateBundle {
+  gtfsStaticBundle: string
+  updateSequence: number
+  cancelledTrip: string[]
 }
 
 export interface TripDescriptor {
@@ -62,7 +81,7 @@ export interface TfnswVehicleDescriptor {
   specialVehicleAttributes?: number
 }
 
-export class StopTimeUpdate {
+export interface StopTimeUpdate {
   stopSequence?: number
   stopName?: string
   stopId?: string
@@ -73,8 +92,31 @@ export class StopTimeUpdate {
   carriage?: CarriageDescriptor
 }
 
-export class StopTimeEvent {
+export interface StopTimeEvent {
   delay?: number
   time?: Date
   uncertainty?: number
+}
+
+export interface TimeRange {
+  start?: number
+  end?: number
+}
+
+export interface EntitySelector {
+  agencyId?: string
+  routeId?: string
+  routeType?: number
+  trip?: TripDescriptor
+  stopId?: string
+  directionId?: number
+}
+
+export interface TranslatedString {
+  translation: Translation[]
+}
+
+export interface Translation {
+  text: string
+  language?: string
 }

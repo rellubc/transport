@@ -1,10 +1,10 @@
 import { Component, ViewChild } from '@angular/core';
 import { MapComponent } from '../components/map/map.component';
 
-import { getMetroShapes, getMetroStops, getRealTimeVehiclePositions } from './metro-helpers';
+import { getMetroShapes, getMetroStops, getVehiclePositions } from './metro-helpers';
 import { Stop } from '../../shared/models/stop';
 import { Shape } from '../../shared/models/shape';
-import { RealtimeVehicle } from '../../shared/models/realtime';
+import { VehiclePosition } from '../../shared/models/realtime';
 
 @Component({
   selector: 'app-metro',
@@ -18,7 +18,7 @@ export class MetroComponent {
   stops: Stop[] = []
   shapes: Shape = {}
   shapeIds: number[] = []
-  vehicles: RealtimeVehicle[] = []
+  vehicles: VehiclePosition[] = []
 
   async ngOnInit(): Promise<void> {
     this.stops = await getMetroStops()
@@ -31,12 +31,12 @@ export class MetroComponent {
     this.map.addShape(this.shapes, this.shapeIds, 0, 1)
     this.map.addStops(this.stops)
 
-    this.vehicles = await getRealTimeVehiclePositions()
+    this.vehicles = await getVehiclePositions()
     this.map.vehicles = this.vehicles
     this.map.refresh()
 
     setInterval(async () => {
-      this.vehicles = await getRealTimeVehiclePositions();
+      this.vehicles = await getVehiclePositions();
       this.map.vehicles = this.vehicles
       this.map.refresh()
     }, 15000)
