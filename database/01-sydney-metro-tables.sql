@@ -10,7 +10,7 @@ CREATE TABLE agency (
 );
 
 CREATE TABLE calendar (
-    service_id INT PRIMARY KEY,
+    service_id VARCHAR(255) PRIMARY KEY,
     monday TINYINT(1) NOT NULL,
     tuesday TINYINT(1) NOT NULL,
     wednesday TINYINT(1) NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE routes (
 );
 
 CREATE TABLE shapes (
-    shape_id INT NOT NULL,
+    shape_id VARCHAR(255) NOT NULL,
     shape_pt_lat DECIMAL(11,8) NOT NULL,
     shape_pt_lon DECIMAL(11,8) NOT NULL,
     shape_pt_sequence INT NOT NULL,
@@ -55,9 +55,14 @@ CREATE TABLE notes (
     note_text TEXT NOT NULL
 );
 
+CREATE TABLE vehicle_categories (
+    vehicle_category_id VARCHAR(255) PRIMARY KEY,
+    vehicle_category_name VARCHAR(255)
+);
+
 CREATE TABLE trips (
     route_id VARCHAR(255) NOT NULL,
-    service_id INT NOT NULL,
+    service_id VARCHAR(255) NOT NULL,
     trip_id VARCHAR(255) PRIMARY KEY,
     shape_id INT NOT NULL,
     trip_headsign VARCHAR(255) NOT NULL,
@@ -66,11 +71,11 @@ CREATE TABLE trips (
     block_id VARCHAR(255),
     wheelchair_accessible TINYINT(1) NOT NULL,
     trip_note VARCHAR(255),
-    route_direction TEXT NOT NULL,
+    route_direction TEXT,
     bikes_allowed TINYINT(1),
+    vehicle_category_id VARCHAR(255),
     FOREIGN KEY (route_id) REFERENCES routes(route_id),
     FOREIGN KEY (service_id) REFERENCES calendar(service_id)
-    -- FOREIGN KEY (trip_note) REFERENCES notes(note_id)
 );
 
 CREATE TABLE stops (
@@ -88,8 +93,8 @@ CREATE TABLE stop_times (
     trip_id VARCHAR(255) NOT NULL,
     arrival_time TIME NOT NULL,
     departure_time TIME NOT NULL,
-    stop_id INT NOT NULL,
-    stop_sequence INT NOT NULL,
+    stop_id VARCHAR(255) NOT NULL,
+    stop_sequence VARCHAR(255) NOT NULL,
     stop_headsign VARCHAR(255),
     pickup_type TINYINT(1) NOT NULL,
     drop_off_type TINYINT(1) NOT NULL,
@@ -99,31 +104,44 @@ CREATE TABLE stop_times (
     PRIMARY KEY (trip_id, stop_sequence),
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
     FOREIGN KEY (stop_id) REFERENCES stops(stop_id)
-    -- FOREIGN KEY (stop_note) REFERENCES notes(note_id)
-);
-
-CREATE TABLE vehicle_categories (
-    vehicle_category_id VARCHAR(255) PRIMARY KEY,
-    vehicle_category_name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE vehicle_boardings (
-    vehicle_category_id VARCHAR(100) NOT NULL,
-    child_sequence VARCHAR(100) NOT NULL,
-    grandchild_sequence VARCHAR(100) NOT NULL,
-    boarding_area_id VARCHAR(100) NOT NULL,
-    PRIMARY KEY (vehicle_category_id, child_sequence, grandchild_sequence, boarding_area_id),
+    vehicle_category_id VARCHAR(255) NOT NULL,
+    child_sequence VARCHAR(255),
+    grandchild_sequence VARCHAR(255),
+    boarding_area_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (vehicle_category_id, boarding_area_id),
     FOREIGN KEY (vehicle_category_id) REFERENCES vehicle_categories(vehicle_category_id)
 );
 
 CREATE TABLE vehicle_couplings (
-    parent_id VARCHAR(100) NOT NULL,
-    child_id VARCHAR(100) NOT NULL,
-    child_sequence VARCHAR(100) NOT NULL,
-    child_label VARCHAR(100) NOT NULL,
+    parent_id VARCHAR(255) NOT NULL,
+    child_id VARCHAR(255) NOT NULL,
+    child_sequence INT NOT NULL,
+    child_label VARCHAR(255),
     PRIMARY KEY (parent_id, child_id, child_sequence),
     FOREIGN KEY (parent_id) REFERENCES vehicle_categories(vehicle_category_id),
     FOREIGN KEY (child_id) REFERENCES vehicle_categories(vehicle_category_id)
+);
+
+CREATE TABLE occupancy (
+    trip_id VARCHAR(255) NOT NULL,
+    stop_sequence VARCHAR(255) NOT NULL,
+    occupancy_status INT NOT NULL,
+    monday TINYINT(1) NOT NULL,
+    tuesday TINYINT(1) NOT NULL,
+    wednesday TINYINT(1) NOT NULL,
+    thursday TINYINT(1) NOT NULL,
+    friday TINYINT(1) NOT NULL,
+    saturday TINYINT(1) NOT NULL,
+    sunday TINYINT(1) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    exception TINYINT(1),
+    PRIMARY KEY (trip_id, stop_sequence),
+    FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
+    FOREIGN KEY (trip_id, stop_sequence) REFERENCES stop_times(trip_id, stop_sequence)
 );
 
 -- CREATE TABLE realtime_trip_updates (

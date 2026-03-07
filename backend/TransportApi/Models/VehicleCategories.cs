@@ -11,6 +11,5 @@ public class VehicleCategory
     public string VehicleCategoryId { get; set; } = null!;
     
     [Column("vehicle_category_name")]
-    [Required]
-    public string VehicleCategoryName { get; set; } = null!;
+    public string? VehicleCategoryName { get; set; }
 }

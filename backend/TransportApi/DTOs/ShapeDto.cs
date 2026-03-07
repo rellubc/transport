@@ -5,7 +5,7 @@ namespace TransportApi.DTOs;
 
 public class ShapeDto
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = null!;
 
     [Precision(11, 8)]
     public decimal Latitude { get; set; }

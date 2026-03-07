@@ -103,7 +103,7 @@ public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factor
     private async Task<TripUpdateDto> TransformTripUpdate(TripUpdate tripUpdate)
     {
         var stopIds = tripUpdate.StopTimeUpdate
-            .Select(stu => int.Parse(stu.StopId))
+            .Select(stu => stu.StopId)
             .Distinct()
             .ToList();
 
@@ -179,7 +179,7 @@ public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factor
             newStopTimeUpdates.Add(new StopTimeUpdateDto
             {
                 StopSequence = stu.StopSequence,
-                StopName = stopNames.GetValueOrDefault(int.Parse(stu.StopId ?? "")) ?? "",
+                StopName = stopNames.GetValueOrDefault(stu.StopId ?? "") ?? "",
                 StopId = stu.StopId ?? "",
                 Arrival = arrival,
                 Departure = departure,

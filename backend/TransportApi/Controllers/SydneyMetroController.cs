@@ -66,15 +66,17 @@ public class SydneyMetroController : ControllerBase
     public async Task<ActionResult<Dictionary<int, List<ShapeDetails>>>> GetSydneyMetroShapes() {
         var shapes = await _db.Shapes.ToListAsync();
 
-        Dictionary<int, List<ShapeDetails>> shapesDictionary = [];
+        Dictionary<string, List<ShapeDetails>> shapesDictionary = [];
 
         foreach (var shape in shapes)
         {
-            if (!shapesDictionary.ContainsKey(shape.Id))
+            if (!shapesDictionary.TryGetValue(shape.Id, out List<ShapeDetails>? value))
             {
-                shapesDictionary[shape.Id] = [];
+                value = [];
+                shapesDictionary[shape.Id] = value;
             }
-            shapesDictionary[shape.Id].Add(new ShapeDetails
+
+            value.Add(new ShapeDetails
             {
                 Latitude = shape.Latitude,
                 Longitude = shape.Longitude,
@@ -151,7 +153,7 @@ public class SydneyMetroController : ControllerBase
     }
 
     [HttpGet("stop-times")]
-    public async Task<ActionResult<List<StopTimeDto>>> GetSydneyMetroStopTimes(int stopId)
+    public async Task<ActionResult<List<StopTimeDto>>> GetSydneyMetroStopTimes(string stopId)
     {
         var stopTimes = await _db.StopTimes.Where(st => st.StopId == stopId).ToListAsync();
 

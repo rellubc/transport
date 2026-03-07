@@ -22,11 +22,11 @@ public class StopTime
 
     [Column("stop_id")]
     [Required]
-    public int StopId { get; set; }
+    public string StopId { get; set; } = null!;
 
     [Column("stop_sequence")]
     [Required]
-    public int StopSequence { get; set; }
+    public string StopSequence { get; set; } = null!;
 
     [Column("stop_headsign")]
     [StringLength(255)]

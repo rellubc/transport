@@ -3,12 +3,20 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TransportApi.Models;
 
-[Table("calendar")]
-public class Calendar
+[Table("occupancy")]
+public class Occupancy
 {
-    [Key]
-    [Column("service_id")]
-    public string ServiceId { get; set; } = null!;
+    [Column("trip_id")]
+    [Required]
+    public string TripId { get; set; } = null!;
+
+    [Column("stop_sequence")]
+    [Required]
+    public string StopSequence { get; set; } = null!;
+
+    [Column("occupancy_status")]
+    [Required]
+    public int OccupancyStatus { get; set; }
 
     [Column("monday")]
     [Required]
@@ -44,7 +52,9 @@ public class Calendar
     public DateTime StartDate { get; set; }
 
     [Column("end_date")]
-    [Required]
     [DataType(DataType.Date)]
-    public DateTime EndDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    
+    [Column("exception")]
+    public bool? Exception { get; set; }
 }

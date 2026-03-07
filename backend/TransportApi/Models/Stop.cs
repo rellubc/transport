@@ -9,7 +9,7 @@ public class Stop
 {
     [Key]
     [Column("stop_id")]
-    public int Id { get; set; }
+    public string Id { get; set; } = null!;
 
     [Column("stop_name")]
     [Required]
@@ -32,7 +32,7 @@ public class Stop
     public string LocationType { get; set; } = null!;
 
     [Column("parent_station")]
-    public int? ParentStationId { get; set; }
+    public string? ParentStationId { get; set; }
 
     [Column("wheelchair_boarding")]
     [Required]

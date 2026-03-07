@@ -12,9 +12,9 @@ public class TripDto
     [StringLength(255)]
     public string RouteId { get; set; } = null!;
 
-    public int ServiceId { get; set; }
+    public string ServiceId { get; set; } = null!;
 
-    public int ShapeId { get; set; }
+    public string ShapeId { get; set; } = null!;
 
     [Required]
     [StringLength(255)]
@@ -29,13 +29,14 @@ public class TripDto
     [StringLength(255)]
     public string? BlockId { get; set; }
 
-    public int WheelchairAccessible { get; set; }
+    public bool WheelchairAccessible { get; set; }
 
     [StringLength(255)]
     public string? TripNote { get; set; }
 
-    [Required]
-    public string RouteDirection { get; set; } = null!;
+    [StringLength(255)]
+    public string? RouteDirection { get; set; }
 
-    public int? BikesAllowed { get; set; }
+    public bool? BikesAllowed { get; set; }
+    public string? VehicleCategoryId { get; set; }
 }

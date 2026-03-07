@@ -11,12 +11,10 @@ public class VehicleBoarding
     public string VehicleCategoryId { get; set; } = null!;
     
     [Column("child_sequence")]
-    [Required]
-    public string ChildSequence { get; set; } = null!;
+    public string? ChildSequence { get; set; }
     
     [Column("grandchild_sequence")]
-    [Required]
-    public string GrandchildSequence { get; set; } = null!;
+    public string? GrandchildSequence { get; set; }
     
     [Column("boarding_area_id")]
     [Required]

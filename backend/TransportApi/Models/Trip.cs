@@ -19,14 +19,14 @@ public class Trip
 
     [Column("service_id")]
     [Required]
-    public int ServiceId { get; set; }
+    public string ServiceId { get; set; } = null!;
 
     [ForeignKey("ServiceId")]
     public Calendar? Service { get; set; }
 
     [Column("shape_id")]
     [Required]
-    public int ShapeId { get; set; }
+    public string ShapeId { get; set; } = null!;
 
     [Column("trip_headsign")]
     [Required]
@@ -48,7 +48,7 @@ public class Trip
 
     [Column("wheelchair_accessible")]
     [Required]
-    public int WheelchairAccessible { get; set; }
+    public bool WheelchairAccessible { get; set; }
 
     [Column("trip_note")]
     [StringLength(255)]
@@ -56,8 +56,11 @@ public class Trip
 
     [Column("route_direction")]
     [Required]
-    public string RouteDirection { get; set; } = null!;
+    public string? RouteDirection { get; set; }
 
     [Column("bikes_allowed")]
-    public int? BikesAllowed { get; set; }
+    public bool? BikesAllowed { get; set; }
+
+    [Column("vehicle_category_id")]
+    public string? VehicleCategoryId { get; set; }
 }

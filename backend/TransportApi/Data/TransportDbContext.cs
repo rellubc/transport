@@ -21,6 +21,7 @@ public class TransportDbContext : DbContext
     public DbSet<VehicleBoarding> VehicleBoardings { get; set; } = null!;
     public DbSet<VehicleCategory> VehicleCategories { get; set; } = null!;
     public DbSet<VehicleCoupling> VehicleCouplings { get; set; } = null!;
+    public DbSet<Occupancy> Occupancies { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,9 +34,12 @@ public class TransportDbContext : DbContext
             .HasKey(s => new { s.Id, s.Sequence });
 
         modelBuilder.Entity<VehicleBoarding>()
-            .HasKey(vb => new { vb.VehicleCategoryId, vb.ChildSequence, vb.GrandchildSequence, vb.BoardingAreaId });
+            .HasKey(vb => new { vb.VehicleCategoryId, vb.BoardingAreaId });
             
         modelBuilder.Entity<VehicleCoupling>()
             .HasKey(vc => new { vc.ParentId, vc.ChildId, vc.ChildSequence });
+
+        modelBuilder.Entity<Occupancy>()
+            .HasKey(o => new { o.TripId, o.StopSequence });
     }
 }

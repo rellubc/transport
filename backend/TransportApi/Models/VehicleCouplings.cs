@@ -16,9 +16,8 @@ public class VehicleCoupling
     
     [Column("child_sequence")]
     [Required]
-    public string ChildSequence { get; set; } = null!;
+    public int ChildSequence { get; set; }
     
     [Column("child_label")]
-    [Required]
-    public string ChildLabel { get; set; } = null!;
+    public string? ChildLabel { get; set; }
 }

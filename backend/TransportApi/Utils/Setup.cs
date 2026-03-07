@@ -30,12 +30,12 @@ public static class Setup
         using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
 
         var existingAgencyIds = new HashSet<string>(db.Agencies.Select(a => a.Id));
-        var existingCalendarIds = new HashSet<int>(db.Calendars.Select(c => c.ServiceId));
+        var existingCalendarIds = new HashSet<string>(db.Calendars.Select(c => c.ServiceId));
         var existingCalendarDateIds = new HashSet<int>(db.CalendarDates.Select(cd => cd.ServiceId));
         var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.Id));
         var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
         var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence));
-        var existingStopIds = new HashSet<int>(db.Stops.Select(s => s.Id));
+        var existingStopIds = new HashSet<string>(db.Stops.Select(s => s.Id));
         var existingStopTimeIds = new HashSet<string>(db.StopTimes.Select(s => s.TripId + "|" + s.StopSequence));
         var existingTripIds = new HashSet<string>(db.Trips.Select(t => t.Id));
 
@@ -55,7 +55,7 @@ public static class Setup
             using var reader = new StreamReader(entryStream);
 
             // skip header line
-            await reader.ReadLineAsync();
+            Console.WriteLine($"Processing {entry.Name}, {await reader.ReadLineAsync()}");
 
             string? line;
             while ((line = await reader.ReadLineAsync()) != null)
@@ -93,11 +93,11 @@ public static class Setup
                     }
                     case "calendar.txt":
                     {
-                        if (!existingCalendarIds.Contains(int.Parse(cols[0])))
+                        if (!existingCalendarIds.Contains(cols[0]))
                         {
                             var entity = new Models.Calendar
                             {
-                                ServiceId = int.Parse(cols[0]),
+                                ServiceId = cols[0],
                                 Monday = cols[1] == "1",
                                 Tuesday = cols[2] == "1",
                                 Wednesday = cols[3] == "1",
@@ -152,13 +152,13 @@ public static class Setup
                     }
                     case "shapes.txt":
                     {
-                        if (!existingShapeIds.Contains(int.Parse(cols[0]) + "|" + int.Parse(cols[3])))
+                        if (!existingShapeIds.Contains(cols[0] + "|" + int.Parse(cols[3])))
                         {
                             // if (cols[4] == "\"\"") cols[4] = "0";
 
                             var entity = new Shape
                             {
-                                Id = int.Parse(cols[0]),
+                                Id = cols[0],
                                 Latitude = decimal.Parse(cols[1], CultureInfo.InvariantCulture),
                                 Longitude = decimal.Parse(cols[2], CultureInfo.InvariantCulture),
                                 Sequence = int.Parse(cols[3]),
@@ -170,16 +170,16 @@ public static class Setup
                     }
                     case "stops.txt":
                     {
-                        if (!existingStopIds.Contains(int.Parse(cols[0])))
+                        if (!existingStopIds.Contains(cols[0]))
                         {
                             var entity = new Stop
                             {
-                                Id = int.Parse(cols[0]),
+                                Id = cols[0],
                                 Name = cols[1],
                                 Latitude = decimal.Parse(cols[2], CultureInfo.InvariantCulture),
                                 Longitude = decimal.Parse(cols[3], CultureInfo.InvariantCulture),
                                 LocationType = cols[4] == "1" ? "Station" : "Platform",
-                                ParentStationId = cols[5].Length == 0 ? null : int.Parse(cols[5]),
+                                ParentStationId = cols[5] == "" ? null : cols[5],
                                 WheelchairBoarding = cols[6] == "1",
                                 PlatformCode = cols[7].Length == 0 ? null : int.Parse(cols[7]),
                             };
@@ -203,8 +203,8 @@ public static class Setup
                                 TripId = cols[0],
                                 ArrivalTime = TimeSpan.ParseExact(cols[1], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
                                 DepartureTime = TimeSpan.ParseExact(cols[2], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
-                                StopId = int.Parse(cols[3]),
-                                StopSequence = int.Parse(cols[4]),
+                                StopId = cols[3],
+                                StopSequence = cols[4],
                                 StopHeadSign = cols[5],
                                 PickupType = cols[6] == "1",
                                 DropOffType = cols[7] == "1",
@@ -223,17 +223,17 @@ public static class Setup
                             var entity = new Trip
                             {
                                 RouteId = cols[0],
-                                ServiceId = int.Parse(cols[1]),
+                                ServiceId = cols[1],
                                 Id = cols[2],
-                                ShapeId = int.Parse(cols[3]),
+                                ShapeId = cols[3],
                                 HeadSign = cols[4],
                                 DirectionId = int.Parse(cols[5]),
-                                ShortName = cols[5],
+                                ShortName = cols[6],
                                 BlockId = cols[7],
-                                WheelchairAccessible = int.Parse(cols[6]),
-                                TripNote = cols[8],
-                                RouteDirection = cols[9],
-                                BikesAllowed = int.Parse(cols[10]),
+                                WheelchairAccessible = cols[8] == "1",
+                                TripNote = cols[9] == "" ? "" : cols[9],
+                                RouteDirection = cols[10],
+                                BikesAllowed = cols[11] == "1",
                             };
                             newTrips.Add(entity);
                         }
@@ -317,25 +317,447 @@ public static class Setup
         var stopTimesCount = await db.StopTimes.CountAsync();
         var tripsCount = await db.Trips.CountAsync();
 
-        if (agenciesCount != existingAgencyIds.Count + newAgencies.Count) {
+        if (agenciesCount != existingAgencyIds.Count + newAgencies.Count)
             app.Logger.LogInformation("Agency table miscount");
-        } else if (calendarsCount != existingCalendarIds.Count + newCalendars.Count) {
+        if (calendarsCount != existingCalendarIds.Count + newCalendars.Count)
             app.Logger.LogInformation("Calendar table miscount");
-        } else if (calendarDatesCount != existingCalendarDateIds.Count + newCalendarDates.Count) {
+        if (calendarDatesCount != existingCalendarDateIds.Count + newCalendarDates.Count)
             app.Logger.LogInformation("CalendarDate table miscount");
-        } else if (notesCount != existingNoteIds.Count + newNotes.Count) {
+        if (notesCount != existingNoteIds.Count + newNotes.Count)
             app.Logger.LogInformation("Note table miscount");
-        } else if (routesCount != existingRouteIds.Count + newRoutes.Count) {
+        if (routesCount != existingRouteIds.Count + newRoutes.Count)
             app.Logger.LogInformation("Route table miscount");
-        } else if (shapesCount != existingShapeIds.Count + newShapes.Count) {
+        if (shapesCount != existingShapeIds.Count + newShapes.Count)
             app.Logger.LogInformation("Shape table miscount");
-        } else if (stopsCount != existingStopIds.Count + newStops.Count) {
+        if (stopsCount != existingStopIds.Count + newStops.Count)
             app.Logger.LogInformation("Stop table miscount");
-        } else if (stopTimesCount != existingStopTimeIds.Count + newStopTimes.Count) {
+        if (stopTimesCount != existingStopTimeIds.Count + newStopTimes.Count)
             app.Logger.LogInformation("StopTime table miscount");
-        } else if (tripsCount != existingTripIds.Count + newTrips.Count) {
+        if (tripsCount != existingTripIds.Count + newTrips.Count)
             app.Logger.LogInformation("Trip table miscount");
+
+        app.Logger.LogInformation("Check Complete");
+    }
+
+    // TODO: Add remaining fields for some entries
+    async public static Task PopulateSydneyTrains(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var factory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+        var db = scope.ServiceProvider.GetRequiredService<TransportDbContext>();
+
+        var client = factory.CreateClient("TransportNSW");
+        var response = await client.GetAsync("https://api.transport.nsw.gov.au/v1/gtfs/schedule/sydneytrains");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            app.Logger.LogWarning($"Failed to fetch data: {response.StatusCode}");
+            return;
         }
+
+        var zipBytes = await response.Content.ReadAsByteArrayAsync();
+        using var memoryStream = new MemoryStream(zipBytes);
+        using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
+
+        var existingAgencyIds = new HashSet<string>(db.Agencies.Select(a => a.Id));
+        var existingCalendarIds = new HashSet<string>(db.Calendars.Select(c => c.ServiceId));
+        var existingCalendarDateIds = new HashSet<int>(db.CalendarDates.Select(cd => cd.ServiceId));
+        var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.Id));
+        var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
+        var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence));
+        var existingStopIds = new HashSet<string>(db.Stops.Select(s => s.Id));
+        var existingStopTimeIds = new HashSet<string>(db.StopTimes.Select(s => s.TripId + "|" + s.StopSequence));
+        var existingTripIds = new HashSet<string>(db.Trips.Select(t => t.Id));
+        var existingVehicleCategoryIds = new HashSet<string>(db.VehicleCategories.Select(vc => vc.VehicleCategoryId));
+        var existingVehicleBoardingIds = new HashSet<string>(db.VehicleBoardings.Select(vb => vb.VehicleCategoryId + "|" + vb.ChildSequence + "|" + vb.GrandchildSequence + "|" + vb.BoardingAreaId));
+        var existingVehicleCouplingIds = new HashSet<string>(db.VehicleCouplings.Select(vc => vc.ParentId + "|" + vc.ChildId + "|" + vc.ChildSequence));
+        var existingOccupancyIds = new HashSet<string>(db.Occupancies.Select(o => o.TripId + "|" + o.StopSequence));
+
+        var newAgencies = new List<Agency>();
+        var newCalendars = new List<Models.Calendar>();
+        var newCalendarDates = new List<CalendarDate>();
+        var newNotes = new List<Note>();
+        var newRoutes = new List<Models.Route>();
+        var newShapes = new List<Shape>();
+        var newStops = new List<Stop>();
+        var newStopTimes = new List<StopTime>();
+        var newTrips = new List<Trip>();
+        var newVehicleCategories = new List<VehicleCategory>();
+        var newVehicleBoardings = new List<VehicleBoarding>();
+        var newVehicleCouplings = new List<VehicleCoupling>();
+        var newOccupancies = new List<Occupancy>();
+
+        foreach (var entry in archive.Entries)
+        {
+            using var entryStream = entry.Open();
+            using var reader = new StreamReader(entryStream);
+
+            // skip header line
+            Console.WriteLine($"Processing {entry.Name}, {await reader.ReadLineAsync()}");
+
+            string? line;
+            while ((line = await reader.ReadLineAsync()) != null)
+            {
+                using var parser = new TextFieldParser(new StringReader(line));
+                parser.HasFieldsEnclosedInQuotes = true;
+                parser.SetDelimiters(",");
+
+                var cols = parser.ReadFields();
+
+                if (cols == null) continue;
+
+                try
+                {
+                    switch (entry.FullName)
+                    {
+                        case "agency.txt":
+                        {
+                            if (!existingAgencyIds.Contains(cols[0]))
+                            {
+                                var entity = new Agency
+                                {
+                                    Id = cols[0],
+                                    Name = cols[1],
+                                    Url = cols[2],
+                                    Timezone = cols[3],
+                                    Lang = cols[4],
+                                    Phone = cols[5],
+                                };
+                                newAgencies.Add(entity);
+                            }
+                            break;
+                        }
+                        case "calendar.txt":
+                        {
+                            if (!existingCalendarIds.Contains(cols[0]))
+                            {
+                                var entity = new Models.Calendar
+                                {
+                                    ServiceId = cols[0],
+                                    Monday = cols[1] == "1",
+                                    Tuesday = cols[2] == "1",
+                                    Wednesday = cols[3] == "1",
+                                    Thursday = cols[4] == "1",
+                                    Friday = cols[5] == "1",
+                                    Saturday = cols[6] == "1",
+                                    Sunday = cols[7] == "1",
+                                    StartDate = DateTime.ParseExact(cols[8], "yyyyMMdd", CultureInfo.InvariantCulture),
+                                    EndDate = DateTime.ParseExact(cols[9], "yyyyMMdd", CultureInfo.InvariantCulture),
+                                };
+                                newCalendars.Add(entity);
+                            }
+                            break;
+                        }
+                        case "calendar_dates.txt":
+                        {
+                            // currently empty
+                            break;
+                        }
+                        case "notes.txt":
+                        {
+                            if (!existingNoteIds.Contains(cols[0]))
+                            {
+                                var entity = new Note
+                                {
+                                    Id = cols[0],
+                                    Text = cols[1],
+                                };
+                                newNotes.Add(entity);
+                            }
+                            break;
+                        }
+                        case "routes.txt":
+                        {
+                            if (!existingRouteIds.Contains(cols[0]))
+                            {
+                                var entity = new Models.Route
+                                {
+                                    Id = cols[0],
+                                    AgencyId = cols[1],
+                                    ShortName = cols[2],
+                                    LongName = cols[3],
+                                    Description = cols[4],
+                                    Type = int.Parse(cols[5]),
+                                    Url = cols[6],
+                                    Color = cols[7],
+                                    TextColor = cols[8],
+                                };
+                                newRoutes.Add(entity);
+                            }
+                            break;
+                        }
+                        case "shapes.txt":
+                        {
+                            if (!existingShapeIds.Contains(cols[0] + "|" + int.Parse(cols[3])))
+                            {
+                                if (cols[4] == "\"\"") cols[4] = "0";
+
+                                var entity = new Shape
+                                {
+                                    Id = cols[0],
+                                    Latitude = decimal.Parse(cols[1], CultureInfo.InvariantCulture),
+                                    Longitude = decimal.Parse(cols[2], CultureInfo.InvariantCulture),
+                                    Sequence = int.Parse(cols[3]),
+                                    DistanceTravelled = cols[4] == "" ? 0 : decimal.Parse(cols[4], CultureInfo.InvariantCulture),
+                                };
+                                newShapes.Add(entity);
+                            }
+                            break;
+                        }
+                        case "stops.txt":
+                        {
+                            if (!existingStopIds.Contains(cols[0]))
+                            {
+                                var entity = new Stop
+                                {
+                                    Id = cols[0],
+                                    Name = cols[2],
+                                    Latitude = decimal.Parse(cols[4], CultureInfo.InvariantCulture),
+                                    Longitude = decimal.Parse(cols[5], CultureInfo.InvariantCulture),
+                                    LocationType = cols[8] == "1" ? "Station" : "Platform",
+                                    ParentStationId = cols[9] == "" ? null : cols[9],
+                                    WheelchairBoarding = cols[11] == "1",
+                                };
+                                newStops.Add(entity);
+                            }
+                            break;
+                        }
+                        case "stop_times.txt":
+                        {
+                            if (!existingStopTimeIds.Contains(cols[0] + "|" + int.Parse(cols[4])))
+                            {
+                                // if (cols[8] == "\"\"") cols[8] = "0";
+
+                                int hour1 = int.Parse(cols[1][..2]);
+                                int hour2 = int.Parse(cols[2][..2]);
+                                cols[1] = string.Concat((hour1 % 24).ToString("D2", CultureInfo.InvariantCulture), cols[1].AsSpan(2));
+                                cols[2] = string.Concat((hour2 % 24).ToString("D2", CultureInfo.InvariantCulture), cols[2].AsSpan(2));
+
+                                var entity = new StopTime
+                                {
+                                    TripId = cols[0],
+                                    ArrivalTime = TimeSpan.ParseExact(cols[1], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
+                                    DepartureTime = TimeSpan.ParseExact(cols[2], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
+                                    StopId = cols[3],
+                                    StopSequence = cols[4],
+                                    StopHeadSign = cols[5],
+                                    PickupType = cols[6] == "1",
+                                    DropOffType = cols[7] == "1",
+                                    ShapeDistanceTravelled = cols[8] == "" ? 0 : decimal.Parse(cols[8], CultureInfo.InvariantCulture),
+                                };
+                                newStopTimes.Add(entity);
+                            }
+                            break;
+                        }
+                        case "trips.txt":
+                        {
+                            if (!existingTripIds.Contains(cols[2]))
+                            {
+                                var entity = new Trip
+                                {
+                                    RouteId = cols[0],
+                                    ServiceId = cols[1],
+                                    Id = cols[2],
+                                    HeadSign = cols[3],
+                                    ShortName = cols[4],
+                                    DirectionId = int.Parse(cols[5]),
+                                    BlockId = cols[6],
+                                    ShapeId = cols[7],
+                                    WheelchairAccessible = cols[8] == "1",
+                                    VehicleCategoryId = cols[9],
+                                };
+                                newTrips.Add(entity);
+                            }
+                            break;
+                        }
+                        case "vehicle_categories.txt":
+                        {
+                            if (!existingVehicleCategoryIds.Contains(cols[0]))
+                            {
+                                var entity = new VehicleCategory
+                                {
+                                    VehicleCategoryId = cols[0],
+                                    VehicleCategoryName = cols[1],
+                                };
+                                newVehicleCategories.Add(entity);
+                            }
+                            break;    
+                        }
+                        case "vehicle_boardings.txt":
+                        {
+                            if (!existingVehicleBoardingIds.Contains(cols[0] + "|" + cols[1] + "|" + cols[2] + "|" + cols[3]))
+                            {
+                                var entity = new VehicleBoarding
+                                {
+                                    VehicleCategoryId = cols[0],
+                                    ChildSequence = cols[1],
+                                    GrandchildSequence = cols[2],
+                                    BoardingAreaId = cols[3],
+                                };
+                                newVehicleBoardings.Add(entity);
+                            }
+                            break;    
+                        }
+                        case "vehicle_couplings.txt":
+                        {
+                            if (!existingVehicleCouplingIds.Contains(cols[0] + "|" + cols[1] + "|" + cols[2]))
+                            {
+                                var entity = new VehicleCoupling
+                                {
+                                    ParentId = cols[0],
+                                    ChildId = cols[1],
+                                    ChildSequence = int.Parse(cols[2]),
+                                    ChildLabel = cols[3],
+                                };
+                                newVehicleCouplings.Add(entity);
+                            }
+                            break;    
+                        }
+
+                        case "occupancies.txt":
+                        {
+                            if (!existingOccupancyIds.Contains(cols[0] + "|" + cols[1]))
+                            {
+                                var entity = new Occupancy
+                                {
+                                    TripId = cols[0],
+                                    StopSequence = cols[1],
+                                    OccupancyStatus = int.Parse(cols[2]),
+                                    Monday = cols[3] == "1",
+                                    Tuesday = cols[4] == "1",
+                                    Wednesday = cols[5] == "1",
+                                    Thursday = cols[6] == "1",
+                                    Friday = cols[7] == "1",
+                                    Saturday = cols[8] == "1",
+                                    Sunday = cols[9] == "1",
+                                    StartDate = DateTime.ParseExact(cols[10], "yyyyMMdd", CultureInfo.InvariantCulture),
+                                    EndDate = cols[11] == "" ? new DateTime() : DateTime.ParseExact(cols[11], "yyyyMMdd", CultureInfo.InvariantCulture),
+                                    Exception = cols[12] == "1",
+                                };
+                                newOccupancies.Add(entity);
+                            }
+                            break;    
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    app.Logger.LogWarning("Failed to parse entry {Entry}: {Error}", entry.FullName, ex.Message);
+                    continue;
+                }
+
+            }
+        }
+
+        if (newAgencies.Count > 0)
+            app.Logger.LogInformation("New Agencies: {newAgencies.Count}", newAgencies.Count);
+        if (newCalendars.Count > 0)
+            app.Logger.LogInformation("New Calendars: {Count}", newCalendars.Count);
+        if (newCalendarDates.Count > 0)
+            app.Logger.LogInformation("New CalendarDates: {Count}", newCalendarDates.Count);
+        if (newNotes.Count > 0)
+            app.Logger.LogInformation("New Notes: {Count}", newNotes.Count);
+        if (newRoutes.Count > 0)
+            app.Logger.LogInformation("New Routes: {Count}", newRoutes.Count);
+        if (newShapes.Count > 0)
+            app.Logger.LogInformation("New Shapes: {Count}", newShapes.Count);
+        if (newStops.Count > 0)
+            app.Logger.LogInformation("New Stops: {Count}", newStops.Count);
+        if (newStopTimes.Count > 0)
+            app.Logger.LogInformation("New StopTimes: {Count}", newStopTimes.Count);
+        if (newTrips.Count > 0)
+            app.Logger.LogInformation("New Trips: {Count}", newTrips.Count);
+        if (newVehicleCategories.Count > 0)
+            app.Logger.LogInformation("New VehicleCategories: {Count}", newVehicleCategories.Count);
+        if (newVehicleBoardings.Count > 0)
+            app.Logger.LogInformation("New VehicleBoardings: {Count}", newVehicleBoardings.Count);
+        if (newVehicleCouplings.Count > 0)
+            app.Logger.LogInformation("New VehicleCouplings: {Count}", newVehicleCouplings.Count);
+        if (newOccupancies.Count > 0)
+            app.Logger.LogInformation("New Occupancies: {Count}", newOccupancies.Count);
+
+        app.Logger.LogInformation("Adding New Entries");
+        db.Agencies.AddRange(newAgencies);
+        await db.SaveChangesAsync();
+
+        db.Calendars.AddRange(newCalendars);
+        await db.SaveChangesAsync();
+
+        db.CalendarDates.AddRange(newCalendarDates);
+        await db.SaveChangesAsync();
+
+        db.Notes.AddRange(newNotes);
+        await db.SaveChangesAsync();
+
+        db.Routes.AddRange(newRoutes);
+        await db.SaveChangesAsync();
+
+        db.Shapes.AddRange(newShapes);
+        await db.SaveChangesAsync();
+
+        db.Stops.AddRange(newStops);
+        await db.SaveChangesAsync();
+
+        db.Trips.AddRange(newTrips);
+        await db.SaveChangesAsync();
+
+        db.StopTimes.AddRange(newStopTimes);
+        await db.SaveChangesAsync();
+
+        db.VehicleCategories.AddRange(newVehicleCategories);
+        await db.SaveChangesAsync();
+
+        db.VehicleCouplings.AddRange(newVehicleCouplings);
+        await db.SaveChangesAsync();
+
+        db.VehicleBoardings.AddRange(newVehicleBoardings);
+        await db.SaveChangesAsync();
+
+        db.Occupancies.AddRange(newOccupancies);
+        await db.SaveChangesAsync();
+
+        app.Logger.LogInformation("Checking new entries");
+
+        var agenciesCount = await db.Agencies.CountAsync();
+        var calendarsCount = await db.Calendars.CountAsync();
+        var calendarDatesCount = await db.CalendarDates.CountAsync();
+        var notesCount = await db.Notes.CountAsync();
+        var routesCount = await db.Routes.CountAsync();
+        var shapesCount = await db.Shapes.CountAsync();
+        var stopsCount = await db.Stops.CountAsync();
+        var stopTimesCount = await db.StopTimes.CountAsync();
+        var tripsCount = await db.Trips.CountAsync();
+        var vehicleCategoriesCount = await db.VehicleCategories.CountAsync();
+        var vehicleBoardingsCount = await db.VehicleBoardings.CountAsync();
+        var vehicleCouplingsCount = await db.VehicleCouplings.CountAsync();
+        var occupanciesCount = await db.Occupancies.CountAsync();
+
+        if (agenciesCount != existingAgencyIds.Count + newAgencies.Count)
+            app.Logger.LogInformation("Agency table miscount");
+        if (calendarsCount != existingCalendarIds.Count + newCalendars.Count)
+            app.Logger.LogInformation("Calendar table miscount");
+        if (calendarDatesCount != existingCalendarDateIds.Count + newCalendarDates.Count)
+            app.Logger.LogInformation("CalendarDate table miscount");
+        if (notesCount != existingNoteIds.Count + newNotes.Count)
+            app.Logger.LogInformation("Note table miscount");
+        if (routesCount != existingRouteIds.Count + newRoutes.Count)
+            app.Logger.LogInformation("Route table miscount");
+        if (shapesCount != existingShapeIds.Count + newShapes.Count)
+            app.Logger.LogInformation("Shape table miscount");
+        if (stopsCount != existingStopIds.Count + newStops.Count)
+            app.Logger.LogInformation("Stop table miscount");
+        if (stopTimesCount != existingStopTimeIds.Count + newStopTimes.Count)
+            app.Logger.LogInformation("StopTime table miscount");
+        if (tripsCount != existingTripIds.Count + newTrips.Count)
+            app.Logger.LogInformation("Trip table miscount");
+        if (vehicleBoardingsCount != existingVehicleCategoryIds.Count + newVehicleBoardings.Count)
+            app.Logger.LogInformation("New VehicleCategories: {Count}", newVehicleCategories.Count);
+        if (vehicleBoardingsCount != existingVehicleBoardingIds.Count + newVehicleBoardings.Count)
+            app.Logger.LogInformation("New VehicleBoardings: {Count}", newVehicleBoardings.Count);
+        if (vehicleCouplingsCount != existingVehicleCouplingIds.Count + newVehicleCouplings.Count)
+            app.Logger.LogInformation("New VehicleCouplings: {Count}", newVehicleCouplings.Count);
+        if (occupanciesCount != existingOccupancyIds.Count + newOccupancies.Count)
+            app.Logger.LogInformation("New Occupancies: {Count}", newOccupancies.Count);
 
         app.Logger.LogInformation("Check Complete");
     }

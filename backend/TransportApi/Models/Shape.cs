@@ -9,7 +9,7 @@ public class Shape
 {
     [Column("shape_id")]
     [Required]
-    public int Id { get; set; }
+    public string Id { get; set; } = null!;
 
     [Column("shape_pt_lat")]
     [Required]

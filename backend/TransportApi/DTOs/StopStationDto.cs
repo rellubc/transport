@@ -5,7 +5,7 @@ namespace TransportApi.DTOs;
 
 public class StopStationDto
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = null!;
 
     [Required]
     [StringLength(255)]

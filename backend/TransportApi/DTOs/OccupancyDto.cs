@@ -2,9 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TransportApi.DTOs;
 
-public class CalendarDto
+public class OccupancyDto
 {
-    public string ServiceId { get; set; } = null!;
+    public string TripId { get; set; } = null!;
+
+    public string StopSequence { get; set; } = null!;
+
+    public int OccupancyStatus { get; set; }
 
     public bool Monday { get; set; }
 
@@ -24,5 +28,7 @@ public class CalendarDto
     public DateTime StartDate { get; set; }
 
     [DataType(DataType.Date)]
-    public DateTime EndDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    
+    public bool? Exception { get; set; }
 }

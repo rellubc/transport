@@ -13,9 +13,9 @@ public class StopTimeDto
 
     public TimeSpan DepartureTime { get; set; }
 
-    public int StopId { get; set; }
+    public string StopId { get; set; } = null!;
 
-    public int StopSequence { get; set; }
+    public string StopSequence { get; set; } = null!;
 
     [StringLength(255)]
     public string? StopHeadSign { get; set; }

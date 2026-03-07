@@ -5,7 +5,7 @@ namespace TransportApi.DTOs;
 
 public class StopPlatformDto
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = null!;
 
     [Required]
     [StringLength(255)]
@@ -18,7 +18,7 @@ public class StopPlatformDto
     public decimal Longitude { get; set; }
     public string LocationType { get; set; } = null!;
 
-    public int? ParentStationId { get; set; }
+    public string? ParentStationId { get; set; }
 
     public bool WheelchairBoarding { get; set; }
 
