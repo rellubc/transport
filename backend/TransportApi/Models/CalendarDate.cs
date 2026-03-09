@@ -8,7 +8,7 @@ public class CalendarDate
 {
     [Key]
     [Column("service_id")]
-    public int ServiceId { get; set; }
+    public string ServiceId { get; set; } = null!;
 
     [Column("date")]
     [Required]

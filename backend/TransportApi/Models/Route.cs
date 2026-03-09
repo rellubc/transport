@@ -36,15 +36,15 @@ public class Route
     [Required]
     public int Type { get; set; }
 
-    [Column("route_color")]
+    [Column("route_colour")]
     [Required]
     [StringLength(6)]
-    public string Color { get; set; } = "00B5EF";
+    public string Colour { get; set; } = "00B5EF";
 
-    [Column("route_text_color")]
+    [Column("route_text_colour")]
     [Required]
     [StringLength(6)]
-    public string TextColor { get; set; } = "FFFFFF";
+    public string TextColour { get; set; } = "FFFFFF";
 
     [Column("route_url")]
     [Required]

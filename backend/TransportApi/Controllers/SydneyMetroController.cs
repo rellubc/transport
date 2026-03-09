@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TransportApi.Data;
 using TransportApi.DTOs;
 using TransportApi.DTOs.Realtime;
+using TransportApi.Models;
 using TransportApi.Services;
 
 using TransitRealtime;
@@ -28,26 +29,31 @@ public class SydneyMetroController : ControllerBase
         Ok(await _db.Agencies.ToListAsync());
 
     [HttpGet("calendars")]
-    public async Task<ActionResult<List<CalendarDto>>> GetSydneyMetroCalendars()
+    public async Task<ActionResult<List<CalendarDto>>> GetSydneyMetroCalendars(string serviceId)
     {
-        var calendars = await _db.Calendars.ToListAsync();
+        var calendar = await _db.Calendars.Where(c => c.ServiceId == serviceId).SingleOrDefaultAsync();
 
-        var calendarsDto = calendars
-        .Select(c => new CalendarDto
+        // invalid serviceId
+        if (calendar == null)
         {
-            ServiceId = c.ServiceId,
-            Monday = c.Monday,
-            Tuesday = c.Tuesday,
-            Wednesday = c.Wednesday,
-            Thursday = c.Thursday,
-            Friday = c.Friday,
-            Saturday = c.Saturday,
-            Sunday = c.Sunday,
-            StartDate = c.StartDate,
-            EndDate = c.EndDate
-        }).ToList();
+            return NotFound();
+        }
 
-        return Ok(calendarsDto);
+        var calendarDto = new CalendarDto
+        {
+            ServiceId = calendar.ServiceId,
+            Monday = calendar.Monday,
+            Tuesday = calendar.Tuesday,
+            Wednesday = calendar.Wednesday,
+            Thursday = calendar.Thursday,
+            Friday = calendar.Friday,
+            Saturday = calendar.Saturday,
+            Sunday = calendar.Sunday,
+            StartDate = calendar.StartDate,
+            EndDate = calendar.EndDate
+        };
+
+        return Ok(calendarDto);
     }
 
     [HttpGet("calendar-dates")]
@@ -70,6 +76,7 @@ public class SydneyMetroController : ControllerBase
 
         foreach (var shape in shapes)
         {
+            if (shape.Mode != "metro") continue;
             if (!shapesDictionary.TryGetValue(shape.Id, out List<ShapeDetails>? value))
             {
                 value = [];
@@ -81,7 +88,8 @@ public class SydneyMetroController : ControllerBase
                 Latitude = shape.Latitude,
                 Longitude = shape.Longitude,
                 Sequence = shape.Sequence,
-                DistanceTravelled = shape.DistanceTravelled
+                DistanceTravelled = shape.DistanceTravelled,
+                Mode = shape.Mode,
             });
         }
 
@@ -98,6 +106,7 @@ public class SydneyMetroController : ControllerBase
         var stops = await _db.Stops.ToListAsync();
 
         var stopsDto = stops
+        .Where(s => s.Mode == "metro")
         .Select(s => new StopDto
         {
             Id = s.Id,
@@ -108,71 +117,69 @@ public class SydneyMetroController : ControllerBase
             ParentStationId = s.ParentStationId,
             WheelchairBoarding = s.WheelchairBoarding,
             PlatformCode = s.PlatformCode,
-        }).ToList();
-
-        return Ok(stopsDto);
-    }
-
-    [HttpGet("stations")]
-    public async Task<ActionResult<List<StopStationDto>>> GetSydneyMetroStations() {
-        var stops = await _db.Stops.ToListAsync();
-
-        var stopsDto = stops
-        .Where(s => s.LocationType == "Station")
-        .Select(s => new StopStationDto
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Latitude = s.Latitude,
-            Longitude = s.Longitude,
-            LocationType = s.LocationType,
-        }).ToList();
-
-        return Ok(stopsDto);
-    }
-
-    [HttpGet("platforms")]
-    public async Task<ActionResult<List<StopPlatformDto>>> GetSydneyMetroPlatforms() {
-        var stops = await _db.Stops.ToListAsync();
-
-        var stopsDto = stops
-        .Where(s => s.LocationType == "Platform")
-        .Select(s => new StopPlatformDto
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Latitude = s.Latitude,
-            Longitude = s.Longitude,
-            LocationType = s.LocationType,
-            ParentStationId = s.ParentStationId,
-            WheelchairBoarding = s.WheelchairBoarding,
-            PlatformCode = s.PlatformCode,
+            Mode = s.Mode
         }).ToList();
 
         return Ok(stopsDto);
     }
 
     [HttpGet("stop-times")]
-    public async Task<ActionResult<List<StopTimeDto>>> GetSydneyMetroStopTimes(string stopId)
+    public async Task<ActionResult<List<StopTime>>> GetSydneyMetroStopTimes(string stopId)
     {
-        var stopTimes = await _db.StopTimes.Where(st => st.StopId == stopId).ToListAsync();
+        var today = DateTime.UtcNow.Date;
+        var dayOfWeek = today.DayOfWeek;
 
-        var stopTimesDto = stopTimes
-        .Where(st => st.StopId == stopId)
-        .Select(st => new StopTimeDto
+        var query = _db.StopTimes
+            .Where(st => st.StopId == stopId)
+            .Join(
+                _db.Trips,
+                st => st.TripId,
+                t => t.Id,
+                (st, t) => new { st, t }
+            )
+            .Join(
+                _db.Calendars,
+                x => x.t.ServiceId,
+                c => c.ServiceId,
+                (x, c) => new { x.st, x.t, c }
+            )
+            .Where(x => x.c.StartDate <= today && x.c.EndDate >= today);
+
+        query = dayOfWeek switch
         {
-            TripId = st.TripId,
-            ArrivalTime = st.ArrivalTime,
-            DepartureTime = st.DepartureTime,
-            StopId = st.StopId,
-            StopSequence = st.StopSequence,
-            StopHeadSign = st.StopHeadSign,
-            PickupType = st.PickupType,
-            DropOffType = st.DropOffType,
-            ShapeDistanceTravelled = st.ShapeDistanceTravelled,
-            Timepoint = st.Timepoint,
-            StopNote = st.StopNote,
-        }).ToList();
+            DayOfWeek.Monday    => query.Where(x => x.c.Monday),
+            DayOfWeek.Tuesday   => query.Where(x => x.c.Tuesday),
+            DayOfWeek.Wednesday => query.Where(x => x.c.Wednesday),
+            DayOfWeek.Thursday  => query.Where(x => x.c.Thursday),
+            DayOfWeek.Friday    => query.Where(x => x.c.Friday),
+            DayOfWeek.Saturday  => query.Where(x => x.c.Saturday),
+            DayOfWeek.Sunday    => query.Where(x => x.c.Sunday),
+            _ => query
+        };
+
+        var stopTimesDto = query
+            .Join(
+                _db.Stops,
+                x => x.st.StopId,
+                s => s.Id,
+                (x, s) => new StopTimeDto
+                {
+                    TripId = x.st.TripId,
+                    ArrivalTime = x.st.ArrivalTime,
+                    DepartureTime = x.st.DepartureTime,
+                    StopId = x.st.StopId,
+                    StopName = s.Name,
+                    RouteId = x.t.RouteId,
+                    StopSequence = x.st.StopSequence,
+                    StopHeadSign = x.st.StopHeadSign,
+                    PickupType = x.st.PickupType,
+                    DropOffType = x.st.DropOffType,
+                    ShapeDistanceTravelled = x.st.ShapeDistanceTravelled,
+                    Timepoint = x.st.Timepoint,
+                    StopNote = x.st.StopNote,
+                    Mode = x.st.Mode
+                })
+            .ToList();
 
         return Ok(stopTimesDto);
     }

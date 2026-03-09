@@ -29,4 +29,8 @@ public class Shape
     [Required]
     [Precision(18, 2)]
     public decimal DistanceTravelled { get; set; }
+
+    [Column("mode")]
+    [Required]
+    public string Mode { get; set; } = null!;
 }

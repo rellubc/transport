@@ -17,8 +17,11 @@ export class MetroComponent {
 
   stops: Stop[] = []
   shapes: Shape = {}
-  shapeIds: number[] = []
+  shapeIds: string[] = []
   vehicles: VehiclePosition[] = []
+
+  METRO_FIRST_SHAPE: string = "3722"
+  METRO_SECOND_SHAPE: string = "16714"
 
   async ngOnInit(): Promise<void> {
     this.stops = await getMetroStops()
@@ -26,10 +29,11 @@ export class MetroComponent {
     this.shapes = await getMetroShapes()
     this.map.shapes = this.shapes
 
-    this.shapeIds = Object.keys(this.shapes).map(id => parseInt(id))
+    this.shapeIds = Object.keys(this.shapes).map(id => id)
 
-    this.map.addShape(this.shapes, this.shapeIds, 0, 1)
-    this.map.addStops(this.stops)
+    this.map.addShape(this.shapes, this.METRO_FIRST_SHAPE)
+    this.map.addShape(this.shapes, this.METRO_SECOND_SHAPE)
+    this.map.addStops()
 
     this.vehicles = await getVehiclePositions()
     this.map.vehicles = this.vehicles

@@ -1,5 +1,5 @@
 export interface ShapeDto {
-    id: number
+    id: string
     latitude: number
     longitude: number
     sequence: number
@@ -13,4 +13,4 @@ interface ShapeDetails {
     distanceTravelled: number
 }
 
-export type Shape = Record<number, ShapeDetails[]>
+export type Shape = Record<string, ShapeDetails[]>

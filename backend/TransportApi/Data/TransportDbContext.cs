@@ -31,15 +31,18 @@ public class TransportDbContext : DbContext
             .HasKey(st => new { st.TripId, st.StopSequence });
 
         modelBuilder.Entity<Shape>()
-            .HasKey(s => new { s.Id, s.Sequence });
+            .HasKey(s => new { s.Id, s.Sequence, s.Mode });
+
+        modelBuilder.Entity<Stop>()
+            .HasKey(s => new { s.Id, s.Mode });
 
         modelBuilder.Entity<VehicleBoarding>()
-            .HasKey(vb => new { vb.VehicleCategoryId, vb.BoardingAreaId });
+            .HasKey(vb => new { vb.VehicleCategoryId, vb.ChildSequence, vb.GrandchildSequence, vb.BoardingAreaId });
             
         modelBuilder.Entity<VehicleCoupling>()
             .HasKey(vc => new { vc.ParentId, vc.ChildId, vc.ChildSequence });
 
         modelBuilder.Entity<Occupancy>()
-            .HasKey(o => new { o.TripId, o.StopSequence });
+            .HasKey(o => new { o.TripId, o.StopSequence, o.OccupancyStatus, o.Monday, o.Tuesday, o.Wednesday, o.Thursday, o.Friday, o.StartDate });
     }
 }

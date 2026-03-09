@@ -3,7 +3,7 @@ import { Calendar } from "./calendar"
 export interface Trip {
     id: string
     routeId: string
-    serviceId: number
+    serviceId: string
     shapeId: number
     headSign: string
     directionId: number

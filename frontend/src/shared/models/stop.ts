@@ -1,19 +1,25 @@
 export interface StopMapIcon {
-    id: number
+    id: string
     name: string
     latitude: number
     longitude: number
 }
 
 export interface Stop {
-    id: number
+    id: string
+    code?: string
     name: string
+    description?: string
     latitude: number
     longitude: number
+    zoneId?: string
+    url?: string
     locationType: string
-    parentStationId: number
+    parentStationId?: number
+    timezone?: string
     wheelchairBoarding: boolean
     platformCode: number
+    mode: string
 }
 
 // export interface StopPlatformDto {

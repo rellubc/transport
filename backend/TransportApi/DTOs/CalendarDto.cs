@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace TransportApi.DTOs;
 
 public class CalendarDto
@@ -20,9 +18,7 @@ public class CalendarDto
 
     public bool Sunday { get; set; }
 
-    [DataType(DataType.Date)]
     public DateTime StartDate { get; set; }
 
-    [DataType(DataType.Date)]
     public DateTime EndDate { get; set; }
 }

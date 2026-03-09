@@ -35,6 +35,7 @@ builder.Services.AddCors(options =>
         });
 });
 builder.Services.AddScoped<ISydneyMetroService, SydneyMetroService>();
+builder.Services.AddScoped<ISydneyTrainsService, SydneyTrainsService>();
 
 var app = builder.Build();
 
@@ -57,8 +58,13 @@ app.Map("/error", (HttpContext http) =>
     return Results.Problem(detail: message);
 });
 
+app.Logger.LogInformation("Metro");
+// await app.PopulateTemp("https://api.transport.nsw.gov.au/v2/gtfs/schedule/metro");
 await app.PopulateSydneyMetro();
-// await app.PopulateSydneyTrains();
+
+app.Logger.LogInformation("SydneyTrains");
+// await app.PopulateTemp("https://api.transport.nsw.gov.au/v1/gtfs/schedule/sydneytrains");
+await app.PopulateSydneyTrains();
 
 app.Logger.LogInformation("Start Server");
 app.Run();

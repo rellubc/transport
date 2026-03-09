@@ -23,7 +23,7 @@ CREATE TABLE calendar (
 );
 
 CREATE TABLE calendar_dates (
-    service_id INT PRIMARY KEY,
+    service_id VARCHAR(255) PRIMARY KEY,
     date DATE NOT NULL,
     exception_type TEXT NOT NULL
 );
@@ -35,8 +35,8 @@ CREATE TABLE routes (
     route_long_name VARCHAR(255) NOT NULL,
     route_desc VARCHAR(255) NOT NULL,
     route_type INT NOT NULL,
-    route_color VARCHAR(6) NOT NULL DEFAULT '00B5EF',
-    route_text_color VARCHAR(6) NOT NULL DEFAULT 'FFFFFF',
+    route_colour VARCHAR(6) NOT NULL DEFAULT '00B5EF',
+    route_text_colour VARCHAR(6) NOT NULL DEFAULT 'FFFFFF',
     route_url VARCHAR(255) NOT NULL,
     FOREIGN KEY (agency_id) REFERENCES agency(agency_id)
 );
@@ -47,7 +47,8 @@ CREATE TABLE shapes (
     shape_pt_lon DECIMAL(11,8) NOT NULL,
     shape_pt_sequence INT NOT NULL,
     shape_dist_travelled DECIMAL(18,2) NOT NULL,
-    PRIMARY KEY (shape_id, shape_pt_sequence)
+    mode VARCHAR(255) NOT NULL,
+    PRIMARY KEY (shape_id, shape_pt_sequence, mode)
 );
 
 CREATE TABLE notes (
@@ -56,15 +57,15 @@ CREATE TABLE notes (
 );
 
 CREATE TABLE vehicle_categories (
-    vehicle_category_id VARCHAR(255) PRIMARY KEY,
-    vehicle_category_name VARCHAR(255)
+    vehicle_category_id VARCHAR(100) PRIMARY KEY,
+    vehicle_category_name VARCHAR(100)
 );
 
 CREATE TABLE trips (
     route_id VARCHAR(255) NOT NULL,
     service_id VARCHAR(255) NOT NULL,
     trip_id VARCHAR(255) PRIMARY KEY,
-    shape_id INT NOT NULL,
+    shape_id VARCHAR(255) NOT NULL,
     trip_headsign VARCHAR(255) NOT NULL,
     direction_id TINYINT(1) NOT NULL,
     trip_short_name VARCHAR(255) NOT NULL,
@@ -73,20 +74,27 @@ CREATE TABLE trips (
     trip_note VARCHAR(255),
     route_direction TEXT,
     bikes_allowed TINYINT(1),
-    vehicle_category_id VARCHAR(255),
+    vehicle_category_id VARCHAR(100),
     FOREIGN KEY (route_id) REFERENCES routes(route_id),
     FOREIGN KEY (service_id) REFERENCES calendar(service_id)
 );
 
 CREATE TABLE stops (
-    stop_id INT PRIMARY KEY,
+    stop_id VARCHAR(255) NOT NULL,
+    stop_code VARCHAR(255),
     stop_name VARCHAR(255) NOT NULL,
+    stop_desc VARCHAR(255),
     stop_lat DECIMAL(11,8) NOT NULL,
     stop_lon DECIMAL(11,8) NOT NULL,
+    zone_id VARCHAR(255),
+    stop_url VARCHAR(255),
     location_type VARCHAR(255) NOT NULL,
-    parent_station INT,
+    parent_station VARCHAR(255),
+    stop_timezone VARCHAR(255),
     wheelchair_boarding boolean NOT NULL,
-    platform_code INT
+    platform_code INT,
+    mode VARCHAR(255) NOT NULL,
+    PRIMARY KEY (stop_id, mode)
 );
 
 CREATE TABLE stop_times (
@@ -99,27 +107,28 @@ CREATE TABLE stop_times (
     pickup_type TINYINT(1) NOT NULL,
     drop_off_type TINYINT(1) NOT NULL,
     shape_dist_travelled DECIMAL(18,2) NOT NULL,
-    timepoint TINYINT(1) NOT NULL,
+    timepoint TINYINT(1),
     stop_note VARCHAR(255),
+    mode VARCHAR(255) NOT NULL,
     PRIMARY KEY (trip_id, stop_sequence),
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
-    FOREIGN KEY (stop_id) REFERENCES stops(stop_id)
+    FOREIGN KEY (stop_id, mode) REFERENCES stops(stop_id, mode)
 );
 
 CREATE TABLE vehicle_boardings (
-    vehicle_category_id VARCHAR(255) NOT NULL,
-    child_sequence VARCHAR(255),
-    grandchild_sequence VARCHAR(255),
-    boarding_area_id VARCHAR(255) NOT NULL,
-    PRIMARY KEY (vehicle_category_id, boarding_area_id),
+    vehicle_category_id VARCHAR(100) NOT NULL,
+    child_sequence VARCHAR(100),
+    grandchild_sequence VARCHAR(100),
+    boarding_area_id VARCHAR(100) NOT NULL,
+    PRIMARY KEY (vehicle_category_id, child_sequence, grandchild_sequence, boarding_area_id),
     FOREIGN KEY (vehicle_category_id) REFERENCES vehicle_categories(vehicle_category_id)
 );
 
 CREATE TABLE vehicle_couplings (
-    parent_id VARCHAR(255) NOT NULL,
-    child_id VARCHAR(255) NOT NULL,
+    parent_id VARCHAR(100) NOT NULL,
+    child_id VARCHAR(100) NOT NULL,
     child_sequence INT NOT NULL,
-    child_label VARCHAR(255),
+    child_label VARCHAR(100),
     PRIMARY KEY (parent_id, child_id, child_sequence),
     FOREIGN KEY (parent_id) REFERENCES vehicle_categories(vehicle_category_id),
     FOREIGN KEY (child_id) REFERENCES vehicle_categories(vehicle_category_id)
@@ -139,7 +148,7 @@ CREATE TABLE occupancy (
     start_date DATE NOT NULL,
     end_date DATE,
     exception TINYINT(1),
-    PRIMARY KEY (trip_id, stop_sequence),
+    PRIMARY KEY (trip_id, stop_sequence, occupancy_status, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date),
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
     FOREIGN KEY (trip_id, stop_sequence) REFERENCES stop_times(trip_id, stop_sequence)
 );

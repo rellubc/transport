@@ -47,9 +47,13 @@ public class StopTime
 
     [Column("timepoint")]
     [Required]
-    public bool Timepoint { get; set; }
+    public bool? Timepoint { get; set; }
 
     [Column("stop_note")]
     [StringLength(255)]
     public string? StopNote { get; set; }
+
+    [Column("mode")]
+    [StringLength(255)]
+    public string Mode { get; set; } = null!;
 }
