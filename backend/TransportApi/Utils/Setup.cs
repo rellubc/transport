@@ -450,8 +450,8 @@ public static class Setup
     //             StopId = cols[3],
     //             StopSequence = cols[4],
     //             StopHeadSign = cols[5],
-    //             PickupType = cols[6] == "1",
-    //             DropOffType = cols[7] == "1",
+    //             PickupType = cols[6] == "0",
+    //             DropOffType = cols[7] == "0",
     //             ShapeDistanceTravelled = !string.IsNullOrEmpty(cols[8]) ? decimal.Parse(cols[8], CultureInfo.InvariantCulture) : 0,
     //         };
             
@@ -763,8 +763,8 @@ public static class Setup
                                     StopId = cols[3],
                                     StopSequence = cols[4],
                                     StopHeadSign = cols[5],
-                                    PickupType = cols[6] == "1",
-                                    DropOffType = cols[7] == "1",
+                                    PickupType = cols[6] == "0",
+                                    DropOffType = cols[7] == "0",
                                     ShapeDistanceTravelled = decimal.Parse(cols[8], CultureInfo.InvariantCulture),
                                     Timepoint = cols[9] == "1",
                                     StopNote = cols[10],
@@ -785,7 +785,7 @@ public static class Setup
                                     Id = cols[2],
                                     ShapeId = cols[3],
                                     HeadSign = cols[4],
-                                    DirectionId = int.Parse(cols[5]),
+                                    DirectionId = cols[5] == "1",
                                     ShortName = cols[6],
                                     BlockId = cols[7],
                                     WheelchairAccessible = cols[8] == "1",
@@ -1104,8 +1104,8 @@ public static class Setup
                                     StopId = cols[3],
                                     StopSequence = cols[4],
                                     StopHeadSign = cols[5],
-                                    PickupType = cols[6] == "1",
-                                    DropOffType = cols[7] == "1",
+                                    PickupType = cols[6] == "0",
+                                    DropOffType = cols[7] == "0",
                                     ShapeDistanceTravelled = !string.IsNullOrEmpty(cols[8]) ? decimal.Parse(cols[8], CultureInfo.InvariantCulture) : 0,
                                     Mode = "sydneytrains",
                                 };
@@ -1117,14 +1117,17 @@ public static class Setup
                         {
                             if (!existingTripIds.Contains(cols[2]))
                             {
+
+                                // RTTA_REV 1978.102.130 Y907.1978.102.130.D.10.87900439 Empty Train  0 312168 RTTA_REV 0 D10
+                                // route_id","service_id","trip_id","trip_headsign","trip_short_name","direction_id","block_id","shape_id","wheelchair_accessible","vehicle_category_id
                                 var entity = new Trip
                                 {
                                     RouteId = cols[0],
                                     ServiceId = cols[1],
                                     Id = cols[2],
                                     HeadSign = cols[3],
-                                    ShortName = cols[4],
-                                    DirectionId = int.Parse(cols[5]),
+                                    ShortName = !string.IsNullOrEmpty(cols[4]) ? cols[4] : string.Empty,
+                                    DirectionId = cols[5] == "1",
                                     BlockId = cols[6],
                                     ShapeId = cols[7],
                                     WheelchairAccessible = cols[8] == "1",

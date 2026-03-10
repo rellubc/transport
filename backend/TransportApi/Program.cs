@@ -59,11 +59,9 @@ app.Map("/error", (HttpContext http) =>
 });
 
 app.Logger.LogInformation("Metro");
-// await app.PopulateTemp("https://api.transport.nsw.gov.au/v2/gtfs/schedule/metro");
 await app.PopulateSydneyMetro();
 
 app.Logger.LogInformation("SydneyTrains");
-// await app.PopulateTemp("https://api.transport.nsw.gov.au/v1/gtfs/schedule/sydneytrains");
 await app.PopulateSydneyTrains();
 
 app.Logger.LogInformation("Start Server");

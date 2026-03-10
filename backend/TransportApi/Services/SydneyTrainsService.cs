@@ -15,8 +15,8 @@ namespace TransportApi.Services;
 
 public interface ISydneyTrainsService
 {
-    Task<TripUpdateDto> TrainsRealtimeTripUpdates(string TripId);
-    Task<List<VehiclePositionDto>> TrainsRealtimeVehiclePositions();
+    Task<TripUpdateDto> SydneyTrainsRealtimeTripUpdates(string TripId);
+    Task<List<VehiclePositionDto>> SydneyTrainsRealtimeVehiclePositions();
 }
 
 public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory factory, ILogger<SydneyTrainsService> logger) : ISydneyTrainsService
@@ -25,11 +25,11 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
     private readonly TransportDbContext _db = db;
     private readonly ILogger<SydneyTrainsService> _logger = logger;
 
-    public async Task<TripUpdateDto> TrainsRealtimeTripUpdates(string tripId)
+    public async Task<TripUpdateDto> SydneyTrainsRealtimeTripUpdates(string tripId)
     {
         _logger.LogInformation("Updating vehicle trip details...");
         var client = _factory.CreateClient("TransportNSW");
-        var response = await client.GetAsync("https://api.transport.nsw.gov.au/v2/gtfs/realtime/trains");
+        var response = await client.GetAsync("https://api.transport.nsw.gov.au/v2/gtfs/realtime/sydneytrains");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -64,11 +64,11 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
         return newTripUpdate;
     }
 
-    public async Task<List<VehiclePositionDto>> TrainsRealtimeVehiclePositions()
+    public async Task<List<VehiclePositionDto>> SydneyTrainsRealtimeVehiclePositions()
     {
         _logger.LogInformation("Updating vehicle positions...");
         var client = _factory.CreateClient("TransportNSW");
-        var response = await client.GetAsync("https://api.transport.nsw.gov.au/v2/gtfs/vehiclepos/trains");
+        var response = await client.GetAsync("https://api.transport.nsw.gov.au/v2/gtfs/vehiclepos/sydneytrains");
 
         if (!response.IsSuccessStatusCode)
         {

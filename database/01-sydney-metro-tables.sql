@@ -68,7 +68,7 @@ CREATE TABLE trips (
     shape_id VARCHAR(255) NOT NULL,
     trip_headsign VARCHAR(255) NOT NULL,
     direction_id TINYINT(1) NOT NULL,
-    trip_short_name VARCHAR(255) NOT NULL,
+    trip_short_name VARCHAR(255),
     block_id VARCHAR(255),
     wheelchair_accessible TINYINT(1) NOT NULL,
     trip_note VARCHAR(255),

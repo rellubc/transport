@@ -21,10 +21,12 @@ import { Stop } from '../../../shared/models/stop';
 import CircleStyle from 'ol/style/Circle';
 import { Fill, Icon, Text } from 'ol/style';
 import { LucideAngularModule, X } from 'lucide-angular';
-import { getMetroStopTimes, getMetroTrip, getTripUpdates } from '../../metro/metro-helpers';
+import { getSydneyMetroStopsPlatforms, getSydneyMetroStopTimes, getSydneyMetroTrip, getSydneyMetroTripUpdates } from '../../metro/sydney-metro-helpers';
 import { TripUpdate, VehiclePosition } from '../../../shared/models/realtime';
 import { Trip } from '../../../shared/models/trip';
 import { StopTime } from '../../../shared/models/stopTime';
+import { getSydneyTrainsStops, getSydneyTrainsStopsPlatforms, getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers';
+import { coloursMap, routesMap } from '../../../shared/models/constants';
 
 @Component({
   selector: 'app-map',
@@ -101,38 +103,49 @@ export class MapComponent {
 
       if (zoom && zoom > 18) {
         this.updateStops('Platform');
-      } else if (zoom && zoom <= 18) {
+      } else if (zoom && zoom <= 18 && zoom >= 11) {
         this.updateStops('Station');
+      } else if (zoom && zoom < 11) {
+        this.updateStops('Station', true)
       }
     });
   }
 
-  addShape = (shapes: Shape, shapeId: string) => {
-    const lineCoordsFirstStart = shapes[shapeId].map(s => fromLonLat([s.longitude, s.latitude]))
+  addShape = (shapes: Shape, shapeId: string, type?: string) => {
+    const lineCoords = shapes[shapeId].map(s => fromLonLat([s.longitude, s.latitude]))
+    
+    let route: string = ''
+    if (shapeId === parseInt(shapeId).toString())
+      route = 'M1'
+    else if (type === 'sydneytrains')
+      route = shapeId.split('_')[0]
 
-    const lineFeatureFirstStart = new Feature({
-      geometry: new LineString(lineCoordsFirstStart)
+    let colourHex = coloursMap[route]
+
+    const lineFeature = new Feature({
+      geometry: new LineString(lineCoords),
+      propType: 'route',
     })
     
-    const shapeSourceFirstStart = new VectorSource({
-      features: [lineFeatureFirstStart]
+    const shapeSource = new VectorSource({
+      features: [lineFeature]
     })
 
-    const shapeLayerFirstStart = new VectorLayer({
-      source: shapeSourceFirstStart,
+    const shapeLayer = new VectorLayer({
+      source: shapeSource,
       style: new Style({
         stroke: new Stroke({
-          color: '#168388',
+          color: colourHex,
           width: 2,
         }),
       }),
     })
 
-    shapeLayerFirstStart.set('name', shapeId.toString())
-    this.map.addLayer(shapeLayerFirstStart)
+    shapeLayer.set('name', shapeId.toString())
+    this.map.addLayer(shapeLayer)
   }
 
-  addStops() {
+  addStops(mode: string) {
     this.stopSource = new VectorSource({})
     this.stopLayer = new VectorLayer({
       source: this.stopSource,
@@ -142,10 +155,10 @@ export class MapComponent {
         const layer = feature.get('stops')
         const map = layer ? layer.getMapInternal() : null
         const zoom = map ? map.getView().getZoom() : 11.8
-        const scale = Math.max(0.1, 0.1 + (zoom - 11.8) * 0.02)
+        const scale = Math.max(0.05, 0.05 + (zoom - 11.8) * 0.02)
         return new Style({
           image: new Icon({
-            src: 'metro.png',
+            src: `${mode}.png`,
             scale: scale,
           }),
         });
@@ -158,28 +171,32 @@ export class MapComponent {
     const zoom = this.map.getView().getZoom();
     if (zoom && zoom > 18) {
       this.updateStops('Platform');
-    } else if (zoom && zoom <= 18) {
+    } else if (zoom && zoom <= 18 && zoom >= 11) {
       this.updateStops('Station');
+    } else if (zoom && zoom < 11) {
+      this.updateStops('Station', true)
     }
   }
 
-  updateStops(type: string) {
+  updateStops(type: string, regional?: boolean) {
     this.stops.forEach((stop, index) => {
       if (stop.locationType !== type) return
-
+      if (regional && stop.network !== 'regional') return
       const coord = fromLonLat([stop.longitude, stop.latitude])
 
       const feature = new Feature({
         geometry: new Point(coord),
-        name: stop.name.split(',')[0],
+        name: stop.name,
         id: stop.id,
         mode: stop.mode,
         propType: 'stop',
         index,
       });
 
-      if (stop.name.split(',')[1]) {
-        feature.set('platform', stop.name.split(',')[1])
+      if (stop.name.includes('Platform')) {
+        feature.set('platform', stop.name)
+      } else {
+        feature.set('station', stop.name)
       }
 
       this.stopSource!.addFeature(feature);
@@ -192,20 +209,26 @@ export class MapComponent {
       this.vehicleLayer = new VectorLayer({
         source: this.vehicleSource,
         zIndex: 9999,
-        style: (feature) => new Style({
-          image: new CircleStyle({
-            radius: 6,
-            fill: new Fill({ color: '#168388' }),
-            stroke: new Stroke({ color: '#ffffff', width: 2 }),
-          }),
-          text: new Text({
-            text: feature.get('id') || '',
-            font: '12px Calibri,sans-serif',
-            fill: new Fill({ color: '#000' }),
-            stroke: new Stroke({ color: '#fff', width: 2 }),
-            offsetY: -15
-          }),
-        }),
+        style: (feature) => {
+          const type = feature.get('type')
+
+          let routeId: string = ''
+
+          if (type === 'metro')
+            routeId = feature.get('routeId').split('_')[1]
+          else 
+            routeId = feature.get('routeId').split('_')[0]
+
+          let colourHex: string = coloursMap[routeId]
+
+          return new Style({
+            image: new CircleStyle({
+              radius: 6,
+              fill: new Fill({ color: colourHex }),
+              stroke: new Stroke({ color: '#ffffff', width: 2 }),
+            }),
+          })
+        },
       });
       this.vehicleLayer.set('name', 'vehicles')
       this.map.addLayer(this.vehicleLayer)
@@ -218,12 +241,19 @@ export class MapComponent {
       if (vehicle.vehicle?.id == null) return
       if (vehicle.trip?.tripId == null) return
 
+      let type: string = ''
+
+      if (vehicle.trip.routeId?.includes('M1')) type = 'metro'
+      else type = 'sydneytrains'
+
       const coord = fromLonLat([vehicle.position.longitude, vehicle.position.latitude]);
 
       const feature = new Feature({
         geometry: new Point(coord),
         id: vehicle.vehicle.id,
         tripId: vehicle.trip.tripId,
+        routeId: vehicle.trip.routeId,
+        type: type,
         propType: 'vehicle',
       });
 
@@ -239,7 +269,12 @@ export class MapComponent {
         console.log('Updating current schedule...')
 
         this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.selectedProps.id)!
-        this.currentRealtimeTrip = await getTripUpdates(this.selectedProps.tripId)
+        if (this.selectedProps.mode === 'metro')
+          this.currentRealtimeTrip = await getSydneyMetroTripUpdates(this.selectedProps.tripId)
+        else if (this.selectedProps.mode === 'sydneytrains')
+          this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(this.selectedProps.tripId)
+        
+        console.log(this.currentRealtimeTrip)
 
         this.updateBar()
       }
@@ -248,9 +283,6 @@ export class MapComponent {
 
   async openSidebar(props: any) {
     if (this.sidebarOpen && this.currentVehicle?.vehicle?.id === props.id) return
-
-    console.log(this.propType)
-    console.log(props)
     if (props.propType !== this.propType) this.resetSidebar()
     
     this.sidebarOpen = true
@@ -263,21 +295,70 @@ export class MapComponent {
       this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.selectedProps.id)!
       this.currentVehicle.consist = this.currentVehicle.trip?.directionId === 1 ? this.currentVehicle.consist?.reverse() : this.currentVehicle.consist
 
-      this.currentRealtimeTrip = await getTripUpdates(props.tripId)
-      this.currentScheduledTrip = await getMetroTrip(this.selectedProps.tripId)
+
+      if (this.selectedProps.type === 'metro') {
+        this.currentRealtimeTrip = await getSydneyMetroTripUpdates(props.tripId)
+        this.currentScheduledTrip = await getSydneyMetroTrip(this.selectedProps.tripId)
+      } else {
+        this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(props.tripId)
+        this.currentScheduledTrip = await getSydneyTrainsTrip(this.selectedProps.tripId)
+      }
       
       console.log(this.currentVehicle)
       console.log(this.currentRealtimeTrip)
       console.log(this.currentScheduledTrip)
       this.updateBar()
     } else if (props.propType === 'stop') {
-      console.log("here")
-      console.log(this.stops.find((stop) => stop.id === props['id']))
+      this.currentStopScheduledServices = []
+      console.log(props)
 
       this.propType = 'stop'
 
       this.currentStop = this.stops.find((stop) => stop.id === props['id'])!
-      this.currentStopScheduledServices = await getMetroStopTimes(this.selectedProps.id)
+      console.log(this.currentStop)
+      let platforms: Stop[]
+
+      if (this.selectedProps.station) {
+        const metroPlatforms = await getSydneyMetroStopsPlatforms(this.currentStop.id)
+        const trainsPlatforms = await getSydneyTrainsStopsPlatforms(this.currentStop.id)
+        platforms = metroPlatforms.concat(trainsPlatforms)
+      } else {
+        platforms = [this.currentStop]
+      }
+
+      for (const platform of platforms) {
+        if (platform.mode === 'metro') {
+          const metroStopTimes = await getSydneyMetroStopTimes(platform.id)
+          this.currentStopScheduledServices = this.currentStopScheduledServices.concat(metroStopTimes)
+        } else if (platform.mode === 'sydneytrains') {
+          const trainsStopTimes = await getSydneyTrainsStopTimes(platform.id)
+          this.currentStopScheduledServices = this.currentStopScheduledServices.concat(trainsStopTimes)
+        }
+      }
+
+      this.currentStopScheduledServices = this.currentStopScheduledServices.filter((service) => service.pickupType || service.dropOffType)
+
+      if (this.selectedProps.mode === 'sydneytrains') {
+        this.currentStopScheduledServices = await Promise.all(this.currentStopScheduledServices.map(async (service) => {
+          if (service.stopHeadSign === '') {
+            const tripDetails = await getSydneyTrainsTrip(service.tripId)
+            service.stopHeadSign = tripDetails.headSign
+          }
+          return service
+        }))
+      }
+
+      this.currentStopScheduledServices.sort((a, b) => {
+        const normalise = (time: string) => {
+          let temp = parseInt(time.substring(0, 2))
+          if (temp < 4) {
+            temp += 24
+            time = temp.toString() + time.substring(2, time.length - 1)
+          }
+          return time
+        }
+        return normalise(a.arrivalTime).localeCompare(normalise(b.arrivalTime))
+      })
 
       console.log(this.currentStopScheduledServices)
 
@@ -293,6 +374,9 @@ export class MapComponent {
       setTimeout(() => {
         this.scrollToIndex(index ?? 0)
       }, 0)
+    } else if (props.propType === 'route') {
+      console.log('route')
+
     }
   }
 
@@ -383,6 +467,18 @@ export class MapComponent {
     } else {
       return 'green'
     }
+  }
+
+  getRouteCode(routeId: string, mode: string) {
+    if (mode === 'metro')
+      return routesMap[routeId.split('_')[1]] 
+    return routesMap[routeId.split('_')[0]] 
+  }
+
+  getCorrespondingRouteColour(routeId: string, mode: string) {
+    if (mode === 'metro')
+      return coloursMap[routeId.split('_')[1]] 
+    return coloursMap[routeId.split('_')[0]]
   }
 
   ngOnInit(): void {

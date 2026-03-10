@@ -1,10 +1,3 @@
-export interface StopMapIcon {
-    id: string
-    name: string
-    latitude: number
-    longitude: number
-}
-
 export interface Stop {
     id: string
     code?: string
@@ -20,6 +13,7 @@ export interface Stop {
     wheelchairBoarding: boolean
     platformCode: number
     mode: string
+    network: string
 }
 
 // export interface StopPlatformDto {

@@ -15,8 +15,8 @@ namespace TransportApi.Services;
 
 public interface ISydneyMetroService
 {
-    Task<TripUpdateDto> MetroRealtimeTripUpdates(string TripId);
-    Task<List<VehiclePositionDto>> MetroRealtimeVehiclePositions();
+    Task<TripUpdateDto> SydneyMetroRealtimeTripUpdates(string TripId);
+    Task<List<VehiclePositionDto>> SydneyMetroRealtimeVehiclePositions();
 }
 
 public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factory, ILogger<SydneyMetroService> logger) : ISydneyMetroService
@@ -25,7 +25,7 @@ public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factor
     private readonly TransportDbContext _db = db;
     private readonly ILogger<SydneyMetroService> _logger = logger;
 
-    public async Task<TripUpdateDto> MetroRealtimeTripUpdates(string tripId)
+    public async Task<TripUpdateDto> SydneyMetroRealtimeTripUpdates(string tripId)
     {
         _logger.LogInformation("Updating vehicle trip details...");
         var client = _factory.CreateClient("TransportNSW");
@@ -64,7 +64,7 @@ public class SydneyMetroService(TransportDbContext db, IHttpClientFactory factor
         return newTripUpdate;
     }
 
-    public async Task<List<VehiclePositionDto>> MetroRealtimeVehiclePositions()
+    public async Task<List<VehiclePositionDto>> SydneyMetroRealtimeVehiclePositions()
     {
         _logger.LogInformation("Updating vehicle positions...");
         var client = _factory.CreateClient("TransportNSW");

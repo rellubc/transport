@@ -35,12 +35,11 @@ public class Trip
 
     [Column("direction_id")]
     [Required]
-    public int DirectionId { get; set; }
+    public bool DirectionId { get; set; }
 
     [Column("trip_short_name")]
-    [Required]
     [StringLength(255)]
-    public string ShortName { get; set; } = null!;
+    public string? ShortName { get; set; }
 
     [Column("block_id")]
     [StringLength(255)]
@@ -55,7 +54,6 @@ public class Trip
     public string? TripNote { get; set; }
 
     [Column("route_direction")]
-    [Required]
     public string? RouteDirection { get; set; }
 
     [Column("bikes_allowed")]

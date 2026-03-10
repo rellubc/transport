@@ -123,6 +123,28 @@ public class SydneyMetroController : ControllerBase
         return Ok(stopsDto);
     }
 
+    [HttpGet("stops-platforms")]
+    public async Task<ActionResult<List<StopDto>>> GetSydneyTrainsStopsPlatforms(string stopId) {
+        var stops = await _db.Stops.ToListAsync();
+
+        var stopsDto = stops
+        .Where(s => s.Mode == "metro" && s.ParentStationId == stopId)
+        .Select(s => new StopDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Latitude = s.Latitude,
+            Longitude = s.Longitude,
+            LocationType = s.LocationType,
+            ParentStationId = s.ParentStationId,
+            WheelchairBoarding = s.WheelchairBoarding,
+            PlatformCode = s.PlatformCode,
+            Mode = s.Mode
+        }).ToList();
+
+        return Ok(stopsDto);
+    }
+
     [HttpGet("stop-times")]
     public async Task<ActionResult<List<StopTime>>> GetSydneyMetroStopTimes(string stopId)
     {
@@ -203,7 +225,7 @@ public class SydneyMetroController : ControllerBase
             ShapeId = trip.ShapeId,
             HeadSign = trip.HeadSign,
             DirectionId = trip.DirectionId,
-            ShortName = trip.ShortName,
+            ShortName = trip.ShortName ?? string.Empty,
             BlockId = trip.BlockId,
             WheelchairAccessible = trip.WheelchairAccessible,
             TripNote = trip.TripNote,
@@ -217,7 +239,7 @@ public class SydneyMetroController : ControllerBase
     [HttpGet("realtime-trip-updates")]
     public async Task<ActionResult<TripUpdateDto>> GetSydneyMetroRealtimeStopTimes(string tripId)
     {
-        var tripUpdate = await _services.MetroRealtimeTripUpdates(tripId);
+        var tripUpdate = await _services.SydneyMetroRealtimeTripUpdates(tripId);
 
         return Ok(tripUpdate);
     }
@@ -225,7 +247,7 @@ public class SydneyMetroController : ControllerBase
     [HttpGet("realtime-vehicle-positions")]
     public async Task<ActionResult<List<VehiclePositionDto>>> GetSydneyMetroRealtimeVehiclePositions()
     {
-        var vehiclePositions = await _services.MetroRealtimeVehiclePositions();
+        var vehiclePositions = await _services.SydneyMetroRealtimeVehiclePositions();
 
         return Ok(vehiclePositions);
     }

@@ -12,7 +12,7 @@ public class TripDto
 
     public string HeadSign { get; set; } = null!;
 
-    public int DirectionId { get; set; }
+    public bool DirectionId { get; set; }
 
     public string ShortName { get; set; } = null!;
 

@@ -11,6 +11,7 @@ interface ShapeDetails {
     longitude: number
     sequence: number
     distanceTravelled: number
+    mode: string
 }
 
 export type Shape = Record<string, ShapeDetails[]>
