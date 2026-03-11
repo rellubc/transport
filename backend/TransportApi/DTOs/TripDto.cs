@@ -12,19 +12,19 @@ public class TripDto
 
     public string HeadSign { get; set; } = null!;
 
-    public bool DirectionId { get; set; }
+    public int DirectionId { get; set; }
 
     public string ShortName { get; set; } = null!;
 
     public string? BlockId { get; set; }
 
-    public bool WheelchairAccessible { get; set; }
+    public int WheelchairAccessible { get; set; }
 
     public string? TripNote { get; set; }
 
     public string? RouteDirection { get; set; }
 
-    public bool? BikesAllowed { get; set; }
+    public int? BikesAllowed { get; set; }
 
     public string? VehicleCategoryId { get; set; }
 }

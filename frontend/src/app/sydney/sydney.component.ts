@@ -33,14 +33,32 @@ export class SydneyComponent {
     this.shapes = { ...metroShapes, ...trainShapes }
     this.map.shapes = this.shapes
 
-    for (const [shapeId, shape] of Object.entries(this.shapes)) {
-      this.map.addShape(shapeId, this.shapes[shapeId][0].mode)
+    console.log(this.shapes)
+
+    const metroLines = Object.keys(metroShapes).reduce<Record<string, string[]>>((acc, shapeId) => {
+      if (!acc['M1']) acc['M1'] = []
+      acc['M1'].push(shapeId)
+      return acc
+    }, {})
+
+    const trainLines = Object.keys(trainShapes).reduce<Record<string, string[]>>((acc, shapeId) => {
+      const line = shapeId.split('_')[0]
+      if (!acc[line]) acc[line] = []
+      acc[line].push(shapeId)
+      return acc
+    }, {})
+
+    const lines = {
+      ...metroLines,
+      ...trainLines,
     }
 
-    console.log(this.stops)
+    for (const [routeId, shapeIds] of Object.entries(lines)) {
+      this.map.addShape(routeId, shapeIds)
+    }
 
-    this.map.addStops('metro')
-    this.map.addStops('sydneytrains')
+    this.map.addStops('metro', true)
+    this.map.addStops('sydneytrains', true)
 
     const metroVehicles = await getSydneyMetroVehiclePositions()
     const trainVehicles = await getSydneyTrainsVehiclePositions()

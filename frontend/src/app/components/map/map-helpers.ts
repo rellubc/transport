@@ -19,8 +19,6 @@ export const getDepartures = async (stopName: string): Promise<StopTime[]> => {
       return normalise(a.arrivalTime).localeCompare(normalise(b.arrivalTime))
     })
 
-    console.log(data)
-
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -46,8 +44,6 @@ export const getSydneyMetroStopTimes = async (stopId: string): Promise<StopTime[
       }
       return normalise(a.arrivalTime).localeCompare(normalise(b.arrivalTime))
     })
-
-    // console.log(data)
 
     return data
   } catch (error) {

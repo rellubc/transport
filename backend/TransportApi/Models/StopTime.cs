@@ -26,7 +26,7 @@ public class StopTime
 
     [Column("stop_sequence")]
     [Required]
-    public string StopSequence { get; set; } = null!;
+    public int StopSequence { get; set; }
 
     [Column("stop_headsign")]
     [StringLength(255)]

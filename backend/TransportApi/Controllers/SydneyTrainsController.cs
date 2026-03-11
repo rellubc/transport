@@ -57,10 +57,6 @@ public class SydneyTrainsController : ControllerBase
         return Ok(calendarDto);
     }
 
-    [HttpGet("calendar-dates")]
-    public async Task<ActionResult<List<CalendarDateDto>>> GetSydneyTrainsCalendarDates() =>
-        Ok(await _db.CalendarDates.ToListAsync());
-
     [HttpGet("notes")]
     public async Task<ActionResult<List<NoteDto>>> GetSydneyTrainsNotes() =>
         Ok(await _db.Notes.ToListAsync());

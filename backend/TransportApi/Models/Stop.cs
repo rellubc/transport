@@ -44,7 +44,7 @@ public class Stop
     [Column("location_type")]
     [Required]
     [StringLength(255)]
-    public string LocationType { get; set; } = null!;
+    public int LocationType { get; set; }
 
     [Column("parent_station")]
     public string? ParentStationId { get; set; }
@@ -55,7 +55,7 @@ public class Stop
 
     [Column("wheelchair_boarding")]
     [Required]
-    public bool WheelchairBoarding { get; set; }
+    public int WheelchairBoarding { get; set; }
 
     [Column("platform_code")]
     public int? PlatformCode { get; set; }

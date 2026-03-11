@@ -18,27 +18,6 @@
         </div>
     </div>
     <div class="sidebar-body">
-        <!-- <div *ngIf="currentProps.propType == 'vehicle' && currentRealtimeTrip" class="sidebar-body-content" [ngStyle]="{ `padding-left`: `2rem` }" >
-            <div *ngFor="let stu of currentRealtimeTrip.stopTimeUpdate; let i = index; let last = last" class="sidebar-body-schedule-vehicle">
-                <div class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
-                    <div class="sidebar-body-innerdot"></div>
-                </div>
-                <div>
-                    <p> {{ stu.stopName!.split(',')[0] }} </p>
-                    <p> {{ stu.stopName!.split(',')[1] }} </p>
-                </div>
-                <div class="sidebar-body-schedule-status">
-                    <p> {{ (last ? stu.arrival?.time : stu.departure?.time) | date:'HH:mm' }} </p>
-                    <div *ngIf="i === currentVehicle?.currentStopSequence" class="sidebar-body-schedule-occupancy">
-                        <div *ngFor="let occupancy of currentVehicle?.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
-                            <p> {{ len - j }} </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="sidebar-body-bar"></div>
-            <div class="sidebar-body-bar-cover"></div>
-        </div> -->
         <div *ngIf="currentProps.propType == 'vehicle' && currentRealtimeTrip" class="sidebar-body-content" [ngStyle]="{ `padding-left`: `2rem` }" >
             <div *ngFor="let stu of currentRealtimeTrip.stopTimeUpdate; let i = index; let last = last" class="sidebar-body-schedule-vehicle">
                 <div class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">

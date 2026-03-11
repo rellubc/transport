@@ -18,13 +18,13 @@ public class StopDto
     
     public string? Url { get; set; }
     
-    public string LocationType { get; set; } = null!;
+    public int LocationType { get; set; }
     
     public string? ParentStationId { get; set; }
     
     public string? Timezone { get; set; }
     
-    public bool WheelchairBoarding { get; set; }
+    public int WheelchairBoarding { get; set; }
     
     public int? PlatformCode { get; set; }
     

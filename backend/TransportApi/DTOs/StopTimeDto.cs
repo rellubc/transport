@@ -14,7 +14,7 @@ public class StopTimeDto
 
     public string RouteId { get; set; } = null!;
 
-    public string StopSequence { get; set; } = null!;
+    public int StopSequence { get; set; }
 
     public string? StopHeadSign { get; set; }
 

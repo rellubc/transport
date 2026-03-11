@@ -11,7 +11,6 @@ public class TransportDbContext : DbContext
 
     public DbSet<Agency> Agencies { get; set; } = null!;
     public DbSet<Calendar> Calendars { get; set; } = null!;
-    public DbSet<CalendarDate> CalendarDates { get; set; } = null!;
     public DbSet<Note> Notes { get; set; } = null!;
     public DbSet<Models.Route> Routes { get; set; } = null!;
     public DbSet<Trip> Trips { get; set; } = null!;
@@ -21,7 +20,6 @@ public class TransportDbContext : DbContext
     public DbSet<VehicleBoarding> VehicleBoardings { get; set; } = null!;
     public DbSet<VehicleCategory> VehicleCategories { get; set; } = null!;
     public DbSet<VehicleCoupling> VehicleCouplings { get; set; } = null!;
-    public DbSet<Occupancy> Occupancies { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,12 +35,9 @@ public class TransportDbContext : DbContext
             .HasKey(s => new { s.Id, s.Mode });
 
         modelBuilder.Entity<VehicleBoarding>()
-            .HasKey(vb => new { vb.VehicleCategoryId, vb.ChildSequence, vb.GrandchildSequence, vb.BoardingAreaId });
+            .HasKey(vb => new { vb.VehicleCategoryId, vb.ChildSequence, vb.BoardingAreaId });
             
         modelBuilder.Entity<VehicleCoupling>()
             .HasKey(vc => new { vc.ParentId, vc.ChildId, vc.ChildSequence });
-
-        modelBuilder.Entity<Occupancy>()
-            .HasKey(o => new { o.TripId, o.StopSequence, o.OccupancyStatus, o.Monday, o.Tuesday, o.Wednesday, o.Thursday, o.Friday, o.StartDate });
     }
 }

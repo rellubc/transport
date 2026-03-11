@@ -114,6 +114,7 @@
 }
 
 .sidebar-body-schedule-vehicle {
+    position: relative;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -123,6 +124,8 @@
 }
 
 .sidebar-body-schedule-status {
+    position: absolute;
+    right: 0;
     display: flex;
     flex-direction: column;
     align-items: end;
@@ -152,7 +155,7 @@
 
 .sidebar-body-dot {
     position: absolute;
-    left: 0rem;
+    left: -2rem;
     height: 0.75rem;
     width: 0.75rem;
     background-color: #168388;

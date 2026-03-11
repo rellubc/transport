@@ -28,8 +28,7 @@ export class SydneyMetroComponent {
     this.shapes = await getSydneyMetroShapes()
     this.map.shapes = this.shapes
 
-    this.map.addShape(this.METRO_FIRST_SHAPE, 'metro')
-    this.map.addShape(this.METRO_SECOND_SHAPE, 'metro')
+    this.map.addShape('M1', Object.keys(this.shapes))
     this.map.addStops('metro')
 
     this.vehicles = await getSydneyMetroVehiclePositions()

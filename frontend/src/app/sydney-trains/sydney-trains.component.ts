@@ -24,8 +24,15 @@ export class SydneyTrainsComponent {
     this.shapes = await getSydneyTrainsShapes()
     this.map.shapes = this.shapes
 
-    for (const shapeId of Object.keys(this.shapes)) {
-      this.map.addShape(shapeId, 'sydneytrains')
+    const lines = Object.keys(this.shapes).reduce<Record<string, string[]>>((acc, shapeId) => {
+      const line = shapeId.split('_')[0]
+      if (!acc[line]) acc[line] = []
+      acc[line].push(shapeId)
+      return acc
+    }, {})
+
+    for (const [routeId, shapeIds] of Object.entries(lines)) {
+      this.map.addShape(routeId, shapeIds)
     }
 
     this.map.addStops('sydneytrains')

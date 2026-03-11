@@ -44,32 +44,29 @@ export class MapSidebarComponent {
     if (this.currentProps.propType === 'vehicle') {
       console.log('Updating current schedule...')
 
-      // this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.currentProps.id)!
-      // if (this.currentProps.mode === 'metro')
-      //   this.currentRealtimeTrip = await getSydneyMetroTripUpdates(this.currentProps.tripId)
-      // else if (this.currentProps.mode === 'sydneytrains')
-      //   this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(this.currentProps.tripId)
-      
-      // console.log(this.currentRealtimeTrip)
+      this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.currentProps.id)!
+      if (this.currentProps.mode === 'metro')
+        this.currentRealtimeTrip = await getSydneyMetroTripUpdates(this.currentProps.tripId)
+      else if (this.currentProps.mode === 'sydneytrains')
+        this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(this.currentProps.tripId)
 
-      // this.updateBar()
+      this.updateBar()
     } else if (this.currentProps.propType === 'stop') {
       console.log('Updating current departures...')
     }
   }
 
   async openSidebar(incomingProps: any) {
-    // if (this.open && this.currentVehicle?.vehicle?.id === incomingProps.id) return
     if (this.currentProps && incomingProps.propType === this.currentProps.propType && incomingProps.id === this.currentProps.id) return
 
     this.resetSidebar()
     
     this.open = true
     this.currentProps = incomingProps
-    console.log(this.currentProps)
     if (incomingProps.propType === 'vehicle') {
       console.log('vehicle')
       if (incomingProps.id === "UNASSIGNED") return
+      if (incomingProps.tripId.includes("NonTimetabled")) return
 
       this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.currentProps.id)!
 
@@ -131,6 +128,10 @@ export class MapSidebarComponent {
         this.currentStopScheduledServices = await getSydneyMetroStopTimes(this.currentProps.name, new Date().toISOString(), false)
       else if (this.currentProps.mode === 'sydneytrains')
         this.currentStopScheduledServices = await getSydneyTrainsStopTimes(this.currentProps.name, new Date().toISOString(), false)
+      else if (this.currentProps.mode === 'combined') {
+        this.currentStopScheduledServices = await getSydneyTrainsStopTimes(this.currentProps.name, new Date().toISOString(), false)
+        this.currentStopScheduledServices = this.currentStopScheduledServices.concat(await getSydneyMetroStopTimes(this.currentProps.name, new Date().toISOString(), false))
+      }
 
       if (this.currentStopScheduledServices.length < 24) {
         this.preLoadingDone = true
@@ -229,6 +230,7 @@ export class MapSidebarComponent {
     barCover.style.height = `calc(${currentProgress}px)`
   }
 
+  // no info for sydney metro yet
   stopScroller = async () => {
     if (!this.container) return
     if (this.currentStopScheduledServices.length === 0) return

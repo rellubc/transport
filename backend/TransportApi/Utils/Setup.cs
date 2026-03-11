@@ -31,7 +31,6 @@ public static class Setup
 
         var existingAgencyIds = new HashSet<string>(db.Agencies.Select(a => a.Id));
         var existingCalendarIds = new HashSet<string>(db.Calendars.Select(c => c.ServiceId));
-        var existingCalendarDateIds = new HashSet<string>(db.CalendarDates.Select(cd => cd.ServiceId));
         var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.Id));
         var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
         var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence + "|" + s.Mode));
@@ -41,7 +40,6 @@ public static class Setup
 
         var newAgencies = new List<Agency>();
         var newCalendars = new List<Models.Calendar>();
-        var newCalendarDates = new List<CalendarDate>();
         var newNotes = new List<Note>();
         var newRoutes = new List<Models.Route>();
         var newShapes = new List<Shape>();
@@ -179,10 +177,10 @@ public static class Setup
                                     Name = cols[1],
                                     Latitude = decimal.Parse(cols[2], CultureInfo.InvariantCulture),
                                     Longitude = decimal.Parse(cols[3], CultureInfo.InvariantCulture),
-                                    LocationType = cols[4] == "1" ? "Station" : "Platform",
+                                    LocationType = int.Parse(cols[4]),
                                     ParentStationId = !string.IsNullOrEmpty(cols[5]) ? cols[5] : string.Empty,
-                                    WheelchairBoarding = cols[6] == "1",
-                                    PlatformCode = cols[7].Length == 0 ? null : int.Parse(cols[7]),
+                                    WheelchairBoarding = int.Parse(cols[6]),
+                                    PlatformCode = !string.IsNullOrEmpty(cols[7]) ? int.Parse(cols[7]) : 0,
                                     Mode = "metro",
                                 };
                                 newStops.Add(entity);
@@ -207,7 +205,7 @@ public static class Setup
                                     ArrivalTime = TimeSpan.ParseExact(cols[1], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
                                     DepartureTime = TimeSpan.ParseExact(cols[2], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
                                     StopId = cols[3],
-                                    StopSequence = cols[4],
+                                    StopSequence = int.Parse(cols[4]),
                                     StopHeadSign = cols[5],
                                     PickupType = cols[6] == "0",
                                     DropOffType = cols[7] == "0",
@@ -231,13 +229,13 @@ public static class Setup
                                     Id = cols[2],
                                     ShapeId = cols[3],
                                     HeadSign = cols[4],
-                                    DirectionId = cols[5] == "1",
+                                    DirectionId = int.Parse(cols[5]),
                                     ShortName = cols[6],
                                     BlockId = cols[7],
-                                    WheelchairAccessible = cols[8] == "1",
+                                    WheelchairAccessible = int.Parse(cols[8]),
                                     TripNote = !string.IsNullOrEmpty(cols[9]) ? cols[9] : string.Empty,
                                     RouteDirection = cols[10],
-                                    BikesAllowed = cols[11] == "1",
+                                    BikesAllowed = int.Parse(cols[11]),
                                 };
                                 newTrips.Add(entity);
                             }
@@ -258,9 +256,6 @@ public static class Setup
 
         if (newCalendars.Count > 0)
             app.Logger.LogInformation("New Calendars: {Count}", newCalendars.Count);
-
-        if (newCalendarDates.Count > 0)
-            app.Logger.LogInformation("New CalendarDates: {Count}", newCalendarDates.Count);
 
         if (newNotes.Count > 0)
             app.Logger.LogInformation("New Notes: {Count}", newNotes.Count);
@@ -287,13 +282,7 @@ public static class Setup
         db.Calendars.AddRange(newCalendars);
         await db.SaveChangesAsync();
 
-        db.CalendarDates.AddRange(newCalendarDates);
-        await db.SaveChangesAsync();
-
         db.Notes.AddRange(newNotes);
-        await db.SaveChangesAsync();
-
-        db.Routes.AddRange(newRoutes);
         await db.SaveChangesAsync();
 
         db.Shapes.AddRange(newShapes);
@@ -302,47 +291,18 @@ public static class Setup
         db.Stops.AddRange(newStops);
         await db.SaveChangesAsync();
 
+        db.Routes.AddRange(newRoutes);
+        await db.SaveChangesAsync();
+
         db.Trips.AddRange(newTrips);
         await db.SaveChangesAsync();
 
         db.StopTimes.AddRange(newStopTimes);
         await db.SaveChangesAsync();
 
-        app.Logger.LogInformation("Checking new entries");
-
-        var agenciesCount = await db.Agencies.CountAsync();
-        var calendarsCount = await db.Calendars.CountAsync();
-        var calendarDatesCount = await db.CalendarDates.CountAsync();
-        var notesCount = await db.Notes.CountAsync();
-        var routesCount = await db.Routes.CountAsync();
-        var shapesCount = await db.Shapes.CountAsync();
-        var stopsCount = await db.Stops.CountAsync();
-        var stopTimesCount = await db.StopTimes.CountAsync();
-        var tripsCount = await db.Trips.CountAsync();
-
-        if (agenciesCount != existingAgencyIds.Count + newAgencies.Count)
-            app.Logger.LogInformation("Agency table miscount");
-        if (calendarsCount != existingCalendarIds.Count + newCalendars.Count)
-            app.Logger.LogInformation("Calendar table miscount");
-        if (calendarDatesCount != existingCalendarDateIds.Count + newCalendarDates.Count)
-            app.Logger.LogInformation("CalendarDate table miscount");
-        if (notesCount != existingNoteIds.Count + newNotes.Count)
-            app.Logger.LogInformation("Note table miscount");
-        if (routesCount != existingRouteIds.Count + newRoutes.Count)
-            app.Logger.LogInformation("Route table miscount");
-        if (shapesCount != existingShapeIds.Count + newShapes.Count)
-            app.Logger.LogInformation("Shape table miscount");
-        if (stopsCount != existingStopIds.Count + newStops.Count)
-            app.Logger.LogInformation("Stop table miscount");
-        if (stopTimesCount != existingStopTimeIds.Count + newStopTimes.Count)
-            app.Logger.LogInformation("StopTime table miscount");
-        if (tripsCount != existingTripIds.Count + newTrips.Count)
-            app.Logger.LogInformation("Trip table miscount");
-
-        app.Logger.LogInformation("Check Complete");
+        app.Logger.LogInformation("Complete");
     }
 
-    // TODO: Add remaining fields for some entries
     async public static Task PopulateSydneyTrains(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
@@ -364,21 +324,18 @@ public static class Setup
 
         var existingAgencyIds = new HashSet<string>(db.Agencies.Select(a => a.Id));
         var existingCalendarIds = new HashSet<string>(db.Calendars.Select(c => c.ServiceId));
-        var existingCalendarDateIds = new HashSet<string>(db.CalendarDates.Select(cd => cd.ServiceId));
         var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.Id));
-        var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
+        var existingVehicleCategoryIds = new HashSet<string>(db.VehicleCategories.Select(vc => vc.VehicleCategoryId));
         var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence + "|" + s.Mode));
         var existingStopIds = new HashSet<string>(db.Stops.Select(s => s.Id + "|" + s.Mode));
-        var existingStopTimeIds = new HashSet<string>(db.StopTimes.Select(s => s.TripId + "|" + s.StopSequence));
+        var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
         var existingTripIds = new HashSet<string>(db.Trips.Select(t => t.Id));
-        var existingVehicleCategoryIds = new HashSet<string>(db.VehicleCategories.Select(vc => vc.VehicleCategoryId));
-        var existingVehicleBoardingIds = new HashSet<string>(db.VehicleBoardings.Select(vb => vb.VehicleCategoryId + "|" + vb.ChildSequence + "|" + vb.GrandchildSequence + "|" + vb.BoardingAreaId));
+        var existingStopTimeIds = new HashSet<string>(db.StopTimes.Select(s => s.TripId + "|" + s.StopSequence));
+        var existingVehicleBoardingIds = new HashSet<string>(db.VehicleBoardings.Select(vb => vb.VehicleCategoryId + "|" + vb.ChildSequence + "|" + "|" + vb.BoardingAreaId));
         var existingVehicleCouplingIds = new HashSet<string>(db.VehicleCouplings.Select(vc => vc.ParentId + "|" + vc.ChildId + "|" + vc.ChildSequence));
-        var existingOccupancyIds = new HashSet<string>(db.Occupancies.Select(o => o.TripId + "|" + o.StopSequence));
 
         var newAgencies = new List<Agency>();
         var newCalendars = new List<Models.Calendar>();
-        var newCalendarDates = new List<CalendarDate>();
         var newNotes = new List<Note>();
         var newRoutes = new List<Models.Route>();
         var newShapes = new List<Shape>();
@@ -388,7 +345,6 @@ public static class Setup
         var newVehicleCategories = new List<VehicleCategory>();
         var newVehicleBoardings = new List<VehicleBoarding>();
         var newVehicleCouplings = new List<VehicleCoupling>();
-        var newOccupancies = new List<Occupancy>();
 
         foreach (var entry in archive.Entries)
         {
@@ -457,15 +413,7 @@ public static class Setup
                         }
                         case "notes.txt":
                         {
-                            if (!existingNoteIds.Contains(cols[0]))
-                            {
-                                var entity = new Note
-                                {
-                                    Id = cols[0],
-                                    Text = cols[1],
-                                };
-                                newNotes.Add(entity);
-                            }
+                            // currently empty
                             break;
                         }
                         case "routes.txt":
@@ -511,6 +459,7 @@ public static class Setup
                         {
                             if (!existingStopIds.Contains(cols[0] + "|sydneytrains"))
                             {
+                                Console.WriteLine(cols[1] + " " + cols[2]);
                                 var entity = new Stop
                                 {
                                     Id = cols[0],
@@ -521,12 +470,12 @@ public static class Setup
                                     Longitude = decimal.Parse(cols[5], CultureInfo.InvariantCulture),
                                     ZoneId = !string.IsNullOrEmpty(cols[6]) ? cols[6] : string.Empty,
                                     Url = !string.IsNullOrEmpty(cols[7]) ? cols[7] : string.Empty,
-                                    LocationType = cols[8] == "1" ? "Station" : "Platform",
+                                    LocationType = int.Parse(cols[8]),
                                     ParentStationId = !string.IsNullOrEmpty(cols[9]) ? cols[9] : string.Empty,
                                     Timezone = !string.IsNullOrEmpty(cols[10]) ? cols[10] : string.Empty,
-                                    WheelchairBoarding = cols[11] == "1",
+                                    WheelchairBoarding = int.Parse(cols[11]),
                                     Mode = "sydneytrains",
-                                    Network = Constants.MetropolitanStations.Any(s => cols[1].StartsWith(s, StringComparison.OrdinalIgnoreCase)) ? "metropolitan" : "regional",
+                                    Network = Constants.MetropolitanStations.Any(s => cols[2].StartsWith(s, StringComparison.OrdinalIgnoreCase)) ? "metropolitan" : "regional",
                                 };
                                 newStops.Add(entity);
                             }
@@ -549,7 +498,7 @@ public static class Setup
                                     ArrivalTime = TimeSpan.ParseExact(cols[1], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
                                     DepartureTime = TimeSpan.ParseExact(cols[2], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
                                     StopId = cols[3],
-                                    StopSequence = cols[4],
+                                    StopSequence = int.Parse(cols[4]),
                                     StopHeadSign = !string.IsNullOrEmpty(cols[5]) ? cols[5] : string.Empty,
                                     PickupType = cols[6] == "0",
                                     DropOffType = cols[7] == "0",
@@ -574,10 +523,10 @@ public static class Setup
                                     Id = cols[2],
                                     HeadSign = cols[3],
                                     ShortName = !string.IsNullOrEmpty(cols[4]) ? cols[4] : string.Empty,
-                                    DirectionId = cols[5] == "1",
+                                    DirectionId = int.Parse(cols[5]),
                                     BlockId = cols[6],
                                     ShapeId = cols[7],
-                                    WheelchairAccessible = cols[8] == "1",
+                                    WheelchairAccessible = int.Parse(cols[8]),
                                     VehicleCategoryId = cols[9],
                                 };
                                 newTrips.Add(entity);
@@ -605,7 +554,7 @@ public static class Setup
                                 {
                                     VehicleCategoryId = cols[0],
                                     ChildSequence = cols[1],
-                                    GrandchildSequence = cols[2],
+                                    GrandchildSequence = !string.IsNullOrEmpty(cols[2]) ? int.Parse(cols[2]) : null,
                                     BoardingAreaId = cols[3],
                                 };
                                 newVehicleBoardings.Add(entity);
@@ -630,27 +579,8 @@ public static class Setup
 
                         case "occupancies.txt":
                         {
-                            if (!existingOccupancyIds.Contains(cols[0] + "|" + cols[1]))
-                            {
-                                var entity = new Occupancy
-                                {
-                                    TripId = cols[0],
-                                    StopSequence = cols[1],
-                                    OccupancyStatus = int.Parse(cols[2]),
-                                    Monday = cols[3] == "1",
-                                    Tuesday = cols[4] == "1",
-                                    Wednesday = cols[5] == "1",
-                                    Thursday = cols[6] == "1",
-                                    Friday = cols[7] == "1",
-                                    Saturday = cols[8] == "1",
-                                    Sunday = cols[9] == "1",
-                                    StartDate = DateTime.ParseExact(cols[10], "yyyyMMdd", CultureInfo.InvariantCulture),
-                                    EndDate = !string.IsNullOrEmpty(cols[11]) ? DateTime.ParseExact(cols[11], "yyyyMMdd", CultureInfo.InvariantCulture) : new DateTime(),
-                                    Exception = cols[12] == "1",
-                                };
-                                newOccupancies.Add(entity);
-                            }
-                            break;    
+                            // currently empty
+                            break;  
                         }
                     }
                 }
@@ -667,8 +597,6 @@ public static class Setup
             app.Logger.LogInformation("New Agencies: {newAgencies.Count}", newAgencies.Count);
         if (newCalendars.Count > 0)
             app.Logger.LogInformation("New Calendars: {Count}", newCalendars.Count);
-        if (newCalendarDates.Count > 0)
-            app.Logger.LogInformation("New CalendarDates: {Count}", newCalendarDates.Count);
         if (newNotes.Count > 0)
             app.Logger.LogInformation("New Notes: {Count}", newNotes.Count);
         if (newRoutes.Count > 0)
@@ -687,8 +615,6 @@ public static class Setup
             app.Logger.LogInformation("New VehicleBoardings: {Count}", newVehicleBoardings.Count);
         if (newVehicleCouplings.Count > 0)
             app.Logger.LogInformation("New VehicleCouplings: {Count}", newVehicleCouplings.Count);
-        if (newOccupancies.Count > 0)
-            app.Logger.LogInformation("New Occupancies: {Count}", newOccupancies.Count);
 
         app.Logger.LogInformation("Adding New Entries");
         db.Agencies.AddRange(newAgencies);
@@ -697,13 +623,10 @@ public static class Setup
         db.Calendars.AddRange(newCalendars);
         await db.SaveChangesAsync();
 
-        db.CalendarDates.AddRange(newCalendarDates);
-        await db.SaveChangesAsync();
-
         db.Notes.AddRange(newNotes);
         await db.SaveChangesAsync();
 
-        db.Routes.AddRange(newRoutes);
+        db.VehicleCategories.AddRange(newVehicleCategories);
         await db.SaveChangesAsync();
 
         db.Shapes.AddRange(newShapes);
@@ -712,67 +635,21 @@ public static class Setup
         db.Stops.AddRange(newStops);
         await db.SaveChangesAsync();
 
+        db.Routes.AddRange(newRoutes);
+        await db.SaveChangesAsync();
+
         db.Trips.AddRange(newTrips);
         await db.SaveChangesAsync();
 
         db.StopTimes.AddRange(newStopTimes);
         await db.SaveChangesAsync();
 
-        db.VehicleCategories.AddRange(newVehicleCategories);
+        db.VehicleBoardings.AddRange(newVehicleBoardings);
         await db.SaveChangesAsync();
 
         db.VehicleCouplings.AddRange(newVehicleCouplings);
         await db.SaveChangesAsync();
 
-        db.VehicleBoardings.AddRange(newVehicleBoardings);
-        await db.SaveChangesAsync();
-
-        db.Occupancies.AddRange(newOccupancies);
-        await db.SaveChangesAsync();
-
-        app.Logger.LogInformation("Checking new entries");
-
-        var agenciesCount = await db.Agencies.CountAsync();
-        var calendarsCount = await db.Calendars.CountAsync();
-        var calendarDatesCount = await db.CalendarDates.CountAsync();
-        var notesCount = await db.Notes.CountAsync();
-        var routesCount = await db.Routes.CountAsync();
-        var shapesCount = await db.Shapes.CountAsync();
-        var stopsCount = await db.Stops.CountAsync();
-        var stopTimesCount = await db.StopTimes.CountAsync();
-        var tripsCount = await db.Trips.CountAsync();
-        var vehicleCategoriesCount = await db.VehicleCategories.CountAsync();
-        var vehicleBoardingsCount = await db.VehicleBoardings.CountAsync();
-        var vehicleCouplingsCount = await db.VehicleCouplings.CountAsync();
-        var occupanciesCount = await db.Occupancies.CountAsync();
-
-        if (agenciesCount != existingAgencyIds.Count + newAgencies.Count)
-            app.Logger.LogInformation("Agency table miscount");
-        if (calendarsCount != existingCalendarIds.Count + newCalendars.Count)
-            app.Logger.LogInformation("Calendar table miscount");
-        if (calendarDatesCount != existingCalendarDateIds.Count + newCalendarDates.Count)
-            app.Logger.LogInformation("CalendarDate table miscount");
-        if (notesCount != existingNoteIds.Count + newNotes.Count)
-            app.Logger.LogInformation("Note table miscount");
-        if (routesCount != existingRouteIds.Count + newRoutes.Count)
-            app.Logger.LogInformation("Route table miscount");
-        if (shapesCount != existingShapeIds.Count + newShapes.Count)
-            app.Logger.LogInformation("Shape table miscount");
-        if (stopsCount != existingStopIds.Count + newStops.Count)
-            app.Logger.LogInformation("Stop table miscount");
-        if (stopTimesCount != existingStopTimeIds.Count + newStopTimes.Count)
-            app.Logger.LogInformation("StopTime table miscount");
-        if (tripsCount != existingTripIds.Count + newTrips.Count)
-            app.Logger.LogInformation("Trip table miscount");
-        if (vehicleBoardingsCount != existingVehicleCategoryIds.Count + newVehicleBoardings.Count)
-            app.Logger.LogInformation("New VehicleCategories: {Count}", newVehicleCategories.Count);
-        if (vehicleBoardingsCount != existingVehicleBoardingIds.Count + newVehicleBoardings.Count)
-            app.Logger.LogInformation("New VehicleBoardings: {Count}", newVehicleBoardings.Count);
-        if (vehicleCouplingsCount != existingVehicleCouplingIds.Count + newVehicleCouplings.Count)
-            app.Logger.LogInformation("New VehicleCouplings: {Count}", newVehicleCouplings.Count);
-        if (occupanciesCount != existingOccupancyIds.Count + newOccupancies.Count)
-            app.Logger.LogInformation("New Occupancies: {Count}", newOccupancies.Count);
-
-        app.Logger.LogInformation("Check Complete");
+        app.Logger.LogInformation("Complete");
     }
 }

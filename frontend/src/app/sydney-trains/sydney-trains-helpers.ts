@@ -26,8 +26,6 @@ export const getSydneyTrainsShapes = async (): Promise<Shape>=> {
 
     const data: Shape = await res.json()
 
-    console.log(data)
-
     return data
   } catch (error) {
     console.error('Fetch failed:', error)

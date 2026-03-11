@@ -6,7 +6,6 @@ namespace TransportApi.Models;
 [Table("routes")]
 public class Route
 {
-    [Key]
     [Column("route_id")]
     [Required]
     [StringLength(255)]

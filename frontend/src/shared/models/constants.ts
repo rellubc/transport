@@ -54,3 +54,5 @@ export const routesMap: Record<string, string> = {
     'HUN': 'HUN',
     'M1': 'M1',
 }
+
+export const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']

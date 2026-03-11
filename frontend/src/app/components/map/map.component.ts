@@ -89,6 +89,7 @@ export class MapComponent {
 
       this.stopSource?.clear()
 
+      console.log(zoom)
       if (zoom && zoom > 18) {
         this.updateStops('Platform', false);
       } else if (zoom && zoom <= 18 && zoom >= 11) {
@@ -99,40 +100,34 @@ export class MapComponent {
     });
   }
 
-  addShape = (shapeId: string, type?: string) => {
-    const lineCoords = this.shapes[shapeId].map(s => fromLonLat([s.longitude, s.latitude]))
-    
-    let route: string
-    if (shapeId === parseInt(shapeId).toString())
-      route = 'M1'
-    // else if (type === 'sydneytrains')
-    else
-      route = shapeId.split('_')[0]
-
-    const lineFeature = new Feature({
-      geometry: new LineString(lineCoords),
-      propType: 'route',
+  addShape = (routeId: string, shapeIds: string[]) => {
+    const features: Feature<LineString>[] = shapeIds.map((shapeId) => {
+      const lineCoords = this.shapes[shapeId].map(s => fromLonLat([s.longitude, s.latitude]))
+      return new Feature({
+        geometry: new LineString(lineCoords),
+        propType: 'route',
+      })
     })
-    
+
     const shapeSource = new VectorSource({
-      features: [lineFeature]
+      features,
     })
 
     const shapeLayer = new VectorLayer({
       source: shapeSource,
       style: new Style({
         stroke: new Stroke({
-          color: coloursMap[route] || '#0000000',
+          color: coloursMap[routeId] || '#0000000',
           width: 2,
         }),
       }),
     })
 
-    shapeLayer.set('name', shapeId.toString())
+    shapeLayer.set('name', routesMap[routeId])
     this.map.addLayer(shapeLayer)
   }
 
-  addStops(mode: string) {
+  addStops(mode: string, combined?: boolean) {
     this.stopSource = new VectorSource({})
     this.stopLayer = new VectorLayer({
       source: this.stopSource,
@@ -157,25 +152,27 @@ export class MapComponent {
 
     const zoom = this.map.getView().getZoom();
     if (zoom && zoom > 18) {
-      this.updateStops('Platform');
+      this.updateStops('Platform', combined);
     } else if (zoom && zoom <= 18 && zoom >= 11) {
-      this.updateStops('Station');
+      this.updateStops('Station', combined);
     } else if (zoom && zoom < 11) {
-      this.updateStops('Station', true)
+      this.updateStops('Station', combined, true)
     }
   }
 
-  updateStops(type: string, regional?: boolean) {
+  updateStops(type: string, combined?: boolean, regional?: boolean) {
     this.stops.forEach((stop, index) => {
-      if (stop.locationType !== type) return
-      // if (regional && stop.network !== 'regional') return
+      if (type === 'Platform' && stop.parentStationId === "") return
+      if (type === 'Station' && stop.parentStationId !== "") return
+      if (regional && stop.network !== 'regional') return
+      if (!regional && stop.network === 'regional') return
       const coord = fromLonLat([stop.longitude, stop.latitude])
 
       const feature = new Feature({
         geometry: new Point(coord),
         name: stop.name,
         id: stop.id,
-        mode: stop.mode,
+        mode: combined ? 'combined' : stop.mode,
         propType: 'stop',
         index,
       });
@@ -252,203 +249,7 @@ export class MapComponent {
     console.log('Updating vehicle positions...')
     this.updateVehiclePositions()
     this.mapSidebar.refresh()
-    // if (this.sidebarOpen) {
-    //   if (this.propType === 'vehicle') {
-    //     console.log('Updating current schedule...')
-
-    //     this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.selectedProps.id)!
-    //     if (this.selectedProps.mode === 'metro')
-    //       this.currentRealtimeTrip = await getSydneyMetroTripUpdates(this.selectedProps.tripId)
-    //     else if (this.selectedProps.mode === 'sydneytrains')
-    //       this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(this.selectedProps.tripId)
-        
-    //     console.log(this.currentRealtimeTrip)
-
-    //     this.mapSidebar.updateBar()
-    //   }
-    // }
   }
-
-  // async openSidebar(props: any) {
-  //   if (this.sidebarOpen && this.currentVehicle?.vehicle?.id === props.id) return
-  //   if (this.selectedProps && props.propType === this.propType && props.id === this.selectedProps.id) return
-
-  //   console.log(props)
-  //   console.log(this.selectedProps)
-  //   this.resetSidebar()
-    
-  //   this.sidebarOpen = true
-  //   this.selectedProps = props
-
-  //   if (props.propType === 'vehicle') {
-  //     if (props['id'] === "UNASSIGNED") return
-  //     this.propType = 'vehicle'
-
-  //     this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.selectedProps.id)!
-  //     this.currentVehicle.consist = this.currentVehicle.trip?.directionId === 1 ? this.currentVehicle.consist?.reverse() : this.currentVehicle.consist
-
-
-  //     if (this.selectedProps.type === 'metro') {
-  //       this.currentRealtimeTrip = await getSydneyMetroTripUpdates(props.tripId)
-  //       this.currentScheduledTrip = await getSydneyMetroTrip(this.selectedProps.tripId)
-  //     } else {
-  //       this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(props.tripId)
-  //       this.currentScheduledTrip = await getSydneyTrainsTrip(this.selectedProps.tripId)
-  //     }
-      
-  //     console.log(this.currentVehicle)
-  //     console.log(this.currentRealtimeTrip)
-  //     console.log(this.currentScheduledTrip)
-  //     this.updateBar()
-  //   } else if (props.propType === 'stop') {
-  //     this.propType = 'stop'
-
-  //     if (this.selectedProps.mode === 'metro')
-  //       this.currentStopScheduledServices = await getSydneyMetroStopTimes(this.selectedProps.name)
-  //     else if (this.selectedProps.mode === 'sydneytrains')
-  //       this.currentStopScheduledServices = await getSydneyTrainsStopTimes(this.selectedProps.name, new Date().toISOString(), false)
-
-  //     console.log(this.currentStopScheduledServices)
-
-  //     if (this.currentStopScheduledServices.length < 24) {
-  //       this.preLoadingDone = true
-  //       this.postLoadingDone = true
-  //     }
-
-  //     const container = document.querySelector('.sidebar-body-content') as HTMLElement
-  //     container.addEventListener('scroll', async () => {
-  //       console.log(this.currentStopScheduledServices.length)
-  //       if (this.currentStopScheduledServices.length === 0) return
-  //       if (container.scrollTop === 0) {
-  //         const temp = await getSydneyTrainsStopTimes(this.selectedProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
-          
-  //         console.log(temp)
-  //         if (temp.length > 0)
-  //           this.currentStopScheduledServices = temp.concat(this.currentStopScheduledServices)
-  //         else
-  //           this.preLoadingDone = true
-  //         setTimeout(() => {
-  //           container.scrollTop = 72 * temp.length
-  //         }, 0)
-  //       } else if (container.scrollTop === 72 * Math.max(0, (this.currentStopScheduledServices.length - 12)) + (this.preLoadingDone ? 62 : 110)) {
-  //         const temp = await getSydneyTrainsStopTimes(this.selectedProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
-
-  //         console.log(temp)
-
-  //         if (temp.length > 0)
-  //           this.currentStopScheduledServices = this.currentStopScheduledServices.concat(temp)
-  //         else
-  //           this.postLoadingDone = true
-  //       }
-  //     })
-
-  //     setTimeout(() => {
-  //       container.scrollTop = 48
-  //     }, 0)
-  //   } else if (props.propType === 'route') {
-  //     console.log('route')
-  //   }
-  // }
-
-  // closeSidebar() {
-  //   this.sidebarOpen = false
-  //   this.resetSidebar()
-  // }
-
-  // resetSidebar() {
-  //   console.log('here')
-  //   this.selectedProps = null
-  //   this.propType = ''
-  //   this.currentVehicle = null
-  //   this.currentRealtimeTrip = null
-  //   this.currentScheduledTrip = null
-
-  //   this.preLoadingDone = false
-  //   this.postLoadingDone = false
-  //   this.currentStopScheduledServices = []
-  //   const container = document.querySelector('.sidebar-body-content') as HTMLElement;
-  //   container?.removeEventListener('scroll');
-  // }
-
-  // getVehicleForTrip(tripId: string): VehiclePosition | undefined {
-  //   return this.vehicles.find((vehicle) => vehicle.trip?.tripId === tripId)
-  // }
-
-  // updateBar() {
-  //   const bar = document.querySelector('.sidebar-body-bar')! as HTMLElement;
-  //   const barCover = document.querySelector('.sidebar-body-bar-cover')! as HTMLElement;
-
-  //   bar.style.height = `${this.currentRealtimeTrip?.stopTimeUpdate.length! * 72 - 32}px`
-    
-  //   const currentTripStartSegment = this.stops.find((stop) => stop.id === this.currentVehicle!.stopId)?.id!
-  //   const nextIndex = Number(this.currentRealtimeTrip?.stopTimeUpdate.findIndex((stop) => stop.stopId === currentTripStartSegment.toString())) + 1
-  //   const currentTripEndSegment = this.stops.find((stop) => stop.id === this.currentRealtimeTrip?.stopTimeUpdate[nextIndex].stopId)?.id!
-
-  //   const start = this.stops.find((stop) => stop.id === currentTripStartSegment!)!
-  //   const end = this.stops.find((stop) => stop.id === currentTripEndSegment!)!
-
-  //   let startBestIndex = 0;
-  //   let startBestDiff = [Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][0].latitude - start.latitude!), Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][0].longitude - start.longitude!)];
-  //   let endBestIndex = 0;
-  //   let endBestDiff = [Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][0].latitude - end.latitude!), Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][0].longitude - end.longitude!)];
-
-  //   for (let i = 1; i < this.shapes[this.currentScheduledTrip!.shapeId].length; i++) {
-  //     const startDiff = [Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][i].latitude - start.latitude!), Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][i].longitude - start.longitude!)];
-  //     if (startDiff[0] < startBestDiff[0] && startDiff[1] < startBestDiff[1]) {
-  //       startBestIndex = i;
-  //       startBestDiff = startDiff;
-  //     }
-
-  //     const endDiff = [Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][i].latitude - end.latitude!), Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][i].longitude - end.longitude!)];
-  //     if (endDiff[0] < endBestDiff[0] && endDiff[1] < endBestDiff[1]) {
-  //       endBestIndex = i;
-  //       endBestDiff = endDiff;
-  //     }
-  //   }
-
-  //   let currentBestIndex = startBestIndex;
-  //   let currentBestDiff = [Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][startBestIndex].latitude - this.currentVehicle!.position!.latitude!), Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][startBestIndex].longitude - this.currentVehicle!.position!.longitude!)];
-
-  //   for (let i = startBestIndex; i < endBestIndex; i++) {
-  //     const currentDiff = [Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][i].latitude - this.currentVehicle!.position!.latitude!), Math.abs(this.shapes[this.currentScheduledTrip!.shapeId][i].longitude - this.currentVehicle!.position!.longitude!)];
-  //     if (currentDiff[0] < currentBestDiff[0] && currentDiff[1] < currentBestDiff[1]) {
-  //       currentBestIndex = i;
-  //       currentBestDiff = currentDiff;
-  //     }
-  //   }
-
-  //   const progress = (this.shapes[this.currentScheduledTrip!.shapeId][currentBestIndex].distanceTravelled - this.shapes[this.currentScheduledTrip!.shapeId][startBestIndex].distanceTravelled) / (this.shapes[this.currentScheduledTrip!.shapeId][endBestIndex].distanceTravelled - this.shapes[this.currentScheduledTrip!.shapeId][startBestIndex].distanceTravelled);
-    
-  //   const percent = progress * 100;
-  //   const increment = 72
-  //   const currentProgress = increment * (nextIndex - 1) + increment * (percent / 100) + 32
-
-  //   barCover.style.height = `calc(${currentProgress}px)`
-  // }
-
-  // getOccupancyColour(status: number): string {
-  //   if (status === 2 || status === 3) {
-  //     return 'yellow'
-  //   } else if (status === 4 || status === 5) {
-  //     return 'red'
-  //   } else if (status === 6) {
-  //     return 'black'
-  //   } else {
-  //     return 'green'
-  //   }
-  // }
-
-  // getRouteCode(routeId: string, mode: string) {
-  //   if (mode === 'metro')
-  //     return routesMap[routeId.split('_')[1]] 
-  //   return routesMap[routeId.split('_')[0]] 
-  // }
-
-  // getCorrespondingRouteColour(routeId: string, mode: string) {
-  //   if (mode === 'metro')
-  //     return coloursMap[routeId.split('_')[1]] 
-  //   return coloursMap[routeId.split('_')[0]]
-  // }
 
   ngOnInit(): void {
     this.createMap()

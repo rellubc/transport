@@ -10,5 +10,3 @@ export interface Calendar {
   startDate: string
   endDate: string
 }
-
-export const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']

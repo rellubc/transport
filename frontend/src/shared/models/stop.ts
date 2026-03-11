@@ -8,7 +8,7 @@ export interface Stop {
     zoneId?: string
     url?: string
     locationType: string
-    parentStationId?: number
+    parentStationId?: string
     timezone?: string
     wheelchairBoarding: boolean
     platformCode: number
