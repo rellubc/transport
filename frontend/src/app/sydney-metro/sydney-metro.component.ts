@@ -17,7 +17,6 @@ export class SydneyMetroComponent {
 
   stops: Stop[] = []
   shapes: Shape = {}
-  shapeIds: string[] = []
   vehicles: VehiclePosition[] = []
 
   METRO_FIRST_SHAPE: string = "3722"
@@ -29,10 +28,8 @@ export class SydneyMetroComponent {
     this.shapes = await getSydneyMetroShapes()
     this.map.shapes = this.shapes
 
-    this.shapeIds = Object.keys(this.shapes).map(id => id)
-
-    this.map.addShape(this.shapes, this.METRO_FIRST_SHAPE, 'metro')
-    this.map.addShape(this.shapes, this.METRO_SECOND_SHAPE, 'metro')
+    this.map.addShape(this.METRO_FIRST_SHAPE, 'metro')
+    this.map.addShape(this.METRO_SECOND_SHAPE, 'metro')
     this.map.addStops('metro')
 
     this.vehicles = await getSydneyMetroVehiclePositions()

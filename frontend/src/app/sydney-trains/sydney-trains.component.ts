@@ -16,11 +16,7 @@ export class SydneyTrainsComponent {
 
   stops: Stop[] = []
   shapes: Shape = {}
-  shapeIds: string[] = []
   vehicles: VehiclePosition[] = []
-
-  METRO_FIRST_SHAPE: string = "3722"
-  METRO_SECOND_SHAPE: string = "16714"
 
   async ngOnInit(): Promise<void> {
     this.stops = await getSydneyTrainsStops()
@@ -28,10 +24,8 @@ export class SydneyTrainsComponent {
     this.shapes = await getSydneyTrainsShapes()
     this.map.shapes = this.shapes
 
-    this.shapeIds = Object.keys(this.shapes).map(id => id)
-
-    for (const [shapeId, shape] of Object.entries(this.shapes)) {
-      this.map.addShape(this.shapes, shapeId, 'sydneytrains')
+    for (const shapeId of Object.keys(this.shapes)) {
+      this.map.addShape(shapeId, 'sydneytrains')
     }
 
     this.map.addStops('sydneytrains')

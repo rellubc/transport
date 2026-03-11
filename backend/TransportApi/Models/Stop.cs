@@ -62,6 +62,8 @@ public class Stop
 
     [Column("mode")]
     [Required]
-    // public List<string> Mode { get; set; } = [];
     public string Mode { get; set; } = null!;
+
+    [Column("network")]
+    public string? Network { get; set; }
 }

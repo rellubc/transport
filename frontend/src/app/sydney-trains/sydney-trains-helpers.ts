@@ -42,25 +42,7 @@ export const getSydneyTrainsStops = async (): Promise<Stop[]>=> {
 
     const data: Stop[] = await res.json()
 
-    const north = data.filter((stop) => stop.name.includes("Richmond")).sort((a, b) => b.latitude - a.latitude)
-    const east = data.filter((stop) => stop.name.includes("Bondi Junction")).sort((a, b) => b.longitude - a.longitude)
-    const south = data.filter((stop) => stop.name.includes("Waterfall")).sort((a, b) => a.latitude - b.latitude)
-    const west = data.filter((stop) => stop.name.includes("Emu Plains")).sort((a, b) => a.longitude - b.longitude)
-
-    const mostNorth = [north[0].latitude, north[0].longitude]
-    const mostEast = [east[0].latitude, east[0].longitude]
-    const mostSouth = [south[0].latitude, south[0].longitude]
-    const mostWest = [west[0].latitude, west[0].longitude]
-    
-    return data.map((stop) => {
-      if (stop.latitude <= mostNorth[0] &&
-        stop.latitude >= mostSouth[0] &&
-        stop.longitude <= mostEast[1] &&
-        stop.longitude >= mostWest[1] &&
-        !stop.name.includes("Menangle")) stop.network = 'local'
-      else stop.network = 'regional'
-      return stop
-    })
+    return data
   } catch (error) {
     console.error('Fetch failed:', error)
     return []
@@ -81,24 +63,12 @@ export const getSydneyTrainsStopsPlatforms = async (stopId: string): Promise<Sto
   }
 }
 
-export const getSydneyTrainsStopTimes = async (stopId: string): Promise<StopTime[]>=> {
+export const getSydneyTrainsStopTimes = async (stopName: string, timeString: string, before: boolean): Promise<StopTime[]>=> {
   try {
-    const res = await fetch(`https://localhost:7284/api/sydney/trains/stop-times?stopId=${stopId}`)
+    const res = await fetch(`https://localhost:7284/api/sydney/trains/stop-times?stopName=${stopName}&timeString=${timeString}&before=${before}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: StopTime[] = await res.json()
-
-    data.sort((a, b) => {
-      const normalise = (time: string) => {
-        let temp = parseInt(time.substring(0, 2))
-        if (temp < 4) {
-          temp += 24
-          time = temp.toString() + time.substring(2, time.length - 1)
-        }
-        return time
-      }
-      return normalise(a.arrivalTime).localeCompare(normalise(b.arrivalTime))
-    })
 
     // console.log(data)
 
@@ -109,7 +79,7 @@ export const getSydneyTrainsStopTimes = async (stopId: string): Promise<StopTime
   }
 }
 
-export const getSydneyTrainsTrip = async (tripId: string): Promise<Trip>=> {
+export const getSydneyTrainsTrip = async (tripId: string): Promise<Trip | null>=> {
   try {
     const res = await fetch(`https://localhost:7284/api/sydney/trains/trips?tripId=${tripId}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -119,11 +89,28 @@ export const getSydneyTrainsTrip = async (tripId: string): Promise<Trip>=> {
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
-    return { id: '', routeId: '', serviceId: '', shapeId: -1, headSign: '', directionId: -1, shortName: '', wheelchairAccessible: 0, routeDirection: '' }
+    return null
   }
 }
 
-export const getSydneyTrainsTripUpdates = async (tripId: string): Promise<TripUpdate>=> {
+export const getSydneyTrainsTripStopTimes = async (tripId: string, timeString: string): Promise<StopTime[]>=> {
+  try {
+    const res = await fetch(`https://localhost:7284/api/sydney/trains/trip-stop-times?tripId=${tripId}&timeString=${timeString}`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const data: StopTime[] = await res.json()
+
+    // console.log(data)
+
+    return data
+  } catch (error) {
+    console.error('Fetch failed:', error)
+    return []
+  }
+}
+
+
+export const getSydneyTrainsTripUpdates = async (tripId: string): Promise<TripUpdate | null>=> {
   try {
     const res = await fetch(`https://localhost:7284/api/sydney/trains/realtime-trip-updates?tripId=${tripId}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -146,6 +133,8 @@ export const getSydneyTrainsTripUpdates = async (tripId: string): Promise<TripUp
 
     // console.log(data)
 
+    if (data.trip === null || data.stopTimeUpdate === null) return null
+
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -166,7 +155,7 @@ export const getSydneyTrainsVehiclePositions = async (): Promise<VehiclePosition
       }
     })
 
-    console.log(data)
+    // console.log(data)
 
     return data
   } catch (error) {

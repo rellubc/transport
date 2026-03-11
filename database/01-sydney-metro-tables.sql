@@ -94,6 +94,7 @@ CREATE TABLE stops (
     wheelchair_boarding boolean NOT NULL,
     platform_code INT,
     mode VARCHAR(255) NOT NULL,
+    network VARCHAR(255),
     PRIMARY KEY (stop_id, mode)
 );
 

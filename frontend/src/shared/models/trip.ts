@@ -1,5 +1,3 @@
-import { Calendar } from "./calendar"
-
 export interface Trip {
     id: string
     routeId: string
@@ -13,4 +11,5 @@ export interface Trip {
     tripNote?: string
     routeDirection: string
     bikesAllowed?: number
+    vehicleCategoryId?: string
 }

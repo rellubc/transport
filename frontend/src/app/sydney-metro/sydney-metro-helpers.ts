@@ -67,9 +67,10 @@ export const getSydneyMetroShapes = async (): Promise<Shape>=> {
     return {}
   }
 }
-export const getSydneyMetroStopTimes = async (stopId: string): Promise<StopTime[]>=> {
+export const getSydneyMetroStopTimes = async (stopName: string, timeString: string, before: boolean): Promise<StopTime[]>=> {
   try {
-    const res = await fetch(`https://localhost:7284/api/sydney/metro/stop-times?stopId=${stopId}`)
+    console.log(stopName, timeString, before)
+    const res = await fetch(`https://localhost:7284/api/sydney/metro/stop-times?stopName=${stopName}&timeString=${timeString}&before=${before}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: StopTime[] = await res.json()

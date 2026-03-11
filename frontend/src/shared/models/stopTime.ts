@@ -2,7 +2,7 @@ export interface StopTime {
   tripId: string
   arrivalTime: string
   departureTime: string
-  stopId: number
+  stopId: string
   stopName: string
   routeId: string
   stopSequence: number

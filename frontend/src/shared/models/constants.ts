@@ -1,3 +1,18 @@
+export const vehiclesMap: Record<string, string> = {
+    'T8': 'Tangara (T)',
+    'A8': 'Waratah (A)',
+    'B8': 'Waratah (B)',
+    'D4': 'Mariyung (D)',
+    'D6': 'Mariyung (D)',
+    'D8': 'Mariyung (D)',
+    'D10': 'Mariyung (D)',
+    'H4': 'OSCAR (H)',
+    'H8': 'OSCAR (H)',
+    'M4': 'Millenium (M)',
+    'M8': 'Millenium (M)',
+}
+
+
 export const coloursMap: Record<string, string> = {
     'BMT': '#F99D1C',
     'NSN': '#F99D1C',

@@ -46,7 +46,6 @@ public class StopTime
     public decimal ShapeDistanceTravelled { get; set; }
 
     [Column("timepoint")]
-    [Required]
     public bool? Timepoint { get; set; }
 
     [Column("stop_note")]

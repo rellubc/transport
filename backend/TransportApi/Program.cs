@@ -58,11 +58,11 @@ app.Map("/error", (HttpContext http) =>
     return Results.Problem(detail: message);
 });
 
-app.Logger.LogInformation("Metro");
-await app.PopulateSydneyMetro();
+// app.Logger.LogInformation("Metro");
+// await app.PopulateSydneyMetro();
 
-app.Logger.LogInformation("SydneyTrains");
-await app.PopulateSydneyTrains();
+// app.Logger.LogInformation("SydneyTrains");
+// await app.PopulateSydneyTrains();
 
 app.Logger.LogInformation("Start Server");
 app.Run();

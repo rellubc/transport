@@ -8,7 +8,7 @@ public class ShapeDetails
 
     public int Sequence { get; set; }
 
-    public decimal DistanceTravelled { get; set; }
+    public decimal? DistanceTravelled { get; set; }
 
     public string Mode { get; set; } = null!;
 }

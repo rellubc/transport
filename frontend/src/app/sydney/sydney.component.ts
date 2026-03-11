@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { getSydneyMetroShapes, getSydneyMetroStops, getSydneyMetroVehiclePositions } from '../metro/sydney-metro-helpers';
+import { getSydneyMetroShapes, getSydneyMetroStops, getSydneyMetroVehiclePositions } from '../sydney-metro/sydney-metro-helpers';
 import { getSydneyTrainsShapes, getSydneyTrainsStops, getSydneyTrainsVehiclePositions } from '../sydney-trains/sydney-trains-helpers';
 import { Stop } from '../../shared/models/stop';
 import { Shape } from '../../shared/models/shape';
@@ -17,7 +17,6 @@ export class SydneyComponent {
 
   stops: Stop[] = []
   shapes: Shape = {}
-  shapeIds: string[] = []
   vehicles: VehiclePosition[] = []
 
   METRO_FIRST_SHAPE: string = "3722"
@@ -34,10 +33,8 @@ export class SydneyComponent {
     this.shapes = { ...metroShapes, ...trainShapes }
     this.map.shapes = this.shapes
 
-    this.shapeIds = Object.keys(this.shapes).map(id => id)
-
     for (const [shapeId, shape] of Object.entries(this.shapes)) {
-      this.map.addShape(this.shapes, shapeId, this.shapes[shapeId][0].mode)
+      this.map.addShape(shapeId, this.shapes[shapeId][0].mode)
     }
 
     console.log(this.stops)
@@ -52,11 +49,11 @@ export class SydneyComponent {
     this.map.refresh()
 
     setInterval(async () => {
-    const metroVehicles = await getSydneyMetroVehiclePositions()
-    const trainVehicles = await getSydneyTrainsVehiclePositions()
-    this.vehicles = metroVehicles.concat(trainVehicles)
-    this.map.vehicles = this.vehicles
-    this.map.refresh()
+      const metroVehicles = await getSydneyMetroVehiclePositions()
+      const trainVehicles = await getSydneyTrainsVehiclePositions()
+      this.vehicles = metroVehicles.concat(trainVehicles)
+      this.map.vehicles = this.vehicles
+      this.map.refresh()
     }, 15000)
   }
 }

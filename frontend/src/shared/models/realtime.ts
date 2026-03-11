@@ -89,7 +89,7 @@ export interface StopTimeUpdate {
   departure?: StopTimeEvent
   scheduleRelationship?: number
   departureOccupancyStatus?: number
-  carriage?: CarriageDescriptor
+  carriageSeqPredictiveOccupancy?: CarriageDescriptor
 }
 
 export interface StopTimeEvent {

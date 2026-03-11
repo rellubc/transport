@@ -1,0 +1,94 @@
+<div *ngIf="open" class="sidebar" id="map-sidebar">
+    <div class="sidebar-header">
+        <div *ngIf="currentProps.propType == 'stop'" class="sidebar-header-left-cluster">
+            <div>
+                <h2> {{ currentProps.name.split(',')[0] }} </h2>
+                <p *ngIf="currentProps.name.split(',')[1]" [ngStyle]="{ 'position': 'absolute' }"> {{ currentProps.name.split(',')[1] }} </p>
+            </div>
+        </div>
+        <div *ngIf="currentProps.propType == 'vehicle' && currentRealtimeTrip && currentRealtimeTrip.trip && currentTrip" class="sidebar-header-left-cluster">
+            <div class="sidebar-header-route" *ngIf="currentRealtimeTrip.trip.routeId" [style.background-color]="getCorrespondingRouteColour(currentRealtimeTrip.trip.routeId, currentProps.type)">
+                <h2 *ngIf="currentRealtimeTrip.trip.routeId"> {{ getRouteCode(currentRealtimeTrip.trip.routeId, currentProps.type) }} </h2>
+            </div>
+            <h2> {{ currentTrip.headSign }} </h2>
+        </div>
+        <div class="sidebar-header-right-cluster">
+            <p *ngIf="currentTrip"> {{ getVehicleModel(currentTrip.vehicleCategoryId!, currentProps.type) }} </p>
+            <button class="close-btn" (click)="closeSidebar()"><lucide-icon [img]="XIcon"></lucide-icon></button>
+        </div>
+    </div>
+    <div class="sidebar-body">
+        <!-- <div *ngIf="currentProps.propType == 'vehicle' && currentRealtimeTrip" class="sidebar-body-content" [ngStyle]="{ `padding-left`: `2rem` }" >
+            <div *ngFor="let stu of currentRealtimeTrip.stopTimeUpdate; let i = index; let last = last" class="sidebar-body-schedule-vehicle">
+                <div class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
+                    <div class="sidebar-body-innerdot"></div>
+                </div>
+                <div>
+                    <p> {{ stu.stopName!.split(',')[0] }} </p>
+                    <p> {{ stu.stopName!.split(',')[1] }} </p>
+                </div>
+                <div class="sidebar-body-schedule-status">
+                    <p> {{ (last ? stu.arrival?.time : stu.departure?.time) | date:'HH:mm' }} </p>
+                    <div *ngIf="i === currentVehicle?.currentStopSequence" class="sidebar-body-schedule-occupancy">
+                        <div *ngFor="let occupancy of currentVehicle?.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
+                            <p> {{ len - j }} </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-body-bar"></div>
+            <div class="sidebar-body-bar-cover"></div>
+        </div> -->
+        <div *ngIf="currentProps.propType == 'vehicle' && currentRealtimeTrip" class="sidebar-body-content" [ngStyle]="{ `padding-left`: `2rem` }" >
+            <div *ngFor="let stu of currentRealtimeTrip.stopTimeUpdate; let i = index; let last = last" class="sidebar-body-schedule-vehicle">
+                <div class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
+                    <div class="sidebar-body-innerdot"></div>
+                </div>
+                <div>
+                    <p> {{ stu.stopName!.split(',')[0] }} </p>
+                    <p> {{ stu.stopName!.split(',')[1] }} </p>
+                </div>
+                <div class="sidebar-body-schedule-status">
+                    <p> {{ (last ? stu.arrival?.time : stu.departure?.time) | date:'HH:mm' }} </p>
+                    <div *ngIf="i === currentVehicle?.currentStopSequence" class="sidebar-body-schedule-occupancy">
+                        <div *ngFor="let occupancy of currentVehicle?.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
+                            <p> {{ len - j }} </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-body-bar"></div>
+            <div class="sidebar-body-bar-cover"></div>
+        </div>
+        <div *ngIf="currentProps.propType == 'stop'" class="sidebar-body-content">
+            <div *ngFor="let s of currentStopScheduledServices; let i = index; let first = first; let last = last" class="sidebar-body-schedule-stop" [ngClass]="{ 'pad-top': first && !preLoadingDone, 'pad-bottom': last && !postLoadingDone }">
+                <div class="sidebar-body-stop">
+                    <ng-container *ngIf="s.stopHeadSign && s.stopHeadSign.includes('via'); else noVia">
+                        <p> {{ s.stopHeadSign!.split('via')[0].trim() }} </p>
+                        <p> via {{ s.stopHeadSign!.split('via')[1].trim() }} </p>
+                    </ng-container>
+                    
+                    <ng-template #noVia>
+                        <p> {{ s.stopHeadSign }} </p>
+                    </ng-template>
+                </div>
+                <div class="sidebar-body-schedule-status">
+                    <p> {{ s.arrivalTime }} </p>
+                    <ng-container *ngIf="getVehicleForTrip(s.tripId) as vehicle; else noOccupancyData">
+                        <div class="sidebar-body-schedule-occupancy">
+                            <div *ngFor="let occupancy of vehicle.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
+                                <p> {{ len - j }} </p>
+                            </div>
+                        </div>
+                    </ng-container>
+                    <ng-template #noOccupancyData>
+                        <p>No vehicle data</p>
+                    </ng-template>
+                </div>
+                <div class="sidebar-body-stop-route" [style.background-color]="getCorrespondingRouteColour(s.routeId, s.mode)">
+                    <p> {{ getRouteCode(s.routeId, s.mode) }} </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
