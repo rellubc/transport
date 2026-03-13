@@ -183,11 +183,13 @@ public class SydneyTrainsController : ControllerBase
         var isSaturday  = dayOfWeek == DayOfWeek.Saturday;
         var isSunday    = dayOfWeek == DayOfWeek.Sunday;
 
+        Console.WriteLine(time);
+
         var query = _db.StopTimes
             .Where(st => st.Mode == "sydneytrains" && (st.PickupType || st.DropOffType))
             .Join(_db.Trips, st => st.TripId, t => t.Id, (st, t) => new { st, t })
             .Join(_db.Calendars, x => x.t.ServiceId, c => c.ServiceId, (x, c) => new { x.st, x.t, c })
-            .Where(x => x.c.StartDate <= time && x.c.EndDate >= time)
+            .Where(x => (x.c.StartDate <= time && x.c.EndDate >= time) || (x.c.StartDate.DayOfWeek == dayOfWeek))
             .Where(x =>
                 (isMonday    && x.c.Monday)    ||
                 (isTuesday   && x.c.Tuesday)   ||
@@ -341,7 +343,7 @@ public class SydneyTrainsController : ControllerBase
             .Where(st => st.TripId == tripId && st.Mode == "sydneytrains" && (st.PickupType || st.DropOffType))
             .Join(_db.Trips, st => st.TripId, t => t.Id, (st, t) => new { st, t })
             .Join(_db.Calendars, x => x.t.ServiceId, c => c.ServiceId, (x, c) => new { x.st, x.t, c })
-            .Where(x => x.c.StartDate <= time && x.c.EndDate >= time)
+            .Where(x => (x.c.StartDate <= time && x.c.EndDate >= time) || (x.c.StartDate.DayOfWeek == dayOfWeek))
             .Where(x =>
                 (isMonday    && x.c.Monday)    ||
                 (isTuesday   && x.c.Tuesday)   ||

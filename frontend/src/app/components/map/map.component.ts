@@ -46,8 +46,8 @@ export class MapComponent {
   
   map!: Map
 
-  stopSource: VectorSource | null = null;
-  stopLayer: VectorLayer | null = null;
+  stopSource: Record<string, VectorSource> | null = null;
+  stopLayer: Record<string, VectorLayer> | null = null;
   vehicleSource: VectorSource | null = null;
   vehicleLayer: VectorLayer | null = null;
 
@@ -87,9 +87,8 @@ export class MapComponent {
       localStorage.setItem('zoom', zoom.toString())
       localStorage.setItem('center', center.toString())
 
-      this.stopSource?.clear()
+      Object.entries(this.stopSource!).forEach(([mode, source]) => source.clear())
 
-      console.log(zoom)
       if (zoom && zoom > 18) {
         this.updateStops('Platform', false);
       } else if (zoom && zoom <= 18 && zoom >= 11) {
@@ -128,9 +127,13 @@ export class MapComponent {
   }
 
   addStops(mode: string, combined?: boolean) {
-    this.stopSource = new VectorSource({})
-    this.stopLayer = new VectorLayer({
-      source: this.stopSource,
+    if (!this.stopSource || !this.stopLayer) {
+      this.stopSource = {}
+      this.stopLayer = {}
+    }
+    this.stopSource[mode] = new VectorSource({})
+    this.stopLayer[mode] = new VectorLayer({
+      source: this.stopSource[mode],
       updateWhileAnimating: true,
       updateWhileInteracting: true,
       style: function (feature) {
@@ -147,8 +150,8 @@ export class MapComponent {
       },
     });
     
-    this.stopLayer.set('name', 'stops')
-    this.map.addLayer(this.stopLayer)
+    this.stopLayer[mode].set('name', 'stops')
+    this.map.addLayer(this.stopLayer[mode])
 
     const zoom = this.map.getView().getZoom();
     if (zoom && zoom > 18) {
@@ -166,6 +169,7 @@ export class MapComponent {
       if (type === 'Station' && stop.parentStationId !== "") return
       if (regional && stop.network !== 'regional') return
       if (!regional && stop.network === 'regional') return
+      if (this.stopSource && !this.stopSource[stop.mode]) return
       const coord = fromLonLat([stop.longitude, stop.latitude])
 
       const feature = new Feature({
@@ -182,8 +186,8 @@ export class MapComponent {
       } else {
         feature.set('station', stop.name)
       }
-
-      this.stopSource!.addFeature(feature);
+      if (!this.stopSource) return
+      this.stopSource[stop.mode].addFeature(feature);
     });
   }
 

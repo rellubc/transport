@@ -97,6 +97,7 @@
 }
 
 .sidebar-body-schedule-stop {
+    min-height: 38px;
     display: flex;
     flex-direction: row;
     align-items: center;

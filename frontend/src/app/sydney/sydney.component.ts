@@ -26,6 +26,7 @@ export class SydneyComponent {
     const metroStops = await getSydneyMetroStops()
     const trainStops = await getSydneyTrainsStops()
     this.stops = metroStops.concat(trainStops)
+    console.log(this.stops.sort((a, b) => a.id.localeCompare(b.id)))
     this.map.stops = this.stops
 
     const metroShapes = await getSydneyMetroShapes()

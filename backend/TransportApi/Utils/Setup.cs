@@ -459,7 +459,6 @@ public static class Setup
                         {
                             if (!existingStopIds.Contains(cols[0] + "|sydneytrains"))
                             {
-                                Console.WriteLine(cols[1] + " " + cols[2]);
                                 var entity = new Stop
                                 {
                                     Id = cols[0],

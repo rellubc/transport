@@ -9,6 +9,7 @@ import { LucideAngularModule, X } from 'lucide-angular';
 import { getSydneyMetroStopTimes, getSydneyMetroTrip, getSydneyMetroTripUpdates } from '../../sydney-metro/sydney-metro-helpers';
 import { getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripStopTimes, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers';
 import { Shape } from '../../../shared/models/shape';
+import { getSydneyCombinedStopTimes } from '../../sydney/sydney-helpers';
 
 @Component({
   selector: 'app-map-sidebar',
@@ -70,6 +71,8 @@ export class MapSidebarComponent {
 
       this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.currentProps.id)!
 
+      console.log(this.currentProps.type)
+
       if (this.currentProps.type === 'metro') {
         this.currentRealtimeTrip = await getSydneyMetroTripUpdates(incomingProps.tripId)
         this.currentTrip = await getSydneyMetroTrip(this.currentProps.tripId)
@@ -77,6 +80,9 @@ export class MapSidebarComponent {
         this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(incomingProps.tripId)
         this.currentTrip = await getSydneyTrainsTrip(this.currentProps.tripId)
         const tripStopTimes: StopTime[] = await getSydneyTrainsTripStopTimes(this.currentProps.tripId, new Date().toISOString())
+
+        console.log(this.currentRealtimeTrip)
+        console.log(tripStopTimes)
 
         this.currentTripStopTimes = tripStopTimes.map((st) => {
           const corresponding = this.currentRealtimeTrip!.stopTimeUpdate.find((stu) => stu.stopId === st.stopId)
@@ -129,9 +135,11 @@ export class MapSidebarComponent {
       else if (this.currentProps.mode === 'sydneytrains')
         this.currentStopScheduledServices = await getSydneyTrainsStopTimes(this.currentProps.name, new Date().toISOString(), false)
       else if (this.currentProps.mode === 'combined') {
-        this.currentStopScheduledServices = await getSydneyTrainsStopTimes(this.currentProps.name, new Date().toISOString(), false)
-        this.currentStopScheduledServices = this.currentStopScheduledServices.concat(await getSydneyMetroStopTimes(this.currentProps.name, new Date().toISOString(), false))
+        this.currentStopScheduledServices = await getSydneyCombinedStopTimes(this.currentProps.name, new Date().toISOString(), false)
+        console.log(this.currentStopScheduledServices)
       }
+
+      console.log(this.currentStopScheduledServices)
 
       if (this.currentStopScheduledServices.length < 24) {
         this.preLoadingDone = true
@@ -230,12 +238,20 @@ export class MapSidebarComponent {
     barCover.style.height = `calc(${currentProgress}px)`
   }
 
-  // no info for sydney metro yet
   stopScroller = async () => {
     if (!this.container) return
     if (this.currentStopScheduledServices.length === 0) return
     if (this.container.scrollTop === 0) {
-      const temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
+      let temp: StopTime[] = []
+      if (this.currentProps.mode === 'metro')
+        temp = await getSydneyMetroStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
+      else if (this.currentProps.mode === 'sydneytrains')
+        temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
+      else if (this.currentProps.mode === 'combined') {
+        temp = await getSydneyCombinedStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
+        console.log(temp)
+      }
+      // const temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
 
       if (temp.length > 0)
         this.currentStopScheduledServices = temp.concat(this.currentStopScheduledServices)
@@ -246,7 +262,16 @@ export class MapSidebarComponent {
         this.container.scrollTop = 72 * temp.length
       }, 0)
     } else if (this.container.scrollTop === 72 * Math.max(0, (this.currentStopScheduledServices.length - 12)) + (this.preLoadingDone ? 62 : 110)) {
-      const temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
+      let temp: StopTime[] = []
+      if (this.currentProps.mode === 'metro')
+        temp = await getSydneyMetroStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
+      else if (this.currentProps.mode === 'sydneytrains')
+        temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
+      else if (this.currentProps.mode === 'combined') {
+        temp = await getSydneyCombinedStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
+        console.log(temp)
+      }
+      // const temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
 
       if (temp.length > 0)
         this.currentStopScheduledServices = this.currentStopScheduledServices.concat(temp)
