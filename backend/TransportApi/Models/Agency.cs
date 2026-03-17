@@ -3,48 +3,50 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TransportApi.Models;
 
+
 [Table("agency")]
 public class Agency
 {
     [Key]
     [Column("agency_id")]
-    [Required]
-    [StringLength(255)]
     public string Id { get; set; } = null!;
     
     [Column("agency_name")]
-    [Required]
-    [StringLength(255)]
     public string Name { get; set; } = null!;
     
     [Column("agency_url")]
-    [Required]
     [Url]
-    [StringLength(255)]
-    public string Url { get; set; } = "http://transportnsw.info";
+    public string Url { get; set; } = null!;
     
     [Column("agency_timezone")]
-    [Required]
-    [StringLength(255)]
-    public string Timezone { get; set; } = "Australia/Sydney";
+    public string Timezone { get; set; } = null!;
     
     [Column("agency_lang")]
-    [Required]
-    [StringLength(255)]
-    public string Lang { get; set; } = "EN";
+    public string Language { get; set; } = null!;
     
     [Column("agency_phone")]
-    [Required]
     [Phone]
-    [StringLength(255)]
-    public string Phone { get; set; } = "131500";
+    public string Phone { get; set; } = null!; 
 
     [Column("agency_fare_url")]
-    [StringLength(255)]
-    public string? FareUrl { get; set; } = "http://transportnsw.info";
+    public string FareUrl { get; set; } = null!;
 
     [Column("agency_email")]
     [EmailAddress]
-    [StringLength(255)]
-    public string? Email { get; set; } = "information@transport.nsw.gov.au";
+    public string Email { get; set; } = null!;
+
+    public static Agency ParseColumns(string[] cols)
+    {
+        return new Agency
+        {
+            Id = cols[0],
+            Name = cols[1],
+            Url = cols[2],
+            Timezone = cols[3],
+            Language = cols[4],
+            Phone = cols[5],
+            FareUrl = cols[6],
+            Email = cols[7]
+        };
+    }
 }

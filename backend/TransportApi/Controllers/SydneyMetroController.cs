@@ -29,31 +29,37 @@ public class SydneyMetroController : ControllerBase
         Ok(await _db.Agencies.ToListAsync());
 
     [HttpGet("calendars")]
-    public async Task<ActionResult<List<CalendarDto>>> GetSydneyMetroCalendars(string serviceId)
-    {
-        var calendar = await _db.Calendars.Where(c => c.ServiceId == serviceId).SingleOrDefaultAsync();
+    public async Task<ActionResult<List<CalendarDto>>> GetSydneyMetroCalendars(string? serviceId)
+    {   
+        IQueryable<Calendar> query = _db.Calendars;
 
-        // invalid serviceId
-        if (calendar == null)
+        if (!string.IsNullOrWhiteSpace(serviceId))
+        {
+            query = query.Where(c => c.ServiceId == serviceId);
+        }
+
+        if (!query.Any())
         {
             return NotFound();
         }
 
-        var calendarDto = new CalendarDto
-        {
-            ServiceId = calendar.ServiceId,
-            Monday = calendar.Monday,
-            Tuesday = calendar.Tuesday,
-            Wednesday = calendar.Wednesday,
-            Thursday = calendar.Thursday,
-            Friday = calendar.Friday,
-            Saturday = calendar.Saturday,
-            Sunday = calendar.Sunday,
-            StartDate = calendar.StartDate,
-            EndDate = calendar.EndDate
-        };
+        var calendarDtos = await query
+            .Select(c => new CalendarDto
+            {
+                ServiceId = c.ServiceId,
+                Monday = c.Monday,
+                Tuesday = c.Tuesday,
+                Wednesday = c.Wednesday,
+                Thursday = c.Thursday,
+                Friday = c.Friday,
+                Saturday = c.Saturday,
+                Sunday = c.Sunday,
+                StartDate = c.StartDate,
+                EndDate = c.EndDate
+            })
+            .ToListAsync();
 
-        return Ok(calendarDto);
+        return Ok(calendarDtos);
     }
 
     [HttpGet("notes")]
@@ -72,7 +78,6 @@ public class SydneyMetroController : ControllerBase
 
         foreach (var shape in shapes)
         {
-            if (shape.Mode != "metro") continue;
             if (!shapesDictionary.TryGetValue(shape.Id, out List<ShapeDetails>? value))
             {
                 value = [];
@@ -85,7 +90,6 @@ public class SydneyMetroController : ControllerBase
                 Longitude = shape.Longitude,
                 Sequence = shape.Sequence,
                 DistanceTravelled = shape.DistanceTravelled,
-                Mode = shape.Mode,
             });
         }
 
@@ -102,7 +106,6 @@ public class SydneyMetroController : ControllerBase
         var stops = await _db.Stops.ToListAsync();
 
         var stopsDto = stops
-        .Where(s => s.Mode == "metro")
         .Select(s => new StopDto
         {
             Id = s.Id,
@@ -113,29 +116,6 @@ public class SydneyMetroController : ControllerBase
             ParentStationId = s.ParentStationId,
             WheelchairBoarding = s.WheelchairBoarding,
             PlatformCode = s.PlatformCode,
-            Mode = s.Mode
-        }).ToList();
-
-        return Ok(stopsDto);
-    }
-
-    [HttpGet("stops-platforms")]
-    public async Task<ActionResult<List<StopDto>>> GetSydneyMetroStopsPlatforms(string stopId) {
-        var stops = await _db.Stops.ToListAsync();
-
-        var stopsDto = stops
-        .Where(s => s.Mode == "metro" && s.ParentStationId == stopId)
-        .Select(s => new StopDto
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Latitude = s.Latitude,
-            Longitude = s.Longitude,
-            LocationType = s.LocationType,
-            ParentStationId = s.ParentStationId,
-            WheelchairBoarding = s.WheelchairBoarding,
-            PlatformCode = s.PlatformCode,
-            Mode = s.Mode
         }).ToList();
 
         return Ok(stopsDto);
@@ -147,49 +127,36 @@ public class SydneyMetroController : ControllerBase
         var time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.Parse(timeString).ToUniversalTime(), TimeZoneInfo.FindSystemTimeZoneById("AUS Eastern Standard Time"));
         var dayOfWeek = time.DayOfWeek;
 
-        var isMonday    = dayOfWeek == DayOfWeek.Monday;
-        var isTuesday   = dayOfWeek == DayOfWeek.Tuesday;
-        var isWednesday = dayOfWeek == DayOfWeek.Wednesday;
-        var isThursday  = dayOfWeek == DayOfWeek.Thursday;
-        var isFriday    = dayOfWeek == DayOfWeek.Friday;
-        var isSaturday  = dayOfWeek == DayOfWeek.Saturday;
-        var isSunday    = dayOfWeek == DayOfWeek.Sunday;
-
         var query = _db.StopTimes
-            .Where(st => st.Mode == "metro" && (st.PickupType || st.DropOffType))
+            .Where(st => st.PickupType == 0 || st.DropOffType == 0)
             .Join(_db.Trips, st => st.TripId, t => t.Id, (st, t) => new { st, t })
             .Join(_db.Calendars, x => x.t.ServiceId, c => c.ServiceId, (x, c) => new { x.st, x.t, c })
             .Where(x => x.c.StartDate <= time && x.c.EndDate >= time)
             .Where(x =>
-                (isMonday    && x.c.Monday)    ||
-                (isTuesday   && x.c.Tuesday)   ||
-                (isWednesday && x.c.Wednesday) ||
-                (isThursday  && x.c.Thursday)  ||
-                (isFriday    && x.c.Friday)    ||
-                (isSaturday  && x.c.Saturday)  ||
-                (isSunday    && x.c.Sunday)
+                (dayOfWeek == DayOfWeek.Monday && x.c.Monday == 1) ||
+                (dayOfWeek == DayOfWeek.Tuesday && x.c.Tuesday == 1) ||
+                (dayOfWeek == DayOfWeek.Wednesday && x.c.Wednesday == 1) ||
+                (dayOfWeek == DayOfWeek.Thursday && x.c.Thursday == 1) ||
+                (dayOfWeek == DayOfWeek.Friday && x.c.Friday == 1) ||
+                (dayOfWeek == DayOfWeek.Saturday && x.c.Saturday == 1) ||
+                (dayOfWeek == DayOfWeek.Sunday && x.c.Sunday == 1)
             )
-            .Join(_db.Stops, x => x.st.StopId, s => s.Id, (x, s) => new { x.st, x.t, x.c, s})
+            .Join(_db.Stops, x => x.st.StopId, s => s.Id, (x, s) => new { x.st, x.t, x.c, s })
             .Where(x => x.s.Name.Contains(stopName))
             .Select(x => new 
             {
                 x.st.TripId,
                 x.st.ArrivalTime,
                 x.st.DepartureTime,
+                x.s.Name,
+                x.s.Id,
                 x.t.RouteId,
+                x.st.StopSequence,
                 x.st.StopHeadSign,
                 x.st.PickupType,
                 x.st.DropOffType,
-                x.st.ShapeDistanceTravelled,
-                x.st.Mode,
+                x.st.ShapeDistanceTravelled
             });
-
-        var missingHeadsigns = await query
-            .Where(x => string.IsNullOrEmpty(x.StopHeadSign))
-            .Select(x => x.TripId)
-            .ToHashSetAsync();
-
-        var missingHeadsignsDict = await GetSydneyMetroTripHeadsigns(missingHeadsigns) ?? new Dictionary<string, string>();
 
         var stopTimesDto = query
             .Select(x => new StopTimeDto
@@ -197,12 +164,14 @@ public class SydneyMetroController : ControllerBase
                 TripId = x.TripId,
                 ArrivalTime = x.ArrivalTime,
                 DepartureTime = x.DepartureTime,
+                StopName = x.Name,
+                StopId = x.Id,
                 RouteId = x.RouteId,
-                StopHeadSign = !string.IsNullOrEmpty(x.StopHeadSign) ? x.StopHeadSign : missingHeadsignsDict.GetValueOrDefault(x.TripId),
+                StopSequence = x.StopSequence,
+                StopHeadSign = x.StopHeadSign,
                 PickupType = x.PickupType,
                 DropOffType = x.DropOffType,
                 ShapeDistanceTravelled = x.ShapeDistanceTravelled,
-                Mode = x.Mode
             })
             .ToList();
 
@@ -295,6 +264,86 @@ public class SydneyMetroController : ControllerBase
         };
 
         return Ok(tripDto);
+    }
+
+    [HttpGet("trip-stop-times")]
+    public async Task<ActionResult<StopTimeDto>> GetSydneyMetroTripStopTimes(string tripId, string timeString)
+    {
+        var time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.Parse(timeString).ToUniversalTime(), TimeZoneInfo.FindSystemTimeZoneById("AUS Eastern Standard Time"));
+        var dayOfWeek = time.DayOfWeek;
+
+        var query = _db.StopTimes
+            .Where(st => st.TripId == tripId)
+            .Where(st => st.PickupType == 0 || st.DropOffType == 0)
+            .Join(_db.Trips, st => st.TripId, t => t.Id, (st, t) => new { st, t })
+            .Join(_db.Calendars, x => x.t.ServiceId, c => c.ServiceId, (x, c) => new { x.st, x.t, c })
+            .Where(x => x.c.StartDate <= time && x.c.EndDate >= time)
+            .Where(x =>
+                (dayOfWeek == DayOfWeek.Monday && x.c.Monday == 1) ||
+                (dayOfWeek == DayOfWeek.Tuesday && x.c.Tuesday == 1) ||
+                (dayOfWeek == DayOfWeek.Wednesday && x.c.Wednesday == 1) ||
+                (dayOfWeek == DayOfWeek.Thursday && x.c.Thursday == 1) ||
+                (dayOfWeek == DayOfWeek.Friday && x.c.Friday == 1) ||
+                (dayOfWeek == DayOfWeek.Saturday && x.c.Saturday == 1) ||
+                (dayOfWeek == DayOfWeek.Sunday && x.c.Sunday == 1)
+            )
+            .Join(_db.Stops, x => x.st.StopId, s => s.Id, (x, s) => new { x.st, x.t, x.c, s })
+            .Select(x => new
+            {
+                x.st.TripId,
+                x.st.ArrivalTime,
+                x.st.DepartureTime,
+                x.s.Name,
+                x.s.Id,
+                x.t.RouteId,
+                x.st.StopSequence,
+                x.st.StopHeadSign,
+                x.st.PickupType,
+                x.st.DropOffType,
+                x.st.ShapeDistanceTravelled
+            });
+
+        var stopTimesDto = await query
+            .Select(x => new StopTimeDto
+            {
+                TripId = x.TripId,
+                ArrivalTime = x.ArrivalTime,
+                DepartureTime = x.DepartureTime,
+                StopName = x.Name,
+                StopId = x.Id,
+                StopSequence = x.StopSequence,
+                StopHeadSign = x.StopHeadSign,
+                PickupType = x.PickupType,
+                DropOffType = x.DropOffType,
+                ShapeDistanceTravelled = x.ShapeDistanceTravelled,
+            })
+            .ToListAsync();
+
+        stopTimesDto.Sort((a, b) => a.ArrivalTime.CompareTo(b.ArrivalTime));
+        var rotatedFirstIndex = stopTimesDto.FindIndex((st) => st.ArrivalTime.Hours >= 4);
+
+        var index = 0;
+        for (var i = 0; i < stopTimesDto.Count; i++)
+        {
+            if (stopTimesDto[i].ArrivalTime > time.TimeOfDay)
+            {
+                index = i;
+                break;
+            }
+        }
+
+        stopTimesDto.Sort((a, b) =>
+        {
+            bool aIsEarly = a.ArrivalTime.Hours < 4;
+            bool bIsEarly = b.ArrivalTime.Hours < 4;
+
+            if (aIsEarly == bIsEarly)
+                return a.ArrivalTime.CompareTo(b.ArrivalTime);
+
+            return aIsEarly ? 1 : -1;
+        });
+
+        return Ok(stopTimesDto); 
     }
 
     [HttpGet("realtime-trip-updates")]

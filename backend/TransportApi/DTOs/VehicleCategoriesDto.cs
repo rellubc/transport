@@ -4,5 +4,5 @@ public class VehicleCategoryDto
 {
     public string VehicleCategoryId { get; set; } = null!;
 
-    public string? VehicleCategoryName { get; set; }
+    public string VehicleCategoryName { get; set; } = null!;
 }

@@ -11,5 +11,5 @@ public class VehicleCategory
     public string VehicleCategoryId { get; set; } = null!;
     
     [Column("vehicle_category_name")]
-    public string? VehicleCategoryName { get; set; }
+    public string VehicleCategoryName { get; set; }
 }

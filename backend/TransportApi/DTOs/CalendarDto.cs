@@ -4,19 +4,19 @@ public class CalendarDto
 {
     public string ServiceId { get; set; } = null!;
 
-    public bool Monday { get; set; }
+    public int Monday { get; set; }
 
-    public bool Tuesday { get; set; }
+    public int Tuesday { get; set; }
 
-    public bool Wednesday { get; set; }
+    public int Wednesday { get; set; }
 
-    public bool Thursday { get; set; }
+    public int Thursday { get; set; }
 
-    public bool Friday { get; set; }
+    public int Friday { get; set; }
 
-    public bool Saturday { get; set; }
+    public int Saturday { get; set; }
 
-    public bool Sunday { get; set; }
+    public int Sunday { get; set; }
 
     public DateTime StartDate { get; set; }
 

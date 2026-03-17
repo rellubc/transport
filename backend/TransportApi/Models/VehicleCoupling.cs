@@ -19,5 +19,5 @@ public class VehicleCoupling
     public int ChildSequence { get; set; }
     
     [Column("child_label")]
-    public string? ChildLabel { get; set; }
+    public string ChildLabel { get; set; }
 }

@@ -29,10 +29,7 @@ public class TransportDbContext : DbContext
             .HasKey(st => new { st.TripId, st.StopSequence });
 
         modelBuilder.Entity<Shape>()
-            .HasKey(s => new { s.Id, s.Sequence, s.Mode });
-
-        modelBuilder.Entity<Stop>()
-            .HasKey(s => new { s.Id, s.Mode });
+            .HasKey(s => new { s.Id, s.Sequence });
 
         modelBuilder.Entity<VehicleBoarding>()
             .HasKey(vb => new { vb.VehicleCategoryId, vb.ChildSequence, vb.BoardingAreaId });

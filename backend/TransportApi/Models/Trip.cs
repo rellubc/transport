@@ -8,49 +8,33 @@ public class Trip
 {
     [Key]
     [Column("trip_id")]
-    [Required]
-    [StringLength(255)]
     public string Id { get; set; } = null!;
 
     [Column("route_id")]
-    [Required]
-    [StringLength(255)]
     public string RouteId { get; set; } = null!;
 
     [Column("service_id")]
-    [Required]
     public string ServiceId { get; set; } = null!;
 
-    [ForeignKey("ServiceId")]
-    public Calendar? Service { get; set; }
-
     [Column("shape_id")]
-    [Required]
     public string ShapeId { get; set; } = null!;
 
     [Column("trip_headsign")]
-    [Required]
-    [StringLength(255)]
     public string HeadSign { get; set; } = null!;
 
     [Column("direction_id")]
-    [Required]
     public int DirectionId { get; set; }
 
     [Column("trip_short_name")]
-    [StringLength(255)]
-    public string? ShortName { get; set; }
+    public string ShortName { get; set; } = null!;
 
     [Column("block_id")]
-    [StringLength(255)]
-    public string? BlockId { get; set; }
+    public string BlockId { get; set; } = null!;
 
     [Column("wheelchair_accessible")]
-    [Required]
     public int WheelchairAccessible { get; set; }
 
     [Column("trip_note")]
-    [StringLength(255)]
     public string? TripNote { get; set; }
 
     [Column("route_direction")]
@@ -61,4 +45,23 @@ public class Trip
 
     [Column("vehicle_category_id")]
     public string? VehicleCategoryId { get; set; }
+
+    public static Trip ParseColumns(string[] cols)
+    {
+        return new Trip
+        {
+            RouteId = cols[0],
+            ServiceId = cols[1],
+            Id = cols[2],
+            ShapeId = cols[3],
+            HeadSign = cols[4],
+            DirectionId = int.Parse(cols[5]),
+            ShortName = cols[6],
+            BlockId = cols[7],
+            WheelchairAccessible = int.Parse(cols[8]),
+            TripNote = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9],
+            RouteDirection = string.IsNullOrWhiteSpace(cols[10]) ? null : cols[10],
+            BikesAllowed = string.IsNullOrWhiteSpace(cols[11]) ? null : int.Parse(cols[11])
+        };
+    }
 }

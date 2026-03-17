@@ -1,10 +1,10 @@
-import { Component, ElementRef, Input, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, Input, ViewChild } from '@angular/core'
+import { CommonModule } from '@angular/common'
 
 import Map from 'ol/Map.js'
-import View from 'ol/View';
-import Tile from 'ol/layer/Tile';
-import StadiaMaps from 'ol/source/StadiaMaps';
+import View from 'ol/View'
+import Tile from 'ol/layer/Tile'
+import StadiaMaps from 'ol/source/StadiaMaps'
 
 import Feature from 'ol/Feature'
 import VectorSource from 'ol/source/Vector'
@@ -14,20 +14,21 @@ import Style from 'ol/style/Style'
 import Stroke from 'ol/style/Stroke'
 
 import { LineString, Point } from 'ol/geom'
-import { fromLonLat } from 'ol/proj';
+import { fromLonLat } from 'ol/proj'
 
-import { Shape } from '../../../shared/models/shape';
-import { Stop } from '../../../shared/models/stop';
-import CircleStyle from 'ol/style/Circle';
-import { Fill, Icon, Text } from 'ol/style';
-import { getSydneyMetroStopsPlatforms, getSydneyMetroStopTimes, getSydneyMetroTrip, getSydneyMetroTripUpdates } from '../../sydney-metro/sydney-metro-helpers';
-import { TripUpdate, VehiclePosition } from '../../../shared/models/realtime';
-import { Trip } from '../../../shared/models/trip';
-import { StopTime } from '../../../shared/models/stopTime';
-import { getSydneyTrainsStops, getSydneyTrainsStopsPlatforms, getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers';
-import { coloursMap, routesMap } from '../../../shared/models/constants';
-import { getDepartures } from './map-helpers';
-import { MapSidebarComponent } from '../map-sidebar/map-sidebar.component';
+import { Shape } from '../../../shared/models/shape'
+import { Stop } from '../../../shared/models/stop'
+import CircleStyle from 'ol/style/Circle'
+import { Fill, Icon, Text } from 'ol/style'
+import { getSydneyMetroStopsPlatforms, getSydneyMetroStopTimes, getSydneyMetroTrip, getSydneyMetroTripUpdates } from '../../sydney-metro/sydney-metro-helpers'
+import { TripUpdate, VehiclePosition } from '../../../shared/models/realtime'
+import { Trip } from '../../../shared/models/trip'
+import { StopTime } from '../../../shared/models/stopTime'
+import { getSydneyTrainsStops, getSydneyTrainsStopsPlatforms, getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers'
+import { coloursMap, routesMap, routeTypeMap } from '../../../shared/models/constants'
+import { getDepartures } from './map-helpers'
+import { MapSidebarComponent } from '../map-sidebar/map-sidebar.component'
+import { Vector } from 'ol/source'
 
 @Component({
   selector: 'app-map',
@@ -40,16 +41,19 @@ import { MapSidebarComponent } from '../map-sidebar/map-sidebar.component';
 export class MapComponent {
   @ViewChild(MapSidebarComponent) mapSidebar!: MapSidebarComponent
 
-  @Input() stops: Stop[] = [];
-  @Input() vehicles: VehiclePosition[] = [];
-  @Input() shapes: Shape = {};
+  @Input() stops: Stop[] = []
+  @Input() vehicles: VehiclePosition[] = []
+  @Input() shapes: Shape = {}
   
   map!: Map
 
-  stopSource: Record<string, VectorSource> | null = null;
-  stopLayer: Record<string, VectorLayer> | null = null;
-  vehicleSource: VectorSource | null = null;
-  vehicleLayer: VectorLayer | null = null;
+  routeTypes: number[] = []
+  shapeSource: Record<string, VectorSource> = {}
+  shapeLayer: Record<string, VectorLayer> = {}
+  stopSource: Record<string, VectorSource> = {}
+  stopLayer: Record<string, VectorLayer> = {}
+  vehicleSource: Record<string, VectorSource> = {}
+  vehicleLayer: Record<string, VectorLayer> = {}
 
   createMap() {    
     const center = localStorage.getItem('center') ? [Number(localStorage.getItem('center')!.split(',')[0]), Number(localStorage.getItem('center')!.split(',')[1])] : fromLonLat([151.05, -33.82])
@@ -69,7 +73,7 @@ export class MapComponent {
       ],
       target: 'map',
       controls: []
-    });
+    })
 
     this.map.on('singleclick', (evt) => {
       const feature = this.map.forEachFeatureAtPixel(evt.pixel, f => f)
@@ -87,33 +91,16 @@ export class MapComponent {
       localStorage.setItem('zoom', zoom.toString())
       localStorage.setItem('center', center.toString())
 
-      Object.entries(this.stopSource!).forEach(([mode, source]) => source.clear())
+      if (this.stopSource) Object.entries(this.stopSource!).forEach(([_mode, source]) => source.clear())
 
-      if (zoom && zoom > 18) {
-        this.updateStops('Platform', false);
-      } else if (zoom && zoom <= 18 && zoom >= 11) {
-        this.updateStops('Station', false);
-      } else if (zoom && zoom < 11) {
-        this.updateStops('Station', true)
-      }
-    });
+      this.addStops()
+    })
   }
 
-  addShape = (routeId: string, shapeIds: string[]) => {
-    const features: Feature<LineString>[] = shapeIds.map((shapeId) => {
-      const lineCoords = this.shapes[shapeId].map(s => fromLonLat([s.longitude, s.latitude]))
-      return new Feature({
-        geometry: new LineString(lineCoords),
-        propType: 'route',
-      })
-    })
-
-    const shapeSource = new VectorSource({
-      features,
-    })
-
-    const shapeLayer = new VectorLayer({
-      source: shapeSource,
+  addShapeSource(routeId: string, routeType: number) {
+    this.shapeSource[routeTypeMap[routeType]] = new VectorSource({})
+    this.shapeLayer[routeTypeMap[routeType]] = new VectorLayer({
+      source: this.shapeSource[routeTypeMap[routeType]],
       style: new Style({
         stroke: new Stroke({
           color: coloursMap[routeId] || '#0000000',
@@ -121,19 +108,15 @@ export class MapComponent {
         }),
       }),
     })
-
-    shapeLayer.set('name', routesMap[routeId])
-    this.map.addLayer(shapeLayer)
+    
+    this.shapeLayer[routeTypeMap[routeType]].set('name', routesMap[routeId])
+    this.map.addLayer(this.shapeLayer[routeTypeMap[routeType]])
   }
 
-  addStops(mode: string, combined?: boolean) {
-    if (!this.stopSource || !this.stopLayer) {
-      this.stopSource = {}
-      this.stopLayer = {}
-    }
-    this.stopSource[mode] = new VectorSource({})
-    this.stopLayer[mode] = new VectorLayer({
-      source: this.stopSource[mode],
+  addStopSource(routeType: number) {
+    this.stopSource[routeTypeMap[routeType]] = new VectorSource({})
+    this.stopLayer[routeTypeMap[routeType]] = new VectorLayer({
+      source: this.stopSource[routeTypeMap[routeType]],
       updateWhileAnimating: true,
       updateWhileInteracting: true,
       style: function (feature) {
@@ -143,115 +126,119 @@ export class MapComponent {
         const scale = Math.max(0.05, 0.05 + (zoom - 11.8) * 0.02)
         return new Style({
           image: new Icon({
-            src: `${mode}.png`,
+            src: `${routeTypeMap[routeType].toLowerCase()}.png`,
             scale: scale,
           }),
-        });
+        })
       },
-    });
+    })
     
-    this.stopLayer[mode].set('name', 'stops')
-    this.map.addLayer(this.stopLayer[mode])
+    this.stopLayer[routeTypeMap[routeType]].set('name', 'stops')
+    this.map.addLayer(this.stopLayer[routeTypeMap[routeType]])
+  }
 
-    const zoom = this.map.getView().getZoom();
-    if (zoom && zoom > 18) {
-      this.updateStops('Platform', combined);
-    } else if (zoom && zoom <= 18 && zoom >= 11) {
-      this.updateStops('Station', combined);
-    } else if (zoom && zoom < 11) {
-      this.updateStops('Station', combined, true)
+  addVehicleSource(routeType: number) {
+    this.vehicleSource[routeTypeMap[routeType]] = new VectorSource({})
+    this.vehicleLayer[routeTypeMap[routeType]] = new VectorLayer({
+      source: this.vehicleSource[routeTypeMap[routeType]],
+      zIndex: 9999,
+      style: (feature) => {
+        let routeId: string = ''
+
+        if (routeTypeMap[routeType] === 'Metro')
+          routeId = feature.get('routeId').split('_')[1]
+        else 
+          routeId = feature.get('routeId').split('_')[0]
+
+        let colourHex: string = coloursMap[routeId]
+
+        return new Style({
+          image: new CircleStyle({
+            radius: 6,
+            fill: new Fill({ color: colourHex }),
+            stroke: new Stroke({ color: '#ffffff', width: 2 }),
+          }),
+        })
+      },
+    })
+
+    this.vehicleLayer[routeTypeMap[routeType]].set('name', 'vehicles')
+    this.map.addLayer(this.vehicleLayer[routeTypeMap[routeType]])
+  }
+
+  addShapes() {
+    for (const routeType of this.routeTypes) {
+      Object.keys(this.shapes).forEach((shapeId) => {
+        const lineCoords = this.shapes[shapeId].map(s => fromLonLat([s.longitude, s.latitude]))
+        const feature = new Feature({
+          geometry: new LineString(lineCoords),
+          type: 'route',
+        })
+
+        this.shapeSource[routeTypeMap[routeType]].addFeature(feature)
+      })
     }
   }
 
-  updateStops(type: string, combined?: boolean, regional?: boolean) {
-    this.stops.forEach((stop, index) => {
-      if (type === 'Platform' && stop.parentStationId === "") return
-      if (type === 'Station' && stop.parentStationId !== "") return
-      if (regional && stop.network !== 'regional') return
-      if (!regional && stop.network === 'regional') return
-      if (this.stopSource && !this.stopSource[stop.mode]) return
-      const coord = fromLonLat([stop.longitude, stop.latitude])
-
-      const feature = new Feature({
-        geometry: new Point(coord),
-        name: stop.name,
-        id: stop.id,
-        mode: combined ? 'combined' : stop.mode,
-        propType: 'stop',
-        index,
-      });
-
-      if (stop.name.includes('Platform')) {
-        feature.set('platform', stop.name)
-      } else {
-        feature.set('station', stop.name)
+  addStops() {
+    for (const routeType of this.routeTypes) {
+      const zoom = this.map.getView().getZoom()
+      let type: string
+      let regional: boolean = zoom && zoom < 11 ? true : false
+      if (zoom && zoom > 18) {
+        type = 'Platform'
+      } else if (zoom && zoom <= 18 && zoom >= 11) {
+        type = 'Station'
+      } else if (zoom && zoom < 18) {
+        // for regional major stations?
       }
-      if (!this.stopSource) return
-      this.stopSource[stop.mode].addFeature(feature);
-    });
+
+      const filteredStops = this.stops.filter((stop) => {
+        if (type === 'Platform' && !stop.parentStationId) return false
+        if (type === 'Station' && stop.parentStationId) return false
+        return true
+      })
+
+      filteredStops.forEach((stop) => {
+        const feature = new Feature({
+          geometry: new Point(fromLonLat([stop.longitude, stop.latitude])),
+          name: stop.name,
+          id: stop.id,
+          type: 'stop',
+          mode: routeTypeMap[routeType],
+        })
+
+        this.stopSource[routeTypeMap[routeType]].addFeature(feature)
+      })
+    }
   }
 
-  updateVehiclePositions() {
-    if (!this.vehicleSource) {
-      this.vehicleSource = new VectorSource({})
-      this.vehicleLayer = new VectorLayer({
-        source: this.vehicleSource,
-        zIndex: 9999,
-        style: (feature) => {
-          const type = feature.get('type')
+  updateVehicles() {
+    for (const routeType of this.routeTypes) {
+      this.vehicleSource[routeTypeMap[routeType]].clear()
 
-          let routeId: string = ''
+      this.vehicles.forEach((vehicle, index) => {
+        if (vehicle.position?.latitude == null || vehicle.position?.longitude == null) return
+        if (vehicle.vehicle?.id == null) return
+        if (vehicle.trip?.tripId == null) return
 
-          if (type === 'metro')
-            routeId = feature.get('routeId').split('_')[1]
-          else 
-            routeId = feature.get('routeId').split('_')[0]
+        const feature = new Feature({
+          geometry: new Point(fromLonLat([vehicle.position.longitude, vehicle.position.latitude])),
+          id: vehicle.vehicle.id,
+          tripId: vehicle.trip.tripId,
+          routeId: vehicle.trip.routeId,
+          mode: routeTypeMap[routeType],
+          type: 'vehicle',
+        })
 
-          let colourHex: string = coloursMap[routeId]
-
-          return new Style({
-            image: new CircleStyle({
-              radius: 6,
-              fill: new Fill({ color: colourHex }),
-              stroke: new Stroke({ color: '#ffffff', width: 2 }),
-            }),
-          })
-        },
-      });
-      this.vehicleLayer.set('name', 'vehicles')
-      this.map.addLayer(this.vehicleLayer)
+        this.vehicleSource[routeTypeMap[routeType]].addFeature(feature)
+      })
     }
-
-    this.vehicleSource.clear()
-
-    this.vehicles.forEach((vehicle, index) => {
-      if (vehicle.position?.latitude == null || vehicle.position?.longitude == null) return
-      if (vehicle.vehicle?.id == null) return
-      if (vehicle.trip?.tripId == null) return
-
-      let type: string = ''
-
-      if (vehicle.trip.routeId?.includes('M1')) type = 'metro'
-      else type = 'sydneytrains'
-
-      const coord = fromLonLat([vehicle.position.longitude, vehicle.position.latitude]);
-
-      const feature = new Feature({
-        geometry: new Point(coord),
-        id: vehicle.vehicle.id,
-        tripId: vehicle.trip.tripId,
-        routeId: vehicle.trip.routeId,
-        type: type,
-        propType: 'vehicle',
-      });
-
-      this.vehicleSource!.addFeature(feature);
-    });
   }
 
   async refresh() {
     console.log('Updating vehicle positions...')
-    this.updateVehiclePositions()
+    this.updateVehicles()
     this.mapSidebar.refresh()
   }
 

@@ -59,7 +59,7 @@ export const getSydneyMetroShapes = async (): Promise<Shape>=> {
 
     const data: Shape = await res.json()
 
-    console.log(data)
+    // console.log(data)
 
     return data
   } catch (error) {
@@ -86,8 +86,6 @@ export const getSydneyMetroStopTimes = async (stopName: string, timeString: stri
       return normalise(a.arrivalTime).localeCompare(normalise(b.arrivalTime))
     })
 
-    // console.log(data)
-
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -106,6 +104,20 @@ export const getSydneyMetroTrip = async (tripId: string): Promise<Trip>=> {
   } catch (error) {
     console.error('Fetch failed:', error)
     return { id: '', routeId: '', serviceId: '', shapeId: -1, headSign: '', directionId: -1, shortName: '', wheelchairAccessible: 0, routeDirection: '' }
+  }
+}
+
+export const getSydneyMetroTripStopTimes = async (tripId: string, timeString: string): Promise<StopTime[]>=> {
+  try {
+    const res = await fetch(`https://localhost:7284/api/sydney/metro/trip-stop-times?tripId=${tripId}&timeString=${timeString}`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const data: StopTime[] = await res.json()
+
+    return data
+  } catch (error) {
+    console.error('Fetch failed:', error)
+    return []
   }
 }
 

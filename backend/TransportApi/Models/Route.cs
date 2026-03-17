@@ -7,47 +7,46 @@ namespace TransportApi.Models;
 public class Route
 {
     [Column("route_id")]
-    [Required]
-    [StringLength(255)]
     public string Id { get; set; } = null!;
 
     [Column("agency_id")]
-    [Required]
-    [StringLength(255)]
     public string AgencyId { get; set; } = null!;
 
     [Column("route_short_name")]
-    [Required]
-    [StringLength(255)]
     public string ShortName { get; set; } = null!;
 
     [Column("route_long_name")]
-    [Required]
-    [StringLength(255)]
     public string LongName { get; set; } = null!;
 
     [Column("route_desc")]
-    [Required]
-    [StringLength(255)]
     public string Description { get; set; } = null!;
 
     [Column("route_type")]
-    [Required]
     public int Type { get; set; }
 
     [Column("route_colour")]
-    [Required]
-    [StringLength(6)]
-    public string Colour { get; set; } = "00B5EF";
+    public string Colour { get; set; } = null!;
 
     [Column("route_text_colour")]
-    [Required]
-    [StringLength(6)]
-    public string TextColour { get; set; } = "FFFFFF";
+    public string TextColour { get; set; } = null!;
 
     [Column("route_url")]
-    [Required]
     [Url]
-    [StringLength(255)]
     public string Url { get; set; } = null!;
+
+    public static Route ParseColumns(string[] cols)
+    {
+        return new Route
+        {
+            Id = cols[0],
+            AgencyId = cols[1],
+            ShortName = cols[2],
+            LongName = cols[3],
+            Description = cols[4],
+            Type = int.Parse(cols[5]),
+            Colour = cols[6],
+            TextColour = cols[7],
+            Url = cols[8]
+        };
+    }
 }

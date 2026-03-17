@@ -1,3 +1,19 @@
+export const ROUTE_TYPE_LIGHT_RAIL = 0
+export const ROUTE_TYPE_METRO = 401
+export const ROUTE_TYPE_RAIL = 2
+export const ROUTE_TYPE_BUS = 3
+export const ROUTE_TYPE_FERRY = 4
+export const ROUTE_TYPE_REGIONAL_RAIL = 105
+
+export const routeTypeMap: Record<number, string> = {
+    0: 'Light Rail',
+    401: 'Metro',
+    2: 'Rail',
+    3: 'Bus',
+    4: 'Ferry',
+    105: 'Regional Rail',
+}
+
 export const vehiclesMap: Record<string, string> = {
     'T8': 'Tangara (T)',
     'A8': 'Waratah (A)',

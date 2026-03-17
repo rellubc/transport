@@ -5,6 +5,7 @@ import { getSydneyMetroShapes, getSydneyMetroStops, getSydneyMetroVehiclePositio
 import { Stop } from '../../shared/models/stop';
 import { Shape } from '../../shared/models/shape';
 import { VehiclePosition } from '../../shared/models/realtime';
+import { ROUTE_TYPE_METRO } from '../../shared/models/constants';
 
 @Component({
   selector: 'app-sydney-metro',
@@ -19,26 +20,31 @@ export class SydneyMetroComponent {
   shapes: Shape = {}
   vehicles: VehiclePosition[] = []
 
-  METRO_FIRST_SHAPE: string = "3722"
-  METRO_SECOND_SHAPE: string = "16714"
-
   async ngOnInit(): Promise<void> {
     this.stops = await getSydneyMetroStops()
     this.map.stops = this.stops
+
     this.shapes = await getSydneyMetroShapes()
     this.map.shapes = this.shapes
 
-    this.map.addShape('M1', Object.keys(this.shapes))
-    this.map.addStops('metro')
+    this.map.routeTypes.push(ROUTE_TYPE_METRO)
+    this.map.addShapeSource('M1', ROUTE_TYPE_METRO)
+    this.map.addStopSource(ROUTE_TYPE_METRO)
+    this.map.addVehicleSource(ROUTE_TYPE_METRO)
+
+    this.map.addShapes()
+    this.map.addStops()
 
     this.vehicles = await getSydneyMetroVehiclePositions()
     this.map.vehicles = this.vehicles
     this.map.refresh()
+    console.log(this.vehicles)
 
     setInterval(async () => {
       this.vehicles = await getSydneyMetroVehiclePositions();
       this.map.vehicles = this.vehicles
       this.map.refresh()
+      console.log(this.vehicles)
     }, 15000)
   }
 }
