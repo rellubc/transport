@@ -72,7 +72,9 @@ public class SydneyMetroController : ControllerBase
 
     [HttpGet("shapes")]
     public async Task<ActionResult<Dictionary<int, List<ShapeDetails>>>> GetSydneyMetroShapes() {
-        var shapes = await _db.Shapes.ToListAsync();
+        var shapes = await _db.Shapes
+            .Where(s => s.Mode == "Metro")
+            .ToListAsync();
 
         Dictionary<string, List<ShapeDetails>> shapesDictionary = [];
 
@@ -103,7 +105,9 @@ public class SydneyMetroController : ControllerBase
 
     [HttpGet("stops")]
     public async Task<ActionResult<List<StopDto>>> GetSydneyMetroStops() {
-        var stops = await _db.Stops.ToListAsync();
+        var stops = await _db.Stops
+            .Where(s => s.Mode == "Metro")
+            .ToListAsync();
 
         var stopsDto = stops
         .Select(s => new StopDto
@@ -128,6 +132,7 @@ public class SydneyMetroController : ControllerBase
         var dayOfWeek = time.DayOfWeek;
 
         var query = _db.StopTimes
+            .Where(st => st.Mode == "Metro")
             .Where(st => st.PickupType == 0 || st.DropOffType == 0)
             .Join(_db.Trips, st => st.TripId, t => t.Id, (st, t) => new { st, t })
             .Join(_db.Calendars, x => x.t.ServiceId, c => c.ServiceId, (x, c) => new { x.st, x.t, c })
@@ -273,6 +278,7 @@ public class SydneyMetroController : ControllerBase
         var dayOfWeek = time.DayOfWeek;
 
         var query = _db.StopTimes
+            .Where(st => st.Mode == "Metro")
             .Where(st => st.TripId == tripId)
             .Where(st => st.PickupType == 0 || st.DropOffType == 0)
             .Join(_db.Trips, st => st.TripId, t => t.Id, (st, t) => new { st, t })

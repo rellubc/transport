@@ -19,9 +19,12 @@ public class Shape
     public int Sequence { get; set; }
 
     [Column("shape_dist_travelled")]
-    public decimal DistanceTravelled { get; set; }
+    public decimal? DistanceTravelled { get; set; }
+    
+    [Column("mode")]
+    public string Mode { get; set; } = null!;
 
-    public static Shape ParseColumns(string[] cols)
+    public static Shape ParseMetroColumns(string[] cols)
     {
         return new Shape
         {
@@ -29,7 +32,21 @@ public class Shape
             Latitude = decimal.Parse(cols[1]),
             Longitude = decimal.Parse(cols[2]),
             Sequence = int.Parse(cols[3]),
-            DistanceTravelled = decimal.Parse(cols[4])
+            DistanceTravelled = decimal.Parse(cols[4]),
+            Mode = "Metro"
+        };
+    }
+
+    public static Shape ParseRailColumns(string[] cols)
+    {
+        return new Shape
+        {
+            Id = cols[0],
+            Latitude = decimal.Parse(cols[1]),
+            Longitude = decimal.Parse(cols[2]),
+            Sequence = int.Parse(cols[3]),
+            DistanceTravelled = string.IsNullOrWhiteSpace(cols[4]) ? null : decimal.Parse(cols[4]),
+            Mode = "Rail"
         };
     }
 }

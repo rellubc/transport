@@ -13,4 +13,5 @@ export interface StopTime {
   timepoint?: number
   stopNote?: string
   mode: string
+  delay?: number
 }

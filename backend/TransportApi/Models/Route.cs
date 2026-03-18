@@ -34,7 +34,7 @@ public class Route
     [Url]
     public string Url { get; set; } = null!;
 
-    public static Route ParseColumns(string[] cols)
+    public static Route ParseMetroColumns(string[] cols)
     {
         return new Route
         {
@@ -47,6 +47,22 @@ public class Route
             Colour = cols[6],
             TextColour = cols[7],
             Url = cols[8]
+        };
+    }
+
+    public static Route ParseRailColumns(string[] cols)
+    {
+        return new Route
+        {
+            Id = cols[0],
+            AgencyId = cols[1],
+            ShortName = cols[2],
+            LongName = cols[3],
+            Description = cols[4],
+            Type = int.Parse(cols[5]),
+            Url = cols[6],
+            Colour = cols[7],
+            TextColour = cols[8]
         };
     }
 }

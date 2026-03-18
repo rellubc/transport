@@ -110,36 +110,48 @@
 }
 
 .sidebar-body-schedule-stop.pad-bottom {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .sidebar-body-schedule-vehicle {
     position: relative;
+
     display: flex;
     flex-direction: row;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+
     padding: 1rem 0 1rem 0rem;
     border-bottom: 2px solid #d3d3d3AA;
 }
 
-.sidebar-body-schedule-status {
-    position: absolute;
-    right: 0;
+.sidebar-body-schedule-vehicle-stop {
+    flex-grow: 1;
+}
+
+.sidebar-body-schedule-platform-occupancy {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-body-schedule-vehicle-time {
     display: flex;
     flex-direction: column;
-    align-items: end;
+    
+    align-items: center;
 }
 
 .sidebar-body-schedule-occupancy {
     display: flex;
     flex-direction: row;
-    gap: 0.1rem;
 }
 
 .sidebar-body-schedule-occupancy-carriage {
-    width: 19px;
-    height: 19px;
+    width: 16px;
+    height: 16px;
     display: flex;
     flex-direction: row;
     justify-content: center;

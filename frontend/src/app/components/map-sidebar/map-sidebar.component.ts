@@ -46,11 +46,8 @@ export class MapSidebarComponent {
       console.log('Updating current schedule...')
 
       this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.currentProps.id)!
-      if (this.currentProps.mode === 'Metro')
-        this.currentRealtimeTrip = await getSydneyMetroTripUpdates(this.currentProps.tripId)
-      else if (this.currentProps.mode === 'sydneytrains')
-        this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(this.currentProps.tripId)
 
+      this.updateTripStopTimes()
       this.updateBar()
     } else if (this.currentProps.type === 'stop') {
       console.log('Updating current departures...')
@@ -62,9 +59,6 @@ export class MapSidebarComponent {
   }
 
   async openSidebar(incomingProps: any) {
-    console.log('open')
-    console.log(this.currentProps, incomingProps)
-
     if (this.currentProps && incomingProps.id === this.currentProps.id) return
 
     // edge case Light Rail service on metro api
@@ -75,25 +69,17 @@ export class MapSidebarComponent {
     this.open = true
     this.currentProps = incomingProps
     if (this.currentProps.type === 'vehicle') {
-
       this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.currentProps.id)!
-      // console.log('currentVehicle', this.currentVehicle)
 
       if (this.currentProps.mode === 'Metro') {
         this.currentScheduledTrip = await getSydneyMetroTrip(incomingProps.tripId)
         this.currentScheduledTripStopTimes = await getSydneyMetroTripStopTimes(incomingProps.tripId, new Date().toISOString())
-        this.currentRealtimeTrip = await getSydneyMetroTripUpdates(incomingProps.tripId)
-        // todo: assign realtime trip times to scheduled trip times then calculate delays
-
-        // console.log(this.currentScheduledTrip)
-        // console.log(this.currentScheduledTripStopTimes)
-        // console.log(this.currentRealtimeTrip)
       }
       else if (this.currentProps.mode === 'sydneytrains') {
         console.log('rail')
       }
-
-      this.updateBar()
+      
+      this.updateTripStopTimes()
     } else if (this.currentProps.type === 'stop') {
       console.log('stop')
 
@@ -135,6 +121,41 @@ export class MapSidebarComponent {
   
     this.preLoadingDone = false
     this.postLoadingDone = false
+  }
+
+  async updateTripStopTimes() {
+    if (!this.currentVehicle || !this.currentScheduledTrip) return
+
+    if (this.currentProps.mode === 'Metro') {
+      this.currentRealtimeTrip = await getSydneyMetroTripUpdates(this.currentProps.tripId)
+      // todo: assign realtime trip times to scheduled trip times then calculate delays
+    } else if (this.currentProps.mode === 'sydneytrains') {
+      console.log('rail')
+    }
+
+    if (!this.currentRealtimeTrip) return
+    const realtimeTrip = this.currentRealtimeTrip
+    this.currentScheduledTripStopTimes.forEach((stopTime) => {
+      let arrival = false
+      const realtimeStopTime = realtimeTrip.stopTimeUpdate.find((stopTimeUpdate) => stopTimeUpdate.stopId === stopTime.stopId)
+      
+      if (!realtimeStopTime) return
+      if (!realtimeStopTime.departure?.time) arrival = true
+      
+      // possibly departure time delay not accounted for
+      const pad = (n: number) => String(n).padStart(2, "0");
+      let realtimeString: string
+      if (arrival) {
+        realtimeString = pad(realtimeStopTime.arrival?.time!.getHours()!) + ":" + pad(realtimeStopTime.arrival?.time!.getMinutes()!) + ":" + pad(realtimeStopTime.arrival?.time!.getSeconds()!)
+      } else {
+        realtimeString = pad(realtimeStopTime.departure?.time!.getHours()!) + ":" + pad(realtimeStopTime.departure?.time!.getMinutes()!) + ":" + pad(realtimeStopTime.departure?.time!.getSeconds()!)
+      }
+
+      stopTime.departureTime = realtimeString
+      stopTime.delay = realtimeStopTime.departure?.delay || realtimeStopTime.arrival?.delay
+    })
+
+    this.updateBar()
   }
 
   updateBar() {
@@ -200,6 +221,7 @@ export class MapSidebarComponent {
   stopScroller = async () => {
     if (!this.container) return
     if (this.currentScheduledStopTimes.length === 0) return
+
     if (this.container.scrollTop === 0) {
       let temp: StopTime[] = []
       if (this.currentProps.mode === 'Metro')
@@ -220,7 +242,7 @@ export class MapSidebarComponent {
         if (!this.container) return
         this.container.scrollTop = 72 * temp.length
       }, 0)
-    } else if (this.container.scrollTop === 72 * Math.max(0, (this.currentScheduledStopTimes.length - 12)) + (this.preLoadingDone ? 62 : 110)) {
+    } else if (this.container.scrollTop === 72 * Math.max(0, (this.currentScheduledStopTimes.length - 12)) + (this.preLoadingDone ? 116 : 164)) {
       let temp: StopTime[] = []
       if (this.currentProps.mode === 'Metro')
         temp = await getSydneyMetroStopTimes(this.currentProps.name, this.currentScheduledStopTimes[this.currentScheduledStopTimes.length - 1].arrivalTime, false)
@@ -251,6 +273,14 @@ export class MapSidebarComponent {
 
   getDepartureDate(time: string) {
     return new Date(`1970-01-01T${time}`);
+  }
+
+  getDelay(delay: number) {
+    const floored = delay < 0 ? Math.ceil(delay / 60) : Math.floor(delay / 60)
+
+    if (floored < 0) return `${Math.abs(floored)} mins early`
+    else if (floored > 0) return `${Math.abs(floored)} mins late`
+    else return 'On time'
   }
 
   getOccupancyColour(status: number): string {

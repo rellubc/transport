@@ -21,7 +21,7 @@ public class Agency
     [Column("agency_timezone")]
     public string Timezone { get; set; } = null!;
     
-    [Column("agency_lang")]
+    [Column("agency_language")]
     public string Language { get; set; } = null!;
     
     [Column("agency_phone")]
@@ -35,7 +35,7 @@ public class Agency
     [EmailAddress]
     public string Email { get; set; } = null!;
 
-    public static Agency ParseColumns(string[] cols)
+    public static Agency ParseMetroColumns(string[] cols)
     {
         return new Agency
         {
@@ -47,6 +47,19 @@ public class Agency
             Phone = cols[5],
             FareUrl = cols[6],
             Email = cols[7]
+        };
+    }
+
+    public static Agency ParseRailColumns(string[] cols)
+    {
+        return new Agency
+        {
+            Id = cols[0],
+            Name = cols[1],
+            Url = cols[2],
+            Timezone = cols[3],
+            Language = cols[4],
+            Phone = cols[5]
         };
     }
 }

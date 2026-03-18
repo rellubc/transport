@@ -23,17 +23,20 @@
                 <div class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
                     <div class="sidebar-body-innerdot"></div>
                 </div>
-                <div>
+                <div class="sidebar-body-schedule-vehicle-stop">
                     <p> {{ stu.stopName!.split(',')[0] }} </p>
-                    <p> {{ stu.stopName!.split(',')[1] }} </p>
-                </div>
-                <div class="sidebar-body-schedule-status">
-                    <p> {{ getDepartureDate(stu.departureTime) | date:'HH:mm' }} </p>
-                    <div *ngIf="i === currentVehicle?.currentStopSequence" class="sidebar-body-schedule-occupancy">
-                        <div *ngFor="let occupancy of currentVehicle?.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
-                            <p> {{ len - j }} </p>
+                    <div class="sidebar-body-schedule-platform-occupancy">
+                        <p> {{ stu.stopName!.split(',')[1] }} </p>
+                        <div *ngIf="i === currentVehicle?.currentStopSequence" class="sidebar-body-schedule-occupancy">
+                            <div *ngFor="let occupancy of currentVehicle?.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
+                                <p> {{ len - j }} </p>
+                            </div>
                         </div>
                     </div>
+                </div>
+                <div class="sidebar-body-schedule-vehicle-time">
+                    <p> {{ getDepartureDate(stu.departureTime) | date:'HH:mm:ss' }} </p>
+                    <p *ngIf ="stu.delay" [ngStyle]="{ 'font-size': '0.8rem' }"> {{ getDelay(stu.delay) }} </p>
                 </div>
             </div>
             <div class="sidebar-body-bar"></div>

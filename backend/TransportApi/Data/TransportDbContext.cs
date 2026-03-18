@@ -11,6 +11,7 @@ public class TransportDbContext : DbContext
 
     public DbSet<Agency> Agencies { get; set; } = null!;
     public DbSet<Calendar> Calendars { get; set; } = null!;
+    public DbSet<Occupancy> Occupancies { get; set; } = null!;
     public DbSet<Note> Notes { get; set; } = null!;
     public DbSet<Models.Route> Routes { get; set; } = null!;
     public DbSet<Trip> Trips { get; set; } = null!;
@@ -24,6 +25,12 @@ public class TransportDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Occupancy>()
+            .HasKey(o => new { o.TripId, o.StopSequence, o.StartDate });
+
+        modelBuilder.Entity<Stop>()
+            .HasKey(s => new { s.Id, s.Mode });
 
         modelBuilder.Entity<StopTime>()
             .HasKey(st => new { st.TripId, st.StopSequence });

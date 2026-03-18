@@ -46,7 +46,7 @@ public class Trip
     [Column("vehicle_category_id")]
     public string? VehicleCategoryId { get; set; }
 
-    public static Trip ParseColumns(string[] cols)
+    public static Trip ParseMetroColumns(string[] cols)
     {
         return new Trip
         {
@@ -62,6 +62,23 @@ public class Trip
             TripNote = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9],
             RouteDirection = string.IsNullOrWhiteSpace(cols[10]) ? null : cols[10],
             BikesAllowed = string.IsNullOrWhiteSpace(cols[11]) ? null : int.Parse(cols[11])
+        };
+    }
+
+    public static Trip ParseRailColumns(string[] cols)
+    {
+        return new Trip
+        {
+            RouteId = cols[0],
+            ServiceId = cols[1],
+            Id = cols[2],
+            HeadSign = cols[3],
+            ShortName = cols[4],
+            DirectionId = int.Parse(cols[5]),
+            BlockId = cols[6],
+            ShapeId = cols[7],
+            WheelchairAccessible = int.Parse(cols[8]),
+            VehicleCategoryId = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9],
         };
     }
 }

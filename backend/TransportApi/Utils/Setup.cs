@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.VisualBasic.FileIO;
 using System.Globalization;
 using System.IO.Compression;
@@ -33,8 +34,8 @@ public static class Setup
         var existingCalendarIds = new HashSet<string>(db.Calendars.Select(c => c.ServiceId));
         var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.Id));
         var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
-        var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence));
-        var existingStopIds = new HashSet<string>(db.Stops.Select(s => s.Id));
+        var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence + "|" + s.Mode));
+        var existingStopIds = new HashSet<string>(db.Stops.Select(s => s.Id + "|" + s.Mode));
         var existingStopTimeIds = new HashSet<string>(db.StopTimes.Select(s => s.TripId + "|" + s.StopSequence));
         var existingTripIds = new HashSet<string>(db.Trips.Select(t => t.Id));
        
@@ -72,12 +73,18 @@ public static class Setup
                     {
                         case "agency.txt":
                         {
-                            agencies.Add(Agency.ParseColumns(cols));
+                            if (!existingAgencyIds.Contains(cols[0]))
+                            {
+                                agencies.Add(Agency.ParseMetroColumns(cols));
+                            }
                             break;
                         }
                         case "calendar.txt":
                         {
-                            calendars.Add(Models.Calendar.ParseColumns(cols));
+                            if (!existingCalendarIds.Contains(cols[0]))
+                            {
+                                calendars.Add(Models.Calendar.ParseColumns(cols));
+                            }
                             break;
                         }
                         case "calendar_dates.txt":
@@ -87,32 +94,50 @@ public static class Setup
                         }
                         case "notes.txt":
                         {
-                            notes.Add(Note.ParseColumns(cols));
+                            if (!existingNoteIds.Contains(cols[0]))
+                            {
+                                notes.Add(Note.ParseColumns(cols));
+                            }
                             break;
                         }
                         case "routes.txt":
                         {
-                            routes.Add(Models.Route.ParseColumns(cols));
+                            if (!existingRouteIds.Contains(cols[0]))
+                            {
+                                routes.Add(Models.Route.ParseMetroColumns(cols));
+                            }
                             break;
                         }
                         case "shapes.txt":
                         {
-                            shapes.Add(Shape.ParseColumns(cols));
+                            if (!existingShapeIds.Contains(cols[0] + "|" + int.Parse(cols[3]) + "|Metro"))
+                            {
+                                shapes.Add(Shape.ParseMetroColumns(cols));
+                            }
                             break;
                         }
                         case "stops.txt":
                         {
-                            stops.Add(Stop.ParseColumns(cols));
+                            if (!existingStopIds.Contains(cols[0] + "|Metro"))
+                            {
+                                stops.Add(Stop.ParseMetroColumns(cols));
+                            }
                             break;
                         }
                         case "stop_times.txt":
                         {
-                            stopTimes.Add(StopTime.ParseColumns(cols));
+                            if (!existingStopTimeIds.Contains(cols[0] + "|" + int.Parse(cols[4])))
+                            {
+                                stopTimes.Add(StopTime.ParseMetroColumns(cols));
+                            }
                             break;
                         }
                         case "trips.txt":
                         {
-                            trips.Add(Trip.ParseColumns(cols));
+                            if (!existingTripIds.Contains(cols[2]))
+                            {
+                                trips.Add(Trip.ParseMetroColumns(cols));
+                            }
                             break;
                         }
                     }
@@ -151,428 +176,354 @@ public static class Setup
 
         app.Logger.LogInformation("Adding New Entries");
 
-        foreach (var agency in agencies)
-        {
-            if (!existingAgencyIds.Contains(agency.Id))
-            {
-                db.Agencies.Add(agency);
-            }
-        }
+        var newAgencies = agencies
+            .Where(a => !existingAgencyIds.Contains(a.Id))
+            .ToList();
 
-        foreach (var calendar in calendars)
-        {
-            if (!existingCalendarIds.Contains(calendar.ServiceId))
-            {
-                db.Calendars.Add(calendar);
-            }
-        }
+        var newCalendars = calendars
+            .Where(c => !existingCalendarIds.Contains(c.ServiceId))
+            .ToList();
 
-        foreach (var note in notes)
-        {
-            if (!existingNoteIds.Contains(note.Id))
-            {
-                db.Notes.Add(note);
-            }
-        }
+        var newNotes = notes
+            .Where(n => !existingNoteIds.Contains(n.Id))
+            .ToList();
 
-        foreach (var shape in shapes)
-        {
-            if (!existingShapeIds.Contains($"{shape.Id}|{shape.Sequence}"))
-            {
-                  db.Shapes.Add(shape);
-            }
-        }
+        var newShapes = shapes
+            .Where(s => !existingShapeIds.Contains($"{s.Id}|{s.Sequence}"))
+            .ToList();
 
-        foreach (var stop in stops)
-        {
-            if (!existingStopIds.Contains(stop.Id))
-            {
-                db.Stops.Add(stop);
-            }
-        }
+        var newStops = stops
+            .Where(s => !existingStopIds.Contains($"{s.Id}|Metro"))
+            .ToList();
 
+        var newRoutes = routes
+            .Where(r => !existingRouteIds.Contains(r.Id))
+            .ToList();
+
+        var newTrips = trips
+            .Where(t => !existingTripIds.Contains(t.Id))
+            .ToList();
+
+        var newStopTimes = stopTimes
+            .Where(st => !existingStopTimeIds.Contains($"{st.TripId}|{st.StopSequence}"))
+            .ToList();
+
+        db.Agencies.AddRange(newAgencies);
+        db.Calendars.AddRange(newCalendars);
+        db.Notes.AddRange(newNotes);
+        db.Shapes.AddRange(newShapes);
+        db.Stops.AddRange(newStops);
+        
         await db.SaveChangesAsync();
 
-        foreach (var route in routes)
-        {
-            if (!existingRouteIds.Contains(route.Id))
-            {
-                db.Routes.Add(route);
-            }
-        }
-
+        db.Routes.AddRange(newRoutes);
+        
+        await db.SaveChangesAsync();
+        
+        db.Trips.AddRange(newTrips);
+        
         await db.SaveChangesAsync();
 
-        foreach (var trip in trips)
-        {
-            if (!existingTripIds.Contains(trip.Id))
-            {
-                db.Trips.Add(trip);
-            }
-        }
-
-        await db.SaveChangesAsync();
-
-        foreach (var stopTime in stopTimes)
-        {
-            if (!existingStopTimeIds.Contains($"{stopTime.TripId}|{stopTime.StopSequence}"))
-            {
-                db.StopTimes.Add(stopTime);
-            }
-        }
+        db.StopTimes.AddRange(newStopTimes);
 
         await db.SaveChangesAsync();
 
         app.Logger.LogInformation("Complete");
     }
 
-    // async public static Task PopulateSydneyTrains(this WebApplication app)
-    // {
-    //     using var scope = app.Services.CreateScope();
-    //     var factory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-    //     var db = scope.ServiceProvider.GetRequiredService<TransportDbContext>();
+    async public static Task PopulateSydneyTrains(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var factory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+        var db = scope.ServiceProvider.GetRequiredService<TransportDbContext>();
 
-    //     var client = factory.CreateClient("TransportNSW");
-    //     var response = await client.GetAsync("https://api.transport.nsw.gov.au/v1/gtfs/schedule/sydneytrains");
+        var client = factory.CreateClient("TransportNSW");
+        var response = await client.GetAsync("https://api.transport.nsw.gov.au/v1/gtfs/schedule/sydneytrains");
 
-    //     if (!response.IsSuccessStatusCode)
-    //     {
-    //         app.Logger.LogWarning($"Failed to fetch data: {response.StatusCode}");
-    //         return;
-    //     }
+        if (!response.IsSuccessStatusCode)
+        {
+            app.Logger.LogWarning($"Failed to fetch data: {response.StatusCode}");
+            return;
+        }
 
-    //     var zipBytes = await response.Content.ReadAsByteArrayAsync();
-    //     using var memoryStream = new MemoryStream(zipBytes);
-    //     using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
+        var zipBytes = await response.Content.ReadAsByteArrayAsync();
+        using var memoryStream = new MemoryStream(zipBytes);
+        using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
 
-    //     var existingAgencyIds = new HashSet<string>(db.Agencies.Select(a => a.Id));
-    //     var existingCalendarIds = new HashSet<string>(db.Calendars.Select(c => c.ServiceId));
-    //     var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.Id));
-    //     var existingVehicleCategoryIds = new HashSet<string>(db.VehicleCategories.Select(vc => vc.VehicleCategoryId));
-    //     var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence + "|" + s.Mode));
-    //     var existingStopIds = new HashSet<string>(db.Stops.Select(s => s.Id + "|" + s.Mode));
-    //     var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
-    //     var existingTripIds = new HashSet<string>(db.Trips.Select(t => t.Id));
-    //     var existingStopTimeIds = new HashSet<string>(db.StopTimes.Select(s => s.TripId + "|" + s.StopSequence));
-    //     var existingVehicleBoardingIds = new HashSet<string>(db.VehicleBoardings.Select(vb => vb.VehicleCategoryId + "|" + vb.ChildSequence + "|" + "|" + vb.BoardingAreaId));
-    //     var existingVehicleCouplingIds = new HashSet<string>(db.VehicleCouplings.Select(vc => vc.ParentId + "|" + vc.ChildId + "|" + vc.ChildSequence));
+        var existingAgencyIds = new HashSet<string>(db.Agencies.Select(a => a.Id));
+        var existingCalendarIds = new HashSet<string>(db.Calendars.Select(c => c.ServiceId));
+        var existingNoteIds = new HashSet<string>(db.Notes.Select(n => n.Id));
+        var existingOccupancyIds = new HashSet<string>(db.Occupancies.Select(o => o.TripId + "|" + o.StopSequence + "|" + o.StartDate));
+        var existingRouteIds = new HashSet<string>(db.Routes.Select(r => r.Id));
+        var existingShapeIds = new HashSet<string>(db.Shapes.Select(s => s.Id + "|" + s.Sequence + "|" + s.Mode));
+        var existingStopIds = new HashSet<string>(db.Stops.Select(s => s.Id + "|" + s.Mode));
+        var existingStopTimeIds = new HashSet<string>(db.StopTimes.Select(s => s.TripId + "|" + s.StopSequence));
+        var existingTripIds = new HashSet<string>(db.Trips.Select(t => t.Id));
+        var existingVehicleBoardingIds = new HashSet<string>(db.VehicleBoardings.Select(vb => vb.VehicleCategoryId + "|" + vb.ChildSequence + "|" + "|" + vb.BoardingAreaId));
+        var existingVehicleCategoryIds = new HashSet<string>(db.VehicleCategories.Select(vc => vc.VehicleCategoryId));
+        var existingVehicleCouplingIds = new HashSet<string>(db.VehicleCouplings.Select(vc => vc.ParentId + "|" + vc.ChildId + "|" + vc.ChildSequence));
 
-    //     var newAgencies = new List<Agency>();
-    //     var newCalendars = new List<Models.Calendar>();
-    //     var newNotes = new List<Note>();
-    //     var newRoutes = new List<Models.Route>();
-    //     var newShapes = new List<Shape>();
-    //     var newStops = new List<Stop>();
-    //     var newStopTimes = new List<StopTime>();
-    //     var newTrips = new List<Trip>();
-    //     var newVehicleCategories = new List<VehicleCategory>();
-    //     var newVehicleBoardings = new List<VehicleBoarding>();
-    //     var newVehicleCouplings = new List<VehicleCoupling>();
+        var agencies = new List<Agency>();
+        var calendars = new List<Models.Calendar>();
+        var notes = new List<Note>();
+        var occupancies = new List<Occupancy>();
+        var routes = new List<Models.Route>();
+        var shapes = new List<Shape>();
+        var stops = new List<Stop>();
+        var stopTimes = new List<StopTime>();
+        var trips = new List<Trip>();
+        var vehicleBoardings = new List<VehicleBoarding>();
+        var vehicleCategories = new List<VehicleCategory>();
+        var vehicleCouplings = new List<VehicleCoupling>();
 
-    //     foreach (var entry in archive.Entries)
-    //     {
-    //         using var entryStream = entry.Open();
-    //         using var reader = new StreamReader(entryStream);
+        foreach (var entry in archive.Entries)
+        {
+            using var entryStream = entry.Open();
+            using var reader = new StreamReader(entryStream);
 
-    //         // skip header line
-    //         Console.WriteLine($"Processing {entry.Name}, {await reader.ReadLineAsync()}");
+            // skip header line
+            Console.WriteLine($"Processing {entry.Name}, {await reader.ReadLineAsync()}");
 
-    //         string? line;
-    //         while ((line = await reader.ReadLineAsync()) != null)
-    //         {
-    //             using var parser = new TextFieldParser(new StringReader(line));
-    //             parser.HasFieldsEnclosedInQuotes = true;
-    //             parser.SetDelimiters(",");
+            string? line;
+            while ((line = await reader.ReadLineAsync()) != null)
+            {
+                using var parser = new TextFieldParser(new StringReader(line));
+                parser.HasFieldsEnclosedInQuotes = true;
+                parser.SetDelimiters(",");
 
-    //             var cols = parser.ReadFields();
-    //             if (cols == null) continue;
+                var cols = parser.ReadFields();
+                if (cols == null) continue;
 
-    //             try
-    //             {
-    //                 switch (entry.FullName)
-    //                 {
-    //                     case "agency.txt":
-    //                     {
-    //                         if (!existingAgencyIds.Contains(cols[0]))
-    //                         {
-    //                             var entity = new Agency
-    //                             {
-    //                                 Id = cols[0],
-    //                                 Name = cols[1],
-    //                                 Url = cols[2],
-    //                                 Timezone = cols[3],
-    //                                 Lang = cols[4],
-    //                                 Phone = cols[5],
-    //                             };
-    //                             newAgencies.Add(entity);
-    //                         }
-    //                         break;
-    //                     }
-    //                     case "calendar.txt":
-    //                     {
-    //                         if (!existingCalendarIds.Contains(cols[0]))
-    //                         {
-    //                             var entity = new Models.Calendar
-    //                             {
-    //                                 ServiceId = cols[0],
-    //                                 Monday = cols[1] == "1",
-    //                                 Tuesday = cols[2] == "1",
-    //                                 Wednesday = cols[3] == "1",
-    //                                 Thursday = cols[4] == "1",
-    //                                 Friday = cols[5] == "1",
-    //                                 Saturday = cols[6] == "1",
-    //                                 Sunday = cols[7] == "1",
-    //                                 StartDate = DateTime.ParseExact(cols[8], "yyyyMMdd", CultureInfo.InvariantCulture),
-    //                                 EndDate = DateTime.ParseExact(cols[9], "yyyyMMdd", CultureInfo.InvariantCulture),
-    //                             };
-    //                             newCalendars.Add(entity);
-    //                         }
-    //                         break;
-    //                     }
-    //                     case "calendar_dates.txt":
-    //                     {
-    //                         // currently empty
-    //                         break;
-    //                     }
-    //                     case "notes.txt":
-    //                     {
-    //                         // currently empty
-    //                         break;
-    //                     }
-    //                     case "routes.txt":
-    //                     {
-    //                         if (!existingRouteIds.Contains(cols[0]))
-    //                         {
-    //                             var entity = new Models.Route
-    //                             {
-    //                                 Id = cols[0],
-    //                                 AgencyId = cols[1],
-    //                                 ShortName = cols[2],
-    //                                 LongName = cols[3],
-    //                                 Description = cols[4],
-    //                                 Type = int.Parse(cols[5]),
-    //                                 Url = cols[6],
-    //                                 Colour = cols[7],
-    //                                 TextColour = cols[8],
-    //                             };
-    //                             newRoutes.Add(entity);
-    //                         }
-    //                         break;
-    //                     }
-    //                     case "shapes.txt":
-    //                     {
-    //                         if (!existingShapeIds.Contains(cols[0] + "|" + int.Parse(cols[3]) + "|sydneytrains"))
-    //                         {
-    //                             // if (cols[4] == "\"\"") cols[4] = "0";
+                try
+                {
+                    switch (entry.FullName)
+                    {
+                        case "agency.txt":
+                        {
+                            if (!existingAgencyIds.Contains(cols[0]))
+                            {
+                                agencies.Add(Agency.ParseRailColumns(cols));
+                            }
+                            break;
+                        }
+                        case "calendar.txt":
+                        {
+                            if (!existingCalendarIds.Contains(cols[0]))
+                            {
+                                calendars.Add(Models.Calendar.ParseColumns(cols));
+                            }
+                            break;
+                        }
+                        case "calendar_dates.txt":
+                        {
+                            // currently empty
+                            break;
+                        }
+                        case "notes.txt":
+                        {
+                            if (!existingNoteIds.Contains(cols[0]))
+                            {
+                                notes.Add(Note.ParseColumns(cols));
+                            }
+                            break;
+                        }
+                        case "routes.txt":
+                        {
+                            if (!existingRouteIds.Contains(cols[0]))
+                            {
+                                routes.Add(Models.Route.ParseRailColumns(cols));
+                            }
+                            break;
+                        }
+                        case "shapes.txt":
+                        {
+                            if (!existingShapeIds.Contains(cols[0] + "|" + int.Parse(cols[3]) + "|Rail"))
+                            {
+                                shapes.Add(Shape.ParseRailColumns(cols));
+                            }
+                            break;
+                        }
+                        case "stops.txt":
+                        {
+                            if (!existingStopIds.Contains(cols[0] + "|Rail"))
+                            {
+                                stops.Add(Stop.ParseRailColumns(cols));
+                            }
+                            break;
+                        }
+                        case "stop_times.txt":
+                        {
+                            if (!existingStopTimeIds.Contains(cols[0] + "|" + int.Parse(cols[4])))
+                            {
+                                stopTimes.Add(StopTime.ParseRailColumns(cols));
+                            }
+                            break;
+                        }
+                        case "trips.txt":
+                        {
+                            if (!existingTripIds.Contains(cols[2]))
+                            {
+                                trips.Add(Trip.ParseRailColumns(cols));
+                            }
+                            break;
+                        }
+                        case "vehicle_categories.txt":
+                        {
+                            if (!existingVehicleCategoryIds.Contains(cols[0]))
+                            {
+                                vehicleCategories.Add(VehicleCategory.ParseColumns(cols));
+                            }
+                            break;    
+                        }
+                        case "vehicle_boardings.txt":
+                        {
+                            if (!existingVehicleBoardingIds.Contains(cols[0] + "|" + cols[1] + "|" + cols[2] + "|" + cols[3]))
+                            {
+                                vehicleBoardings.Add(VehicleBoarding.ParseColumns(cols));
+                            }
+                            break;    
+                        }
+                        case "vehicle_couplings.txt":
+                        {
+                            if (!existingVehicleCouplingIds.Contains(cols[0] + "|" + cols[1] + "|" + cols[2]))
+                            {
+                                vehicleCouplings.Add(VehicleCoupling.ParseColumns(cols));
+                            }
+                            break;    
+                        }
 
-    //                             var entity = new Shape
-    //                             {
-    //                                 Id = cols[0],
-    //                                 Latitude = decimal.Parse(cols[1], CultureInfo.InvariantCulture),
-    //                                 Longitude = decimal.Parse(cols[2], CultureInfo.InvariantCulture),
-    //                                 Sequence = int.Parse(cols[3]),
-    //                                 DistanceTravelled = cols[4] == "" ? 0 : decimal.Parse(cols[4], CultureInfo.InvariantCulture),
-    //                                 Mode = "sydneytrains"
-    //                             };
-    //                             newShapes.Add(entity);
-    //                         }
-    //                         break;
-    //                     }
-    //                     case "stops.txt":
-    //                     {
-    //                         if (!existingStopIds.Contains(cols[0] + "|sydneytrains"))
-    //                         {
-    //                             var entity = new Stop
-    //                             {
-    //                                 Id = cols[0],
-    //                                 Code = cols[1],
-    //                                 Name = cols[2],
-    //                                 Description = !string.IsNullOrEmpty(cols[3]) ? cols[3] : string.Empty,
-    //                                 Latitude = decimal.Parse(cols[4], CultureInfo.InvariantCulture),
-    //                                 Longitude = decimal.Parse(cols[5], CultureInfo.InvariantCulture),
-    //                                 ZoneId = !string.IsNullOrEmpty(cols[6]) ? cols[6] : string.Empty,
-    //                                 Url = !string.IsNullOrEmpty(cols[7]) ? cols[7] : string.Empty,
-    //                                 LocationType = int.Parse(cols[8]),
-    //                                 ParentStationId = !string.IsNullOrEmpty(cols[9]) ? cols[9] : string.Empty,
-    //                                 Timezone = !string.IsNullOrEmpty(cols[10]) ? cols[10] : string.Empty,
-    //                                 WheelchairBoarding = int.Parse(cols[11]),
-    //                                 Mode = "sydneytrains",
-    //                                 Network = Constants.MetropolitanStations.Any(s => cols[2].StartsWith(s, StringComparison.OrdinalIgnoreCase)) ? "metropolitan" : "regional",
-    //                             };
-    //                             newStops.Add(entity);
-    //                         }
-    //                         break;
-    //                     }
-    //                     case "stop_times.txt":
-    //                     {
-    //                         if (!existingStopTimeIds.Contains(cols[0] + "|" + int.Parse(cols[4])))
-    //                         {
-    //                             // if (cols[8] == "\"\"") cols[8] = "0";
+                        case "occupancies.txt":
+                        {
+                            // currently empty
+                            break;  
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    app.Logger.LogWarning("Failed to parse entry {Entry}: {Error}", entry.FullName, ex.Message);
+                    continue;
+                }
 
-    //                             int hour1 = int.Parse(cols[1][..2]);
-    //                             int hour2 = int.Parse(cols[2][..2]);
-    //                             cols[1] = string.Concat((hour1 % 24).ToString("D2", CultureInfo.InvariantCulture), cols[1].AsSpan(2));
-    //                             cols[2] = string.Concat((hour2 % 24).ToString("D2", CultureInfo.InvariantCulture), cols[2].AsSpan(2));
+            }
+        }
 
-    //                             var entity = new StopTime
-    //                             {
-    //                                 TripId = cols[0],
-    //                                 ArrivalTime = TimeSpan.ParseExact(cols[1], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
-    //                                 DepartureTime = TimeSpan.ParseExact(cols[2], @"hh\:mm\:ss", CultureInfo.InvariantCulture),
-    //                                 StopId = cols[3],
-    //                                 StopSequence = int.Parse(cols[4]),
-    //                                 StopHeadSign = !string.IsNullOrEmpty(cols[5]) ? cols[5] : string.Empty,
-    //                                 PickupType = cols[6] == "0",
-    //                                 DropOffType = cols[7] == "0",
-    //                                 ShapeDistanceTravelled = !string.IsNullOrEmpty(cols[8]) ? decimal.Parse(cols[8], CultureInfo.InvariantCulture) : 0,
-    //                                 Mode = "sydneytrains",
-    //                             };
-    //                             newStopTimes.Add(entity);
-    //                         }
-    //                         break;
-    //                     }
-    //                     case "trips.txt":
-    //                     {
-    //                         if (!existingTripIds.Contains(cols[2]))
-    //                         {
+        if (agencies.Count > 0)
+            app.Logger.LogInformation("New Agencies: {Count}", agencies.Count);
 
-    //                             // RTTA_REV 1978.102.130 Y907.1978.102.130.D.10.87900439 Empty Train  0 312168 RTTA_REV 0 D10
-    //                             // route_id","service_id","trip_id","trip_headsign","trip_short_name","direction_id","block_id","shape_id","wheelchair_accessible","vehicle_category_id
-    //                             var entity = new Trip
-    //                             {
-    //                                 RouteId = cols[0],
-    //                                 ServiceId = cols[1],
-    //                                 Id = cols[2],
-    //                                 HeadSign = cols[3],
-    //                                 ShortName = !string.IsNullOrEmpty(cols[4]) ? cols[4] : string.Empty,
-    //                                 DirectionId = int.Parse(cols[5]),
-    //                                 BlockId = cols[6],
-    //                                 ShapeId = cols[7],
-    //                                 WheelchairAccessible = int.Parse(cols[8]),
-    //                                 VehicleCategoryId = cols[9],
-    //                             };
-    //                             newTrips.Add(entity);
-    //                         }
-    //                         break;
-    //                     }
-    //                     case "vehicle_categories.txt":
-    //                     {
-    //                         if (!existingVehicleCategoryIds.Contains(cols[0]))
-    //                         {
-    //                             var entity = new VehicleCategory
-    //                             {
-    //                                 VehicleCategoryId = cols[0],
-    //                                 VehicleCategoryName = cols[1],
-    //                             };
-    //                             newVehicleCategories.Add(entity);
-    //                         }
-    //                         break;    
-    //                     }
-    //                     case "vehicle_boardings.txt":
-    //                     {
-    //                         if (!existingVehicleBoardingIds.Contains(cols[0] + "|" + cols[1] + "|" + cols[2] + "|" + cols[3]))
-    //                         {
-    //                             var entity = new VehicleBoarding
-    //                             {
-    //                                 VehicleCategoryId = cols[0],
-    //                                 ChildSequence = cols[1],
-    //                                 GrandchildSequence = !string.IsNullOrEmpty(cols[2]) ? int.Parse(cols[2]) : null,
-    //                                 BoardingAreaId = cols[3],
-    //                             };
-    //                             newVehicleBoardings.Add(entity);
-    //                         }
-    //                         break;    
-    //                     }
-    //                     case "vehicle_couplings.txt":
-    //                     {
-    //                         if (!existingVehicleCouplingIds.Contains(cols[0] + "|" + cols[1] + "|" + cols[2]))
-    //                         {
-    //                             var entity = new VehicleCoupling
-    //                             {
-    //                                 ParentId = cols[0],
-    //                                 ChildId = cols[1],
-    //                                 ChildSequence = int.Parse(cols[2]),
-    //                                 ChildLabel = cols[3],
-    //                             };
-    //                             newVehicleCouplings.Add(entity);
-    //                         }
-    //                         break;    
-    //                     }
+        if (calendars.Count > 0)
+            app.Logger.LogInformation("New Calendars: {Count}", calendars.Count);
 
-    //                     case "occupancies.txt":
-    //                     {
-    //                         // currently empty
-    //                         break;  
-    //                     }
-    //                 }
-    //             }
-    //             catch (Exception ex)
-    //             {
-    //                 app.Logger.LogWarning("Failed to parse entry {Entry}: {Error}", entry.FullName, ex.Message);
-    //                 continue;
-    //             }
+        if (notes.Count > 0)
+            app.Logger.LogInformation("New Notes: {Count}", notes.Count);
 
-    //         }
-    //     }
+        if (occupancies.Count > 0)
+            app.Logger.LogInformation("New Notes: {Count}", occupancies.Count);
 
-    //     if (newAgencies.Count > 0)
-    //         app.Logger.LogInformation("New Agencies: {newAgencies.Count}", newAgencies.Count);
-    //     if (newCalendars.Count > 0)
-    //         app.Logger.LogInformation("New Calendars: {Count}", newCalendars.Count);
-    //     if (newNotes.Count > 0)
-    //         app.Logger.LogInformation("New Notes: {Count}", newNotes.Count);
-    //     if (newRoutes.Count > 0)
-    //         app.Logger.LogInformation("New Routes: {Count}", newRoutes.Count);
-    //     if (newShapes.Count > 0)
-    //         app.Logger.LogInformation("New Shapes: {Count}", newShapes.Count);
-    //     if (newStops.Count > 0)
-    //         app.Logger.LogInformation("New Stops: {Count}", newStops.Count);
-    //     if (newStopTimes.Count > 0)
-    //         app.Logger.LogInformation("New StopTimes: {Count}", newStopTimes.Count);
-    //     if (newTrips.Count > 0)
-    //         app.Logger.LogInformation("New Trips: {Count}", newTrips.Count);
-    //     if (newVehicleCategories.Count > 0)
-    //         app.Logger.LogInformation("New VehicleCategories: {Count}", newVehicleCategories.Count);
-    //     if (newVehicleBoardings.Count > 0)
-    //         app.Logger.LogInformation("New VehicleBoardings: {Count}", newVehicleBoardings.Count);
-    //     if (newVehicleCouplings.Count > 0)
-    //         app.Logger.LogInformation("New VehicleCouplings: {Count}", newVehicleCouplings.Count);
+        if (routes.Count > 0)
+            app.Logger.LogInformation("New Routes: {Count}", routes.Count);
 
-    //     app.Logger.LogInformation("Adding New Entries");
-    //     db.Agencies.AddRange(newAgencies);
-    //     await db.SaveChangesAsync();
+        if (shapes.Count > 0)
+            app.Logger.LogInformation("New Shapes: {Count}", shapes.Count);
 
-    //     db.Calendars.AddRange(newCalendars);
-    //     await db.SaveChangesAsync();
+        if (stops.Count > 0)
+            app.Logger.LogInformation("New Stops: {Count}", stops.Count);
 
-    //     db.Notes.AddRange(newNotes);
-    //     await db.SaveChangesAsync();
+        if (stopTimes.Count > 0)
+            app.Logger.LogInformation("New StopTimes: {Count}", stopTimes.Count);
 
-    //     db.VehicleCategories.AddRange(newVehicleCategories);
-    //     await db.SaveChangesAsync();
+        if (trips.Count > 0)
+            app.Logger.LogInformation("New Trips: {Count}", trips.Count);
 
-    //     db.Shapes.AddRange(newShapes);
-    //     await db.SaveChangesAsync();
+        if (vehicleCategories.Count > 0)
+            app.Logger.LogInformation("New VehicleCategories: {Count}", vehicleCategories.Count);
 
-    //     db.Stops.AddRange(newStops);
-    //     await db.SaveChangesAsync();
+        if (vehicleBoardings.Count > 0)
+            app.Logger.LogInformation("New VehicleBoardings: {Count}", vehicleBoardings.Count);
 
-    //     db.Routes.AddRange(newRoutes);
-    //     await db.SaveChangesAsync();
+        if (vehicleCouplings.Count > 0)
+            app.Logger.LogInformation("New VehicleCouplings: {Count}", vehicleCouplings.Count);
 
-    //     db.Trips.AddRange(newTrips);
-    //     await db.SaveChangesAsync();
+        app.Logger.LogInformation("Adding New Entries");
 
-    //     db.StopTimes.AddRange(newStopTimes);
-    //     await db.SaveChangesAsync();
+        var newAgencies = agencies
+            .Where(a => !existingAgencyIds.Contains(a.Id))
+            .ToList();
 
-    //     db.VehicleBoardings.AddRange(newVehicleBoardings);
-    //     await db.SaveChangesAsync();
+        var newCalendars = calendars
+            .Where(c => !existingCalendarIds.Contains(c.ServiceId))
+            .ToList();
 
-    //     db.VehicleCouplings.AddRange(newVehicleCouplings);
-    //     await db.SaveChangesAsync();
+        var newNotes = notes
+            .Where(n => !existingNoteIds.Contains(n.Id))
+            .ToList();
 
-    //     app.Logger.LogInformation("Complete");
-    // }
+        var newVehicleCategories = vehicleCategories
+            .Where(vc => !existingVehicleCategoryIds.Contains(vc.VehicleCategoryId))
+            .ToList();
 
+        var newShapes = shapes
+            .Where(s => !existingShapeIds.Contains($"{s.Id}|{s.Sequence}"))
+            .ToList();
+
+        var newStops = stops
+            .Where(s => !existingStopIds.Contains($"{s.Id}|Metro"))
+            .ToList();
+
+        var newRoutes = routes
+            .Where(r => !existingRouteIds.Contains(r.Id))
+            .ToList();
+
+        var newTrips = trips
+            .Where(t => !existingTripIds.Contains(t.Id))
+            .ToList();
+
+        var newStopTimes = stopTimes
+            .Where(st => !existingStopTimeIds.Contains($"{st.TripId}|{st.StopSequence}"))
+            .ToList();
+
+        var newVehicleBoardings = vehicleBoardings
+            .Where(vb => !existingVehicleBoardingIds.Contains($"{vb.VehicleCategoryId}|{vb.ChildSequence}|{vb.BoardingAreaId}"))
+            .ToList();
+
+        var newVehicleCouplings = vehicleCouplings
+            .Where(vc => !existingVehicleCouplingIds.Contains($"{vc.ParentId}|{vc.ChildId}|{vc.ChildSequence}"))
+            .ToList();
+
+        var newOccupancies = occupancies
+            .Where(o => !existingOccupancyIds.Contains($"{o.TripId}|{o.StopSequence}|{o.StartDate}"))
+            .ToList();
+
+        db.Agencies.AddRange(newAgencies);
+        db.Calendars.AddRange(newCalendars);
+        db.Notes.AddRange(newNotes);
+        db.VehicleCategories.AddRange(newVehicleCategories);
+        db.Shapes.AddRange(newShapes);
+        db.Stops.AddRange(newStops);
+        
+        await db.SaveChangesAsync();
+
+        db.Routes.AddRange(newRoutes);
+        
+        await db.SaveChangesAsync();
+        
+        db.Trips.AddRange(newTrips);
+        
+        await db.SaveChangesAsync();
+
+        const int batchSize = 10000;
+        foreach (var batch in newStopTimes.Chunk(batchSize))
+        {
+            db.StopTimes.AddRange(batch);
+            await db.SaveChangesAsync();
+        }
+
+        db.VehicleBoardings.AddRange(newVehicleBoardings);
+        db.VehicleCouplings.AddRange(newVehicleCouplings);
+        db.Occupancies.AddRange(newOccupancies);
+
+        await db.SaveChangesAsync();
+
+        app.Logger.LogInformation("Complete");
+    }
 }

@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { SydneyMetroComponent } from './sydney-metro/sydney-metro.component';
 import { MapComponent } from './components/map/map.component';
-// import { SydneyTrainsComponent } from './sydney-trains/sydney-trains.component';
+import { SydneyTrainsComponent } from './sydney-trains/sydney-trains.component';
 // import { SydneyComponent } from './sydney/sydney.component';
 
 export const routes: Routes = [
@@ -18,10 +18,10 @@ export const routes: Routes = [
     path: 'sydney/metro',
     component: SydneyMetroComponent,
   },
-  // {
-  //   path: 'sydney/trains',
-  //   component: SydneyTrainsComponent,
-  // },
+  {
+    path: 'sydney/trains',
+    component: SydneyTrainsComponent,
+  },
   {
     path: 'map-test',
     component: MapComponent,

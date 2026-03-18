@@ -19,4 +19,15 @@ public class VehicleBoarding
     [Column("boarding_area_id")]
     [Required]
     public string BoardingAreaId { get; set; } = null!;
+
+    public static VehicleBoarding ParseColumns(string[] cols)
+    {
+        return new VehicleBoarding
+        {
+            VehicleCategoryId = cols[0],
+            ChildSequence = cols[1],
+            GrandchildSequence = string.IsNullOrWhiteSpace(cols[2]) ? null : int.Parse(cols[2]),
+            BoardingAreaId = cols[3]
+        };
+    }
 }
