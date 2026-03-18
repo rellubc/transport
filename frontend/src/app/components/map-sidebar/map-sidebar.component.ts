@@ -67,6 +67,9 @@ export class MapSidebarComponent {
 
     if (this.currentProps && incomingProps.id === this.currentProps.id) return
 
+    // edge case Light Rail service on metro api
+    if (incomingProps.id == "UNASSIGNED") return
+
     this.resetSidebar()
     
     this.open = true
@@ -97,6 +100,8 @@ export class MapSidebarComponent {
       if (this.currentProps.mode === 'Metro') {
         this.currentScheduledStopTimes = await getSydneyMetroStopTimes(this.currentProps.name, new Date().toISOString(), false)
       }
+
+      console.log(this.currentScheduledStopTimes)
 
       if (this.currentScheduledStopTimes.length < 24) {
         this.preLoadingDone = true

@@ -46,6 +46,7 @@
                         <p> {{ s.stopHeadSign!.split('via')[0].trim() }} </p>
                         <p> via {{ s.stopHeadSign!.split('via')[1].trim() }} </p>
                     </ng-container>
+                    <p> {{ s.stopName!.split(',')[1] }} </p>
                     
                     <ng-template #noVia>
                         <p> {{ s.stopHeadSign }} </p>
