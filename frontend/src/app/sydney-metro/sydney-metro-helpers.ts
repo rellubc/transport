@@ -59,8 +59,6 @@ export const getSydneyMetroShapes = async (): Promise<Shape>=> {
 
     const data: Shape = await res.json()
 
-    // console.log(data)
-
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -164,7 +162,7 @@ export const getSydneyMetroVehiclePositions = async (): Promise<VehiclePosition[
       }
     })
 
-    // console.log(data)
+    console.log(data)
 
     return data
   } catch (error) {

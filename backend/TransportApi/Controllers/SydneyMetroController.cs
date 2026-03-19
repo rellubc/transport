@@ -146,15 +146,11 @@ public class SydneyMetroController : ControllerBase
                 (dayOfWeek == DayOfWeek.Saturday && x.c.Saturday == 1) ||
                 (dayOfWeek == DayOfWeek.Sunday && x.c.Sunday == 1)
             )
-            .Join(_db.Stops, x => x.st.StopId, s => s.Id, (x, s) => new { x.st, x.t, x.c, s })
-            .Where(x => x.s.Name.Contains(stopName))
             .Select(x => new 
             {
                 x.st.TripId,
                 x.st.ArrivalTime,
                 x.st.DepartureTime,
-                x.s.Name,
-                x.s.Id,
                 x.t.RouteId,
                 x.st.StopSequence,
                 x.st.StopHeadSign,
@@ -169,8 +165,6 @@ public class SydneyMetroController : ControllerBase
                 TripId = x.TripId,
                 ArrivalTime = x.ArrivalTime,
                 DepartureTime = x.DepartureTime,
-                StopName = x.Name,
-                StopId = x.Id,
                 RouteId = x.RouteId,
                 StopSequence = x.StopSequence,
                 StopHeadSign = x.StopHeadSign,

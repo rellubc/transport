@@ -110,7 +110,7 @@ public static class Setup
                         }
                         case "shapes.txt":
                         {
-                            if (!existingShapeIds.Contains(cols[0] + "|" + int.Parse(cols[3]) + "|Metro"))
+                            if (!existingShapeIds.Contains("M1_" + cols[0] + "|" + int.Parse(cols[3]) + "|Metro"))
                             {
                                 shapes.Add(Shape.ParseMetroColumns(cols));
                             }
@@ -189,7 +189,7 @@ public static class Setup
             .ToList();
 
         var newShapes = shapes
-            .Where(s => !existingShapeIds.Contains($"{s.Id}|{s.Sequence}"))
+            .Where(s => !existingShapeIds.Contains($"M1_{s.Id}|{s.Sequence}|Metro"))
             .ToList();
 
         var newStops = stops
@@ -463,11 +463,11 @@ public static class Setup
             .ToList();
 
         var newShapes = shapes
-            .Where(s => !existingShapeIds.Contains($"{s.Id}|{s.Sequence}"))
+            .Where(s => !existingShapeIds.Contains($"{s.Id}|{s.Sequence}|Rail"))
             .ToList();
 
         var newStops = stops
-            .Where(s => !existingStopIds.Contains($"{s.Id}|Metro"))
+            .Where(s => !existingStopIds.Contains($"{s.Id}|Rail"))
             .ToList();
 
         var newRoutes = routes

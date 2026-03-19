@@ -25,7 +25,7 @@ import { TripUpdate, VehiclePosition } from '../../../shared/models/realtime'
 import { Trip } from '../../../shared/models/trip'
 import { StopTime } from '../../../shared/models/stopTime'
 import { getSydneyTrainsStops, getSydneyTrainsStopsPlatforms, getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers'
-import { coloursMap, routesMap, routeTypeMap } from '../../../shared/models/constants'
+import { coloursMap, ROUTE_TYPE_METRO, ROUTE_TYPE_RAIL, routesMap, routeTypeMap } from '../../../shared/models/constants'
 import { getDepartures } from './map-helpers'
 import { MapSidebarComponent } from '../map-sidebar/map-sidebar.component'
 import { Vector } from 'ol/source'
@@ -47,7 +47,7 @@ export class MapComponent {
   
   map!: Map
 
-  routeTypes: number[] = []
+  routeTypes: Record<number, Set<string>> = {}
   shapeSource: Record<string, VectorSource> = {}
   shapeLayer: Record<string, VectorLayer> = {}
   stopSource: Record<string, VectorSource> = {}
@@ -97,19 +97,23 @@ export class MapComponent {
     })
   }
 
-  addShapeSource(routeId: string, routeType: number) {
+  addShapeSource(routeType: number) {
     this.shapeSource[routeTypeMap[routeType]] = new VectorSource({})
     this.shapeLayer[routeTypeMap[routeType]] = new VectorLayer({
       source: this.shapeSource[routeTypeMap[routeType]],
-      style: new Style({
-        stroke: new Stroke({
-          color: coloursMap[routeId] || '#0000000',
-          width: 2,
-        }),
-      }),
+      style: (feature) => {
+        const routeId: string = feature.get('routeId').split('_')[0]
+
+        return new Style({
+          stroke: new Stroke({
+            color: coloursMap[routeId] || '#0000000',
+            width: 2,
+          }),
+        })
+      },
     })
-    
-    this.shapeLayer[routeTypeMap[routeType]].set('name', routesMap[routeId])
+
+    this.shapeLayer[routeTypeMap[routeType]].set('name', routeTypeMap[routeType])
     this.map.addLayer(this.shapeLayer[routeTypeMap[routeType]])
   }
 
@@ -132,7 +136,7 @@ export class MapComponent {
         })
       },
     })
-    
+
     this.stopLayer[routeTypeMap[routeType]].set('name', 'stops')
     this.map.addLayer(this.stopLayer[routeTypeMap[routeType]])
   }
@@ -145,10 +149,11 @@ export class MapComponent {
       style: (feature) => {
         let routeId: string = ''
 
-        if (routeTypeMap[routeType] === 'Metro')
+        if (routeType === ROUTE_TYPE_METRO) {
           routeId = feature.get('routeId').split('_')[1]
-        else 
+        } else if (routeType === ROUTE_TYPE_RAIL) {
           routeId = feature.get('routeId').split('_')[0]
+        }
 
         let colourHex: string = coloursMap[routeId]
 
@@ -167,21 +172,22 @@ export class MapComponent {
   }
 
   addShapes() {
-    for (const routeType of this.routeTypes) {
+    for (const routeType of Object.keys(this.routeTypes)) {
       Object.keys(this.shapes).forEach((shapeId) => {
         const lineCoords = this.shapes[shapeId].map(s => fromLonLat([s.longitude, s.latitude]))
         const feature = new Feature({
           geometry: new LineString(lineCoords),
           type: 'route',
+          routeId: shapeId,
         })
 
-        this.shapeSource[routeTypeMap[routeType]].addFeature(feature)
+        this.shapeSource[routeTypeMap[Number(routeType)]].addFeature(feature)
       })
     }
   }
 
   addStops() {
-    for (const routeType of this.routeTypes) {
+    for (const routeType of Object.keys(this.routeTypes)) {
       const zoom = this.map.getView().getZoom()
       let type: string
       let regional: boolean = zoom && zoom < 11 ? true : false
@@ -205,17 +211,17 @@ export class MapComponent {
           name: stop.name,
           id: stop.id,
           type: 'stop',
-          mode: routeTypeMap[routeType],
+          mode: routeTypeMap[Number(routeType)],
         })
 
-        this.stopSource[routeTypeMap[routeType]].addFeature(feature)
+        this.stopSource[routeTypeMap[Number(routeType)]].addFeature(feature)
       })
     }
   }
 
   updateVehicles() {
-    for (const routeType of this.routeTypes) {
-      this.vehicleSource[routeTypeMap[routeType]].clear()
+    for (const routeType of Object.keys(this.routeTypes)) {
+      this.vehicleSource[routeTypeMap[Number(routeType)]].clear()
 
       this.vehicles.forEach((vehicle, index) => {
         if (vehicle.position?.latitude == null || vehicle.position?.longitude == null) return
@@ -227,11 +233,11 @@ export class MapComponent {
           id: vehicle.vehicle.id,
           tripId: vehicle.trip.tripId,
           routeId: vehicle.trip.routeId,
-          mode: routeTypeMap[routeType],
+          mode: routeTypeMap[Number(routeType)],
           type: 'vehicle',
         })
 
-        this.vehicleSource[routeTypeMap[routeType]].addFeature(feature)
+        this.vehicleSource[routeTypeMap[Number(routeType)]].addFeature(feature)
       })
     }
   }

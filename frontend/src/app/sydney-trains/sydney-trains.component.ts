@@ -4,6 +4,7 @@ import { Stop } from '../../shared/models/stop';
 import { Shape } from '../../shared/models/shape';
 import { VehiclePosition } from '../../shared/models/realtime';
 import { getSydneyTrainsShapes, getSydneyTrainsStops, getSydneyTrainsVehiclePositions } from './sydney-trains-helpers';
+import { ROUTE_TYPE_RAIL, routesMap } from '../../shared/models/constants';
 
 @Component({
   selector: 'app-sydney-trains',
@@ -25,30 +26,27 @@ export class SydneyTrainsComponent {
     this.shapes = await getSydneyTrainsShapes()
     this.map.shapes = this.shapes
 
-    console.log(this.stops)
-    console.log(this.shapes)
+    const routeSet = new Set(Object.keys(this.shapes).map(shapeId => shapeId.split('_')[0]))
+    this.map.routeTypes[ROUTE_TYPE_RAIL] = new Set()
 
-    // const lines = Object.keys(this.shapes).reduce<Record<string, string[]>>((acc, shapeId) => {
-    //   const line = shapeId.split('_')[0]
-    //   if (!acc[line]) acc[line] = []
-    //   acc[line].push(shapeId)
-    //   return acc
-    // }, {})
+    for (const routeId of routeSet) {
+      this.map.routeTypes[ROUTE_TYPE_RAIL].add(routeId)
+      this.map.addShapeSource(ROUTE_TYPE_RAIL)
+    }
+    this.map.addStopSource(ROUTE_TYPE_RAIL)
+    this.map.addVehicleSource(ROUTE_TYPE_RAIL)
 
-    // for (const [routeId, shapeIds] of Object.entries(lines)) {
-    //   this.map.addShape(routeId, shapeIds)
-    // }
+    this.map.addShapes()
+    this.map.addStops()
 
-    // this.map.addStops('sydneytrains')
+    this.vehicles = await getSydneyTrainsVehiclePositions()
+    this.map.vehicles = this.vehicles
+    this.map.refresh()
 
-    // this.vehicles = await getSydneyTrainsVehiclePositions()
-    // this.map.vehicles = this.vehicles
-    // this.map.refresh()
-
-    // setInterval(async () => {
-    //   this.vehicles = await getSydneyTrainsVehiclePositions();
-    //   this.map.vehicles = this.vehicles
-    //   this.map.refresh()
-    // }, 15000)
+    setInterval(async () => {
+      this.vehicles = await getSydneyTrainsVehiclePositions();
+      this.map.vehicles = this.vehicles
+      this.map.refresh()
+    }, 15000)
   }
 }

@@ -53,7 +53,7 @@ public class Trip
             RouteId = cols[0],
             ServiceId = cols[1],
             Id = cols[2],
-            ShapeId = cols[3],
+            ShapeId = $"M1_{cols[2]}",
             HeadSign = cols[4],
             DirectionId = int.Parse(cols[5]),
             ShortName = cols[6],

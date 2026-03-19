@@ -27,8 +27,9 @@ export class SydneyMetroComponent {
     this.shapes = await getSydneyMetroShapes()
     this.map.shapes = this.shapes
 
-    this.map.routeTypes.push(ROUTE_TYPE_METRO)
-    this.map.addShapeSource('M1', ROUTE_TYPE_METRO)
+    this.map.routeTypes[ROUTE_TYPE_METRO] = new Set()
+    this.map.routeTypes[ROUTE_TYPE_METRO].add('M1')
+    this.map.addShapeSource(ROUTE_TYPE_METRO)
     this.map.addStopSource(ROUTE_TYPE_METRO)
     this.map.addVehicleSource(ROUTE_TYPE_METRO)
 

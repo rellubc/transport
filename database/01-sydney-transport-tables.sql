@@ -28,7 +28,9 @@ CREATE TABLE calendar (
     sunday TINYINT(1) NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
-    PRIMARY KEY (service_id)
+    PRIMARY KEY (service_id),
+    INDEX idx_calendar_start_date (start_date),
+    INDEX idx_calendar_end_date (end_date)
 );
 
 CREATE TABLE notes (
@@ -70,7 +72,9 @@ CREATE TABLE stops (
     wheelchair_boarding TINYINT(1) NOT NULL,
     platform_code INT,
     mode VARCHAR(100) NOT NULL,
-    PRIMARY KEY (stop_id, mode)
+    PRIMARY KEY (stop_id, mode),
+    INDEX idx_stops_stop_id (stop_id),
+    INDEX idx_stops_stop_name (stop_name)
 );
 
 CREATE TABLE routes (
@@ -138,7 +142,11 @@ CREATE TABLE stop_times (
     mode VARCHAR(100) NOT NULL,
     PRIMARY KEY (trip_id, stop_sequence),
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
-    FOREIGN KEY (stop_id, mode) REFERENCES stops(stop_id, mode)
+    FOREIGN KEY (stop_id, mode) REFERENCES stops(stop_id, mode),
+    INDEX idx_stop_times_mode (mode),
+    INDEX idx_stop_times_pickup_type (pickup_type),
+    INDEX idx_stop_times_drop_off_type (drop_off_type),
+    INDEX idx_stop_times_stop_id (stop_id)
 );
 
 CREATE TABLE vehicle_boardings (

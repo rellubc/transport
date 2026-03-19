@@ -66,6 +66,8 @@ public class Stop
 
     public static Stop ParseRailColumns(string[] cols)
     {
+        var index = cols[2].IndexOf(" Platform");
+		cols[2] = $"{cols[2][..index]}, {cols[2][(index + 1)..]}";
         return new Stop
         {
             Id = cols[0],

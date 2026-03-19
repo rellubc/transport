@@ -18,9 +18,12 @@
         </div>
     </div>
     <div class="sidebar-body">
-        <div *ngIf="currentProps.type == 'vehicle' && currentScheduledTripStopTimes" class="sidebar-body-content" [ngStyle]="{ `padding-left`: `2rem` }" >
+        <div *ngIf="currentProps.type == 'vehicle' && currentScheduledTripStopTimes && currentScheduledTrip" class="sidebar-body-content" [ngStyle]="{ `padding-left`: `2rem` }" >
             <div *ngFor="let stu of currentScheduledTripStopTimes; let i = index; let last = last" class="sidebar-body-schedule-vehicle">
-                <div class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
+                <div *ngIf="currentProps.mode === 'Metro'" class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
+                    <div class="sidebar-body-innerdot"></div>
+                </div>
+                <div *ngIf="currentProps.mode === 'Rail'" class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentScheduledTripStopTimes.length - currentRealtimeTrip?.stopTimeUpdate!.length ? '#d3d3d3' : getCorrespondingRouteColour(currentScheduledTrip.routeId!, currentProps.mode) }">
                     <div class="sidebar-body-innerdot"></div>
                 </div>
                 <div class="sidebar-body-schedule-vehicle-stop">
@@ -35,11 +38,11 @@
                     </div>
                 </div>
                 <div class="sidebar-body-schedule-vehicle-time">
-                    <p> {{ getDepartureDate(stu.departureTime) | date:'HH:mm:ss' }} </p>
+                    <p> {{ last ? (getDate(stu.arrivalTime) | date:'HH:mm:ss') : (getDate(stu.departureTime) | date:'HH:mm:ss') }} </p>
                     <p *ngIf ="stu.delay" [ngStyle]="{ 'font-size': '0.8rem' }"> {{ getDelay(stu.delay) }} </p>
                 </div>
             </div>
-            <div class="sidebar-body-bar"></div>
+            <div class="sidebar-body-bar" [style.background-color]="getCorrespondingRouteColour(currentScheduledTrip.routeId!, currentProps.mode)"></div>
             <div class="sidebar-body-bar-cover"></div>
         </div>
         <div *ngIf="currentProps.type == 'stop'" class="sidebar-body-content">
@@ -49,7 +52,7 @@
                         <p> {{ s.stopHeadSign!.split('via')[0].trim() }} </p>
                         <p> via {{ s.stopHeadSign!.split('via')[1].trim() }} </p>
                     </ng-container>
-                    <p> {{ s.stopName!.split(',')[1] }} </p>
+                    <p> {{ currentProps.name!.split(',')[1] }} </p>
                     
                     <ng-template #noVia>
                         <p> {{ s.stopHeadSign }} </p>
