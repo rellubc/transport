@@ -59,11 +59,11 @@
     }
 }
 
-.sidebar-header-right-cluster {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
+.sidebar-header-headsign {
+    h3 {
+        margin: 0;
+        font-weight: 400;
+    }
 }
 
 .sidebar-header-route {
@@ -75,6 +75,13 @@
         color: #fff;
         margin: 0;
     }
+}
+
+.sidebar-header-right-cluster {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
 }
 
 .sidebar-body {
@@ -208,8 +215,9 @@
 
 .sidebar-body-bar {
     position: absolute;
+    top: 2rem;
     left: 0.25rem;
-    height: 100%;
+    height: calc(100% - 2rem);
     width: 4px;
     background-color: #168388;
     z-index: 9996;
@@ -217,6 +225,7 @@
 
 .sidebar-body-bar-cover {
     position: absolute;
+    top: 2rem;
     left: 0.25rem;
     height: 0;
     width: 4px;

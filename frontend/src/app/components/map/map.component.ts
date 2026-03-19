@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, ViewChild } from '@angular/core'
+import { Component, Input, ViewChild } from '@angular/core'
 import { CommonModule } from '@angular/common'
 
 import Map from 'ol/Map.js'
@@ -16,19 +16,13 @@ import Stroke from 'ol/style/Stroke'
 import { LineString, Point } from 'ol/geom'
 import { fromLonLat } from 'ol/proj'
 
-import { Shape } from '../../../shared/models/shape'
+import { Shapes } from '../../../shared/models/shape'
 import { Stop } from '../../../shared/models/stop'
 import CircleStyle from 'ol/style/Circle'
-import { Fill, Icon, Text } from 'ol/style'
-import { getSydneyMetroStopsPlatforms, getSydneyMetroStopTimes, getSydneyMetroTrip, getSydneyMetroTripUpdates } from '../../sydney-metro/sydney-metro-helpers'
-import { TripUpdate, VehiclePosition } from '../../../shared/models/realtime'
-import { Trip } from '../../../shared/models/trip'
-import { StopTime } from '../../../shared/models/stopTime'
-import { getSydneyTrainsStops, getSydneyTrainsStopsPlatforms, getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers'
-import { coloursMap, ROUTE_TYPE_METRO, ROUTE_TYPE_RAIL, routesMap, routeTypeMap } from '../../../shared/models/constants'
-import { getDepartures } from './map-helpers'
+import { Fill, Icon } from 'ol/style'
+import { VehiclePosition } from '../../../shared/models/realtime'
+import { coloursMap, ROUTE_TYPE_METRO, ROUTE_TYPE_RAIL, routeTypeMap } from '../../../shared/models/constants'
 import { MapSidebarComponent } from '../map-sidebar/map-sidebar.component'
-import { Vector } from 'ol/source'
 
 @Component({
   selector: 'app-map',
@@ -43,7 +37,7 @@ export class MapComponent {
 
   @Input() stops: Stop[] = []
   @Input() vehicles: VehiclePosition[] = []
-  @Input() shapes: Shape = {}
+  @Input() shapes: Shapes = {}
   
   map!: Map
 

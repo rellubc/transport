@@ -1,4 +1,4 @@
-CREATE TABLE agency (
+CREATE TABLE agencies (
     agency_id VARCHAR(100) NOT NULL,
     agency_name VARCHAR(100) NOT NULL,
     agency_url VARCHAR(255) NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE agency (
     PRIMARY KEY (agency_id)
 );
 
-CREATE TABLE calendar (
+CREATE TABLE calendars (
     service_id VARCHAR(100) NOT NULL,
     -- 0: Service is not available for all Mondays in the date range. 1: Service is available for all Mondays in the date range. -- 
     monday TINYINT(1) NOT NULL,
@@ -74,7 +74,8 @@ CREATE TABLE stops (
     mode VARCHAR(100) NOT NULL,
     PRIMARY KEY (stop_id, mode),
     INDEX idx_stops_stop_id (stop_id),
-    INDEX idx_stops_stop_name (stop_name)
+    INDEX idx_stops_stop_name (stop_name),
+    INDEX idx_stops_mode (mode)
 );
 
 CREATE TABLE routes (
@@ -89,7 +90,7 @@ CREATE TABLE routes (
     route_text_colour VARCHAR(6) NOT NULL,
     route_url VARCHAR(100) NOT NULL,
     PRIMARY KEY (route_id),
-    FOREIGN KEY (agency_id) REFERENCES agency(agency_id)
+    FOREIGN KEY (agency_id) REFERENCES agencies(agency_id)
 );
 
 CREATE TABLE trips (
@@ -115,7 +116,7 @@ CREATE TABLE trips (
     vehicle_category_id VARCHAR(100),
     PRIMARY KEY (trip_id),
     FOREIGN KEY (route_id) REFERENCES routes(route_id),
-    FOREIGN KEY (service_id) REFERENCES calendar(service_id)
+    FOREIGN KEY (service_id) REFERENCES calendars(service_id)
 );
 
 CREATE TABLE stop_times (
@@ -194,4 +195,35 @@ CREATE TABLE occupancies (
     PRIMARY KEY (trip_id, stop_sequence, start_date),
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
     FOREIGN KEY (trip_id, stop_sequence) REFERENCES stop_times(trip_id, stop_sequence)
+);
+
+CREATE TABLE realtime_stop_times (
+    trip_id VARCHAR(100) NOT NULL,
+    arrival_time TIME NOT NULL,
+    departure_time TIME NOT NULL,
+    stop_id VARCHAR(100) NOT NULL,
+    stop_sequence INT NOT NULL,
+    stop_headsign VARCHAR(100) NOT NULL,
+    -- 0: Regularly scheduled pickup. --
+    -- 1: No pickup available. --
+    -- 2: Must phone agency to arrange pickup. --
+    -- 3: Must coordinate with driver to arrange pickup. --
+    pickup_type TINYINT(1) NOT NULL,
+    -- 0: Regularly scheduled drop off. --
+    -- 1: No drop off available. --
+    -- 2: Must phone agency to arrange drop off. --
+    -- 3: Must coordinate with driver to arrange drop off. --
+    drop_off_type TINYINT(1) NOT NULL,
+    shape_dist_travelled NUMERIC(9,2),
+    -- 0: Approximate times, 1: Exact times. --
+    timepoint TINYINT(1),
+    stop_note VARCHAR(100),
+    mode VARCHAR(100) NOT NULL,
+    PRIMARY KEY (trip_id, stop_sequence),
+    FOREIGN KEY (trip_id) REFERENCES trips(trip_id),
+    FOREIGN KEY (stop_id, mode) REFERENCES stops(stop_id, mode),
+    INDEX idx_stop_times_mode (mode),
+    INDEX idx_stop_times_pickup_type (pickup_type),
+    INDEX idx_stop_times_drop_off_type (drop_off_type),
+    INDEX idx_stop_times_stop_id (stop_id)
 );

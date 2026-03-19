@@ -7,7 +7,10 @@ namespace TransportApi.Data;
 public class TransportDbContext : DbContext
 {
     public TransportDbContext(DbContextOptions<TransportDbContext> options) 
-        : base(options) { }
+        : base(options)
+    {
+        ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+    }
 
     public DbSet<Agency> Agencies { get; set; } = null!;
     public DbSet<Calendar> Calendars { get; set; } = null!;

@@ -1,6 +1,6 @@
 import { Calendar } from "../../shared/models/calendar"
 import { TripUpdate, VehiclePosition } from "../../shared/models/realtime"
-import { Shape } from "../../shared/models/shape"
+import { Shapes } from "../../shared/models/shape"
 import { Stop } from "../../shared/models/stop"
 import { StopTime } from "../../shared/models/stopTime"
 import { Trip } from "../../shared/models/trip"
@@ -27,8 +27,6 @@ export const getSydneyMetroStops = async (): Promise<Stop[]>=> {
 
     const data: Stop[] = await res.json()
 
-    // console.log(data)
-
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -43,8 +41,6 @@ export const getSydneyMetroStopsPlatforms = async (stopId: string): Promise<Stop
 
     const data: Stop[] = await res.json()
 
-    // console.log(data)
-
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -52,12 +48,12 @@ export const getSydneyMetroStopsPlatforms = async (stopId: string): Promise<Stop
   }
 }
 
-export const getSydneyMetroShapes = async (): Promise<Shape>=> {
+export const getSydneyMetroShapes = async (): Promise<Shapes>=> {
   try {
     const res = await fetch('https://localhost:7284/api/sydney/metro/shapes')
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-    const data: Shape = await res.json()
+    const data: Shapes = await res.json()
 
     return data
   } catch (error) {
@@ -140,8 +136,6 @@ export const getSydneyMetroTripUpdates = async (tripId: string): Promise<TripUpd
       data.timestamp = new Date(Number(data.timestamp) * 1000)
     }
 
-    // console.log(data)
-
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -161,8 +155,6 @@ export const getSydneyMetroVehiclePositions = async (): Promise<VehiclePosition[
         vehicle.timestamp = new Date(Number(vehicle.timestamp) * 1000)
       }
     })
-
-    console.log(data)
 
     return data
   } catch (error) {

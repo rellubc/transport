@@ -46,39 +46,40 @@ public class Trip
     [Column("vehicle_category_id")]
     public string? VehicleCategoryId { get; set; }
 
-    public static Trip ParseMetroColumns(string[] cols)
+    public static Trip ParseColumns(string mode, string[] cols)
     {
-        return new Trip
+        var trip = new Trip
         {
             RouteId = cols[0],
             ServiceId = cols[1],
             Id = cols[2],
-            ShapeId = $"M1_{cols[2]}",
-            HeadSign = cols[4],
             DirectionId = int.Parse(cols[5]),
-            ShortName = cols[6],
-            BlockId = cols[7],
             WheelchairAccessible = int.Parse(cols[8]),
-            TripNote = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9],
-            RouteDirection = string.IsNullOrWhiteSpace(cols[10]) ? null : cols[10],
-            BikesAllowed = string.IsNullOrWhiteSpace(cols[11]) ? null : int.Parse(cols[11])
         };
-    }
 
-    public static Trip ParseRailColumns(string[] cols)
-    {
-        return new Trip
+        if (mode == "metro")
         {
-            RouteId = cols[0],
-            ServiceId = cols[1],
-            Id = cols[2],
-            HeadSign = cols[3],
-            ShortName = cols[4],
-            DirectionId = int.Parse(cols[5]),
-            BlockId = cols[6],
-            ShapeId = cols[7],
-            WheelchairAccessible = int.Parse(cols[8]),
-            VehicleCategoryId = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9],
-        };
+            trip.ShapeId = $"M1_{cols[2]}";
+            trip.HeadSign = cols[4];
+            trip.DirectionId = int.Parse(cols[5]);
+            trip.ShortName = cols[6];
+            trip.BlockId = cols[7];
+            trip.TripNote = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9];
+            trip.RouteDirection = string.IsNullOrWhiteSpace(cols[10]) ? null : cols[10];
+            trip.BikesAllowed = string.IsNullOrWhiteSpace(cols[11]) ? null : int.Parse(cols[11]);
+        }
+        else if (mode == "sydneytrains")
+        {
+            trip.RouteId = cols[0];
+            trip.ServiceId = cols[1];
+            trip.Id = cols[2];
+            trip.HeadSign = cols[3];
+            trip.ShortName = cols[4];
+            trip.BlockId = cols[6];
+            trip.ShapeId = cols[7];
+            trip.VehicleCategoryId = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9];
+        }
+
+        return trip;
     }
 }

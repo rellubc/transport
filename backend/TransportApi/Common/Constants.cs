@@ -1,6 +1,8 @@
+namespace TransportApi.Common;
+
 public static class Constants
 {
-    public static HashSet<string> MetropolitanStations = [
+    public static readonly HashSet<string> MetropolitanStations = [
         "Allawah",
         "Arncliffe",
         "Artarmon",
@@ -134,4 +136,13 @@ public static class Constants
         "Yagoona",
         "Yennora",
     ];
+}
+
+public static class Mappings
+{
+    public static readonly Dictionary<string, string> UrlMappings = new()
+    {
+        { "Metro", "metro" },
+        { "Rail", "sydneytrains" },
+    };
 }

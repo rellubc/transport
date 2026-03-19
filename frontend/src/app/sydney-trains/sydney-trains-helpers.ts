@@ -1,6 +1,6 @@
 import { Calendar } from "../../shared/models/calendar"
 import { TripUpdate, VehiclePosition } from "../../shared/models/realtime"
-import { Shape } from "../../shared/models/shape"
+import { Shapes } from "../../shared/models/shape"
 import { Stop } from "../../shared/models/stop"
 import { StopTime } from "../../shared/models/stopTime"
 import { Trip } from "../../shared/models/trip"
@@ -52,12 +52,12 @@ export const getSydneyTrainsStopsPlatforms = async (stopId: string): Promise<Sto
   }
 }
 
-export const getSydneyTrainsShapes = async (): Promise<Shape>=> {
+export const getSydneyTrainsShapes = async (): Promise<Shapes>=> {
   try {
     const res = await fetch('https://localhost:7284/api/sydney/trains/shapes')
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-    const data: Shape = await res.json()
+    const data: Shapes = await res.json()
 
     // console.log(data)
 

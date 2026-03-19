@@ -1,37 +1,49 @@
 <div *ngIf="open" class="sidebar" id="map-sidebar">
     <div class="sidebar-header">
-        <div *ngIf="currentProps.type == 'stop'" class="sidebar-header-left-cluster">
+        <div *ngIf="props.type == 'stop'" class="sidebar-header-left-cluster">
             <div>
-                <h2> {{ currentProps.name.split(',')[0] }} </h2>
-                <p *ngIf="currentProps.name.split(',')[1]" [ngStyle]="{ 'position': 'absolute' }"> {{ currentProps.name.split(',')[1] }} </p>
+                <h2> {{ props.name.split(',')[0] }} </h2>
+                <p *ngIf="props.name.split(',')[1]" [ngStyle]="{ 'position': 'absolute' }"> {{ props.name.split(',')[1] }} </p>
             </div>
         </div>
-        <div *ngIf="currentProps.type == 'vehicle' && currentScheduledTrip && currentScheduledTrip" class="sidebar-header-left-cluster">
-            <div class="sidebar-header-route" *ngIf="currentScheduledTrip.routeId" [style.background-color]="getCorrespondingRouteColour(currentScheduledTrip.routeId, currentProps.mode)">
-                <h2 *ngIf="currentScheduledTrip.routeId"> {{ getRouteCode(currentScheduledTrip.routeId, currentProps.mode) }} </h2>
+        <div *ngIf="props.type == 'vehicle' && scheduledTrip && stopTimes && realtimeTrip" class="sidebar-header-left-cluster">
+            <div class="sidebar-header-route" *ngIf="scheduledTrip.routeId" [style.background-color]="getCorrespondingRouteColour(scheduledTrip.routeId, props.mode)">
+                <h2 *ngIf="scheduledTrip.routeId"> {{ getRouteCode(scheduledTrip.routeId, props.mode) }} </h2>
             </div>
-            <h2> {{ currentScheduledTrip.headSign }} </h2>
+            <div class="sidebar-header-headsign" *ngIf="props.mode === 'Rail'">
+                <ng-container *ngIf="stopTimes[stopTimes.length - realtimeTrip!.stopTimeUpdate!.length]; else altHeadSign">
+                    <h2> {{ stopTimes[stopTimes.length - realtimeTrip!.stopTimeUpdate!.length].stopHeadSign!.split('via')[0] }} </h2>
+                    <h3 *ngIf="stopTimes[stopTimes.length - realtimeTrip!.stopTimeUpdate!.length].stopHeadSign!.split('via').length === 2"> via {{ stopTimes[stopTimes.length - realtimeTrip!.stopTimeUpdate!.length].stopHeadSign!.split('via')[1] }} </h3>
+                </ng-container>
+
+                <ng-template #altHeadSign>
+                    <h2> {{ scheduledTrip.headSign }} </h2>
+                </ng-template>
+            </div>
+            <div class="sidebar-header-headsign" *ngIf="props.mode === 'Metro'">
+                <h2> {{ scheduledTrip.headSign }} </h2>
+            </div>
         </div>
         <div class="sidebar-header-right-cluster">
-            <p *ngIf="currentScheduledTrip"> {{ getVehicleModel(currentScheduledTrip.vehicleCategoryId!, currentProps.mode) }} </p>
+            <p *ngIf="scheduledTrip"> {{ getVehicleModel(scheduledTrip.vehicleCategoryId!, props.mode) }} </p>
             <button class="close-btn" (click)="closeSidebar()"><lucide-icon [img]="XIcon"></lucide-icon></button>
         </div>
     </div>
     <div class="sidebar-body">
-        <div *ngIf="currentProps.type == 'vehicle' && currentScheduledTripStopTimes && currentScheduledTrip" class="sidebar-body-content" [ngStyle]="{ `padding-left`: `2rem` }" >
-            <div *ngFor="let stu of currentScheduledTripStopTimes; let i = index; let last = last" class="sidebar-body-schedule-vehicle">
-                <div *ngIf="currentProps.mode === 'Metro'" class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentVehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
+        <div *ngIf="props.type == 'vehicle' && stopTimes && scheduledTrip" class="sidebar-body-content" [ngStyle]="{ `padding-left`: `2rem` }" >
+            <div *ngFor="let stu of stopTimes; let i = index; let last = last" class="sidebar-body-schedule-vehicle">
+                <div *ngIf="props.mode === 'Metro'" class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < vehicle?.currentStopSequence! ? '#d3d3d3' : '#168388'}">
                     <div class="sidebar-body-innerdot"></div>
                 </div>
-                <div *ngIf="currentProps.mode === 'Rail'" class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < currentScheduledTripStopTimes.length - currentRealtimeTrip?.stopTimeUpdate!.length ? '#d3d3d3' : getCorrespondingRouteColour(currentScheduledTrip.routeId!, currentProps.mode) }">
+                <div *ngIf="props.mode === 'Rail'" class="sidebar-body-dot" [ngStyle]="{ 'background-color': i < stopTimes.length - realtimeTrip?.stopTimeUpdate!.length ? '#d3d3d3' : getCorrespondingRouteColour(scheduledTrip.routeId!, props.mode) }">
                     <div class="sidebar-body-innerdot"></div>
                 </div>
                 <div class="sidebar-body-schedule-vehicle-stop">
                     <p> {{ stu.stopName!.split(',')[0] }} </p>
                     <div class="sidebar-body-schedule-platform-occupancy">
                         <p> {{ stu.stopName!.split(',')[1] }} </p>
-                        <div *ngIf="i === currentVehicle?.currentStopSequence" class="sidebar-body-schedule-occupancy">
-                            <div *ngFor="let occupancy of currentVehicle?.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
+                        <div *ngIf="i === (props.mode === 'Metro' ? vehicle?.currentStopSequence : stopTimes.length - realtimeTrip?.stopTimeUpdate!.length)" class="sidebar-body-schedule-occupancy">
+                            <div *ngFor="let occupancy of vehicle?.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
                                 <p> {{ len - j }} </p>
                             </div>
                         </div>
@@ -39,27 +51,27 @@
                 </div>
                 <div class="sidebar-body-schedule-vehicle-time">
                     <p> {{ last ? (getDate(stu.arrivalTime) | date:'HH:mm:ss') : (getDate(stu.departureTime) | date:'HH:mm:ss') }} </p>
-                    <p *ngIf ="stu.delay" [ngStyle]="{ 'font-size': '0.8rem' }"> {{ getDelay(stu.delay) }} </p>
+                    <p *ngIf="stu.delay" [ngStyle]="{ 'font-size': '0.8rem' }"> {{ getDelay(stu.delay) }} </p>
                 </div>
             </div>
-            <div class="sidebar-body-bar" [style.background-color]="getCorrespondingRouteColour(currentScheduledTrip.routeId!, currentProps.mode)"></div>
+            <div class="sidebar-body-bar" [style.background-color]="getCorrespondingRouteColour(scheduledTrip.routeId!, props.mode)"></div>
             <div class="sidebar-body-bar-cover"></div>
         </div>
-        <div *ngIf="currentProps.type == 'stop'" class="sidebar-body-content">
-            <div *ngFor="let s of currentScheduledStopTimes; let i = index; let first = first; let last = last" class="sidebar-body-schedule-stop" [ngClass]="{ 'pad-top': first && !preLoadingDone, 'pad-bottom': last && !postLoadingDone }">
+        <div *ngIf="props.type == 'stop'" class="sidebar-body-content">
+            <div *ngFor="let s of stopTimes; let i = index; let first = first; let last = last" class="sidebar-body-schedule-stop" [ngClass]="{ 'pad-top': first && !preLoadingDone, 'pad-bottom': last && !postLoadingDone }">
                 <div class="sidebar-body-stop">
                     <ng-container *ngIf="s.stopHeadSign && s.stopHeadSign.includes('via'); else noVia">
                         <p> {{ s.stopHeadSign!.split('via')[0].trim() }} </p>
                         <p> via {{ s.stopHeadSign!.split('via')[1].trim() }} </p>
                     </ng-container>
-                    <p> {{ currentProps.name!.split(',')[1] }} </p>
+                    <p> {{ props.name!.split(',')[1] }} </p>
                     
                     <ng-template #noVia>
                         <p> {{ s.stopHeadSign }} </p>
                     </ng-template>
                 </div>
                 <div class="sidebar-body-schedule-status">
-                    <p> {{ s.arrivalTime }} </p>
+                    <p> {{ s.departureTime }} </p>
                     <ng-container *ngIf="getVehicleForTrip(s.tripId) as vehicle; else noOccupancyData">
                         <div class="sidebar-body-schedule-occupancy">
                             <div *ngFor="let occupancy of vehicle.consist; let j = index; let len = count" [ngStyle]="{ 'background-color': getOccupancyColour(occupancy.occupancyStatus!) }" class="sidebar-body-schedule-occupancy-carriage">
@@ -71,8 +83,8 @@
                         <p>No vehicle data</p>
                     </ng-template>
                 </div>
-                <div class="sidebar-body-stop-route" [style.background-color]="getCorrespondingRouteColour(s.routeId, currentProps.mode)">
-                    <p> {{ getRouteCode(s.routeId, currentProps.mode) }} </p>
+                <div class="sidebar-body-stop-route" [style.background-color]="getCorrespondingRouteColour(s.routeId, props.mode)">
+                    <p> {{ getRouteCode(s.routeId, props.mode) }} </p>
                 </div>
             </div>
         </div>

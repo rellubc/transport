@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace TransportApi.Models;
 
 
-[Table("agency")]
+[Table("agencies")]
 public class Agency
 {
     [Key]
@@ -35,9 +35,9 @@ public class Agency
     [EmailAddress]
     public string Email { get; set; } = null!;
 
-    public static Agency ParseMetroColumns(string[] cols)
+    public static Agency ParseColumns(string mode, string[] cols)
     {
-        return new Agency
+        var agency = new Agency
         {
             Id = cols[0],
             Name = cols[1],
@@ -45,21 +45,13 @@ public class Agency
             Timezone = cols[3],
             Language = cols[4],
             Phone = cols[5],
-            FareUrl = cols[6],
-            Email = cols[7]
         };
-    }
 
-    public static Agency ParseRailColumns(string[] cols)
-    {
-        return new Agency
+        if (mode == "metro")
         {
-            Id = cols[0],
-            Name = cols[1],
-            Url = cols[2],
-            Timezone = cols[3],
-            Language = cols[4],
-            Phone = cols[5]
-        };
+            agency.FareUrl = cols[6];
+            agency.Email = cols[7];
+        }
+        return agency;
     }
 }

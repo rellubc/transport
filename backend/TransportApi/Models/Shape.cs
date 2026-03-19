@@ -24,29 +24,27 @@ public class Shape
     [Column("mode")]
     public string Mode { get; set; } = null!;
 
-    public static Shape ParseMetroColumns(string[] cols)
+    public static Shape ParseColumns(string mode, string[] cols)
     {
-        return new Shape
+        var shape = new Shape
         {
-            Id = cols[0],
-            Latitude = decimal.Parse(cols[1]),
-            Longitude = decimal.Parse(cols[2]),
-            Sequence = int.Parse(cols[3]),
-            DistanceTravelled = decimal.Parse(cols[4]),
-            Mode = "Metro"
-        };
-    }
-
-    public static Shape ParseRailColumns(string[] cols)
-    {
-        return new Shape
-        {
-            Id = cols[0],
             Latitude = decimal.Parse(cols[1]),
             Longitude = decimal.Parse(cols[2]),
             Sequence = int.Parse(cols[3]),
             DistanceTravelled = string.IsNullOrWhiteSpace(cols[4]) ? null : decimal.Parse(cols[4]),
-            Mode = "Rail"
         };
+
+        if (mode == "metro")
+        {
+            shape.Id = "M1_" +cols[0];
+            shape.Mode = "Metro";
+        }
+        else if (mode == "sydneytrains")
+        {
+            shape.Id = cols[0];
+            shape.Mode = "Rail";
+        }
+
+        return shape;
     }
 }

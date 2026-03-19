@@ -1,11 +1,13 @@
 import { Component, ViewChild } from '@angular/core';
 import { MapComponent } from '../components/map/map.component';
 
-import { getSydneyMetroShapes, getSydneyMetroStops, getSydneyMetroVehiclePositions } from './sydney-metro-helpers';
 import { Stop } from '../../shared/models/stop';
-import { Shape } from '../../shared/models/shape';
+import { Shapes } from '../../shared/models/shape';
 import { VehiclePosition } from '../../shared/models/realtime';
-import { ROUTE_TYPE_METRO } from '../../shared/models/constants';
+import { ROUTE_TYPE_METRO, routeTypeMap } from '../../shared/models/constants';
+import { getSydneyStops } from '../api/sydney-stops';
+import { getSydneyShapes } from '../api/sydney-shapes';
+import { getSydneyVehiclePositions } from '../api/sydney-realtime-vehicles';
 
 @Component({
   selector: 'app-sydney-metro',
@@ -17,14 +19,14 @@ export class SydneyMetroComponent {
   @ViewChild(MapComponent) map!: MapComponent
 
   stops: Stop[] = []
-  shapes: Shape = {}
+  shapes: Shapes = {}
   vehicles: VehiclePosition[] = []
 
   async ngOnInit(): Promise<void> {
-    this.stops = await getSydneyMetroStops()
+    this.stops = await getSydneyStops(routeTypeMap[ROUTE_TYPE_METRO])
     this.map.stops = this.stops
 
-    this.shapes = await getSydneyMetroShapes()
+    this.shapes = await getSydneyShapes(routeTypeMap[ROUTE_TYPE_METRO])
     this.map.shapes = this.shapes
 
     this.map.routeTypes[ROUTE_TYPE_METRO] = new Set()
@@ -36,16 +38,15 @@ export class SydneyMetroComponent {
     this.map.addShapes()
     this.map.addStops()
 
-    this.vehicles = await getSydneyMetroVehiclePositions()
+    this.vehicles = await getSydneyVehiclePositions(routeTypeMap[ROUTE_TYPE_METRO])
     this.map.vehicles = this.vehicles
     this.map.refresh()
-    console.log(this.vehicles)
+
 
     setInterval(async () => {
-      this.vehicles = await getSydneyMetroVehiclePositions();
+      this.vehicles = await getSydneyVehiclePositions(routeTypeMap[ROUTE_TYPE_METRO])
       this.map.vehicles = this.vehicles
       this.map.refresh()
-      console.log(this.vehicles)
     }, 15000)
   }
 }

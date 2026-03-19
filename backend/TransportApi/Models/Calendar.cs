@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace TransportApi.Models;
 
-[Table("calendar")]
+[Table("calendars")]
 public class Calendar
 {
     [Key]

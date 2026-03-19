@@ -48,41 +48,40 @@ public class Stop
     [Column("mode")]
     public string Mode { get; set; } = null!;
 
-    public static Stop ParseMetroColumns(string[] cols)
+    public static Stop ParseColumns(string mode, string[] cols)
     {
-        return new Stop
+        var stop = new Stop
         {
             Id = cols[0],
-            Name = cols[1],
-            Latitude = decimal.Parse(cols[2]),
-            Longitude = decimal.Parse(cols[3]),
-            LocationType = int.Parse(cols[4]),
-            ParentStationId = string.IsNullOrWhiteSpace(cols[5]) ? null : cols[5],
-            WheelchairBoarding = int.Parse(cols[6]),
-            PlatformCode = string.IsNullOrWhiteSpace(cols[7]) ? null : int.Parse(cols[7]),
-            Mode = "Metro"
         };
-    }
 
-    public static Stop ParseRailColumns(string[] cols)
-    {
-        var index = cols[2].IndexOf(" Platform");
-		cols[2] = $"{cols[2][..index]}, {cols[2][(index + 1)..]}";
-        return new Stop
+        if (mode == "metro")
         {
-            Id = cols[0],
-            Code = cols[1],
-            Name = cols[2],
-            Description = cols[3],
-            Latitude = decimal.Parse(cols[4]),
-            Longitude = decimal.Parse(cols[5]),
-            ZoneId = cols[6],
-            Url = cols[7],
-            LocationType = int.Parse(cols[8]),
-            ParentStationId = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9],
-            Timezone = cols[10],
-            WheelchairBoarding = int.Parse(cols[11]),
-            Mode = "Rail"
-        };
+            stop.Name = cols[1];
+            stop.Latitude = decimal.Parse(cols[2]);
+            stop.Longitude = decimal.Parse(cols[3]);
+            stop.LocationType = int.Parse(cols[4]);
+            stop.ParentStationId = string.IsNullOrWhiteSpace(cols[5]) ? null : cols[5];
+            stop.WheelchairBoarding = int.Parse(cols[6]);
+            stop.PlatformCode = string.IsNullOrWhiteSpace(cols[7]) ? null : int.Parse(cols[7]);
+            stop.Mode = "Metro";
+        }
+        else if (mode == "sydneytrains")
+        {
+            stop.Code = cols[1];
+            stop.Name = cols[2];
+            stop.Description = cols[3];
+            stop.Latitude = decimal.Parse(cols[4]);
+            stop.Longitude = decimal.Parse(cols[5]);
+            stop.ZoneId = cols[6];
+            stop.Url = cols[7];
+            stop.LocationType = int.Parse(cols[8]);
+            stop.ParentStationId = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9];
+            stop.Timezone = cols[10];
+            stop.WheelchairBoarding = int.Parse(cols[11]);
+            stop.Mode = "Rail";
+        }
+
+        return stop;
     }
 }

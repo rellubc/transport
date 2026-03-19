@@ -16,7 +16,7 @@ public class StopTimeDto
 
     public int StopSequence { get; set; }
 
-    public string StopHeadSign { get; set; } = null!;
+    public string? StopHeadSign { get; set; }
 
     public int PickupType { get; set; }
 
@@ -27,4 +27,6 @@ public class StopTimeDto
     public int? Timepoint { get; set; }
 
     public string? StopNote { get; set; }
+
+    public int? Delay { get; set; }
 }
