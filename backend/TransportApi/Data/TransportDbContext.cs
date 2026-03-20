@@ -7,10 +7,14 @@ namespace TransportApi.Data;
 public class TransportDbContext : DbContext
 {
     public TransportDbContext(DbContextOptions<TransportDbContext> options) 
-        : base(options) { }
+        : base(options)
+    {
+        ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+    }
 
     public DbSet<Agency> Agencies { get; set; } = null!;
     public DbSet<Calendar> Calendars { get; set; } = null!;
+    public DbSet<Occupancy> Occupancies { get; set; } = null!;
     public DbSet<Note> Notes { get; set; } = null!;
     public DbSet<Models.Route> Routes { get; set; } = null!;
     public DbSet<Trip> Trips { get; set; } = null!;
@@ -25,14 +29,17 @@ public class TransportDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Occupancy>()
+            .HasKey(o => new { o.TripId, o.StopSequence, o.StartDate });
+
+        modelBuilder.Entity<Stop>()
+            .HasKey(s => new { s.Id, s.Mode });
+
         modelBuilder.Entity<StopTime>()
             .HasKey(st => new { st.TripId, st.StopSequence });
 
         modelBuilder.Entity<Shape>()
-            .HasKey(s => new { s.Id, s.Sequence, s.Mode });
-
-        modelBuilder.Entity<Stop>()
-            .HasKey(s => new { s.Id, s.Mode });
+            .HasKey(s => new { s.Id, s.Sequence });
 
         modelBuilder.Entity<VehicleBoarding>()
             .HasKey(vb => new { vb.VehicleCategoryId, vb.ChildSequence, vb.BoardingAreaId });

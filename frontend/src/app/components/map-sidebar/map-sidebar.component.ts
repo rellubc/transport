@@ -5,11 +5,13 @@ import { StopTimeUpdate, TripUpdate, VehiclePosition } from '../../../shared/mod
 import { Trip } from '../../../shared/models/trip';
 import { Stop } from '../../../shared/models/stop';
 import { StopTime } from '../../../shared/models/stopTime';
-import { LucideAngularModule, X } from 'lucide-angular';
-import { getSydneyMetroStopTimes, getSydneyMetroTrip, getSydneyMetroTripUpdates } from '../../sydney-metro/sydney-metro-helpers';
+import { GalleryThumbnailsIcon, LucideAngularModule, X } from 'lucide-angular';
 import { getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripStopTimes, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers';
-import { Shape } from '../../../shared/models/shape';
-import { getSydneyCombinedStopTimes } from '../../sydney/sydney-helpers';
+import { Shapes } from '../../../shared/models/shape';
+import { getCurrentScheduledTrip } from './map-sidebar-helpers';
+import { getSydneyTrip, getSydneyTripStopTimes } from '../../api/sydney-trips';
+import { getSydneyStopScheduledStopTimes, getSydneyTripRealtimeStopTimes, getSydneyTripScheduledStopTimes } from '../../api/sydney-stop-times';
+import { getSydneyRealtimeTripUpdate } from '../../api/sydney-realtime';
 
 @Component({
   selector: 'app-map-sidebar',
@@ -18,7 +20,7 @@ import { getSydneyCombinedStopTimes } from '../../sydney/sydney-helpers';
   styleUrl: './map-sidebar.component.css'
 })
 export class MapSidebarComponent {
-  @Input() shapes: Shape = {};
+  @Input() shapes: Shapes = {};
   @Input() stops: Stop[] = [];
   @Input() vehicles: VehiclePosition[] = [];
 
@@ -26,14 +28,13 @@ export class MapSidebarComponent {
   
   open: boolean = false
 
-  currentProps: any = null
+  props: any = null
 
-  currentVehicle: VehiclePosition | null = null
-  currentRealtimeTrip: TripUpdate | null = null
-  currentTrip: Trip | null = null
-  currentTripStopTimes: StopTimeUpdate[] = []
+  vehicle: VehiclePosition | null = null
+  scheduledTrip: Trip | null = null
+  stopTimes: StopTime[] = []
+  stopSequence: number = 0
 
-  currentStopScheduledServices: StopTime[] = []
   container: HTMLElement | null = null
 
   preLoadingDone: boolean = false
@@ -42,106 +43,49 @@ export class MapSidebarComponent {
   async refresh() {
     if (!this.open) return
 
-    if (this.currentProps.propType === 'vehicle') {
+    if (this.props.type === 'vehicle') {
       console.log('Updating current schedule...')
 
-      this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.currentProps.id)!
-      if (this.currentProps.mode === 'metro')
-        this.currentRealtimeTrip = await getSydneyMetroTripUpdates(this.currentProps.tripId)
-      else if (this.currentProps.mode === 'sydneytrains')
-        this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(this.currentProps.tripId)
+      this.vehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.props.id)!
 
-      this.updateBar()
-    } else if (this.currentProps.propType === 'stop') {
+      this.updateTripStopTimes()
+    } else if (this.props.type === 'stop') {
       console.log('Updating current departures...')
+
+      this.stopTimes = await getSydneyStopScheduledStopTimes(this.props.mode, this.props.name, new Date().toISOString(), false)
     }
   }
 
   async openSidebar(incomingProps: any) {
-    if (this.currentProps && incomingProps.propType === this.currentProps.propType && incomingProps.id === this.currentProps.id) return
+    console.log("Incoming Props: ",incomingProps)
+
+    if (this.props && incomingProps.id === this.props.id) return
+
+    // edge case Light Rail service on metro api
+    if (incomingProps.id == "UNASSIGNED") return
+    if (incomingProps.tripId?.includes("NonTimetabled")) return
 
     this.resetSidebar()
     
     this.open = true
-    this.currentProps = incomingProps
-    if (incomingProps.propType === 'vehicle') {
-      console.log('vehicle')
-      if (incomingProps.id === "UNASSIGNED") return
-      if (incomingProps.tripId.includes("NonTimetabled")) return
+    this.props = incomingProps
 
-      this.currentVehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.currentProps.id)!
+    if (this.props.type === 'vehicle') {
+      // "M1-O-SYD_DN-CUD_UP-1-20260320-030011:X" metro strange trip id
+      this.vehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.props.id)!
+      console.log("Current Vehicle: ", this.vehicle)
 
-      console.log(this.currentProps.type)
+      this.scheduledTrip = await getSydneyTrip(this.props.tripId)
+      console.log("Current Trip Details: ", this.scheduledTrip)
+      
+      this.updateTripStopTimes()
+    } else if (this.props.type === 'stop') {
 
-      if (this.currentProps.type === 'metro') {
-        this.currentRealtimeTrip = await getSydneyMetroTripUpdates(incomingProps.tripId)
-        this.currentTrip = await getSydneyMetroTrip(this.currentProps.tripId)
-      } else {
-        this.currentRealtimeTrip = await getSydneyTrainsTripUpdates(incomingProps.tripId)
-        this.currentTrip = await getSydneyTrainsTrip(this.currentProps.tripId)
-        const tripStopTimes: StopTime[] = await getSydneyTrainsTripStopTimes(this.currentProps.tripId, new Date().toISOString())
+      // map current stop times for corresponding vehicle to the current stop
+      this.stopTimes = await getSydneyStopScheduledStopTimes(this.props.mode, this.props.name, new Date().toISOString(), false)
+      console.log("Current Stop Times: ", this.stopTimes)
 
-        console.log(this.currentRealtimeTrip)
-        console.log(tripStopTimes)
-
-        this.currentTripStopTimes = tripStopTimes.map((st) => {
-          const corresponding = this.currentRealtimeTrip!.stopTimeUpdate.find((stu) => stu.stopId === st.stopId)
-          const today = new Date();
-          const [arrivalH, arrivalM, arrivalS] = st.arrivalTime.split(':').map(Number)
-          const [departureH, departureM, departureS] = st.departureTime.split(':').map(Number)
-
-          if (!corresponding) {
-            return {
-              stopName: st.stopName.replace('Station', 'Station,'),
-              stopSequence: Number(st.stopSequence),
-              stopId: st.stopId,
-              arrival: {
-                time: new Date(today.getFullYear(), today.getMonth(), today.getDate(), arrivalH, arrivalM, arrivalS, 0),
-              },
-              departure: {
-                time: new Date(today.getFullYear(), today.getMonth(), today.getDate(), departureH, departureM, departureS, 0),
-              },
-            }
-          }
-
-          return {
-            stopName: st.stopName.replace('Station', 'Station,'),
-            stopSequence: Number(st.stopSequence),
-            stopId: st.stopId,
-            arrival: {
-              delay: corresponding.arrival?.delay ?? 0,
-              time: new Date(today.getFullYear(), today.getMonth(), today.getDate(), arrivalH, arrivalM, arrivalS, 0),
-              uncertainty: corresponding.arrival?.uncertainty ?? 0,
-            },
-            departure: {
-              delay: corresponding.departure?.delay ?? 0,
-              time: new Date(today.getFullYear(), today.getMonth(), today.getDate(), departureH, departureM, departureS, 0),
-              uncertainty: corresponding.departure?.uncertainty ?? 0,
-            },
-            departureOccupancyStatus: corresponding.departureOccupancyStatus,
-            carriageSeqPredictiveOccupancy: corresponding.carriageSeqPredictiveOccupancy
-          }
-        })
-        const temp = this.currentRealtimeTrip!.stopTimeUpdate
-        this.currentRealtimeTrip!.stopTimeUpdate = this.currentTripStopTimes
-        this.currentTripStopTimes = temp
-      }
-
-      this.updateBar()
-    } else if (incomingProps.propType === 'stop') {
-      console.log('stop')
-      if (this.currentProps.mode === 'metro')
-        this.currentStopScheduledServices = await getSydneyMetroStopTimes(this.currentProps.name, new Date().toISOString(), false)
-      else if (this.currentProps.mode === 'sydneytrains')
-        this.currentStopScheduledServices = await getSydneyTrainsStopTimes(this.currentProps.name, new Date().toISOString(), false)
-      else if (this.currentProps.mode === 'combined') {
-        this.currentStopScheduledServices = await getSydneyCombinedStopTimes(this.currentProps.name, new Date().toISOString(), false)
-        console.log(this.currentStopScheduledServices)
-      }
-
-      console.log(this.currentStopScheduledServices)
-
-      if (this.currentStopScheduledServices.length < 24) {
+      if (this.stopTimes.length < 24) {
         this.preLoadingDone = true
         this.postLoadingDone = true
       }
@@ -153,63 +97,65 @@ export class MapSidebarComponent {
         if (!this.container) return
         this.container.scrollTop = 48
       }, 0)
-    } else if (incomingProps.propType === 'route') {
-      console.log('route')
     }
   }
 
   closeSidebar() {
-    console.log('close')
     this.open = false
     this.resetSidebar()
   }
 
   resetSidebar() {
-    console.log('reset')
-    this.currentProps = null
+    this.props = null
 
-    this.currentVehicle = null
-    this.currentRealtimeTrip = null
-    this.currentTrip = null
-    this.currentTripStopTimes = []
-
-    this.currentStopScheduledServices = []
+    this.vehicle = null
+    this.scheduledTrip = null
+    this.stopTimes = []
   
     this.preLoadingDone = false
     this.postLoadingDone = false
   }
 
+  async updateTripStopTimes() {
+    this.stopTimes = await getSydneyTripRealtimeStopTimes(this.props.mode, this.props.tripId, new Date().toISOString())
+    console.log("Current Trip Stop Times: ", this.stopTimes)
+
+    this.updateBar()
+  }
+
+  // MOVE LOGIC HERE TO BACKEND - YUCKY
   updateBar() {
-    const vehicle = this.currentVehicle
-    const realtime = this.currentRealtimeTrip
-    const trip = this.currentTrip
-    if (!vehicle || !realtime || !trip) return
+    const vehicle = this.vehicle
+    const scheduledTrip = this.scheduledTrip
+    const stopTimes = this.stopTimes
 
-    const bar = document.querySelector('.sidebar-body-bar')! as HTMLElement;
-    const barCover = document.querySelector('.sidebar-body-bar-cover')! as HTMLElement;
+    if (!vehicle || !scheduledTrip || !stopTimes) return
 
-    bar.style.height = `${realtime.stopTimeUpdate.length! * 72 - 32}px`
+    const date = new Date()
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const timeString = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    this.stopSequence = stopTimes.findIndex((st) => st.departureTime.localeCompare(timeString) >= 0)
+    const segmentStartStopTime: StopTime = stopTimes[Math.max(0, this.stopSequence - 1)]
+    const segmentEndStopTime: StopTime = stopTimes[this.stopSequence]
 
-    const currentTripStartSegment = this.currentProps.type === 'metro' ? this.stops.find((stop) => stop.id === vehicle.stopId)?.id! : realtime.stopTimeUpdate[realtime.stopTimeUpdate.length - this.currentTripStopTimes.length - 1].stopId!
-    const nextIndex = Number(realtime.stopTimeUpdate.findIndex((stop) => stop.stopId === currentTripStartSegment.toString())) + 1
-    const currentTripEndSegment = this.stops.find((stop) => stop.id === realtime.stopTimeUpdate[nextIndex].stopId)?.id!
+    const start = this.stops.find((stop) => stop.id === segmentStartStopTime.stopId)!
+    const end = this.stops.find((stop) => stop.id === segmentEndStopTime.stopId)!
 
-    const start = this.stops.find((stop) => stop.id === currentTripStartSegment!)!
-    const end = this.stops.find((stop) => stop.id === currentTripEndSegment!)!
+    const shape = this.shapes[scheduledTrip.shapeId]
 
     let startBestIndex = 0;
-    let startBestDiff = [Math.abs(this.shapes[trip.shapeId][0].latitude - start.latitude!), Math.abs(this.shapes[trip.shapeId][0].longitude - start.longitude!)];
+    let startBestDiff = [Math.abs(shape[0].latitude - start.latitude!), Math.abs(shape[0].longitude - start.longitude!)];
     let endBestIndex = 0;
-    let endBestDiff = [Math.abs(this.shapes[trip.shapeId][0].latitude - end.latitude!), Math.abs(this.shapes[trip.shapeId][0].longitude - end.longitude!)];
-
-    for (let i = 1; i < this.shapes[trip.shapeId].length; i++) {
-      const startDiff = [Math.abs(this.shapes[trip.shapeId][i].latitude - start.latitude!), Math.abs(this.shapes[trip.shapeId][i].longitude - start.longitude!)];
+    let endBestDiff = [Math.abs(shape[0].latitude - end.latitude!), Math.abs(shape[0].longitude - end.longitude!)];
+  
+    for (let i = 1; i < shape.length; i++) {
+      const startDiff = [Math.abs(shape[i].latitude - start.latitude!), Math.abs(shape[i].longitude - start.longitude!)];
       if (startDiff[0] < startBestDiff[0] && startDiff[1] < startBestDiff[1]) {
         startBestIndex = i;
         startBestDiff = startDiff;
       }
 
-      const endDiff = [Math.abs(this.shapes[trip.shapeId][i].latitude - end.latitude!), Math.abs(this.shapes[trip.shapeId][i].longitude - end.longitude!)];
+      const endDiff = [Math.abs(shape[i].latitude - end.latitude!), Math.abs(shape[i].longitude - end.longitude!)];
       if (endDiff[0] < endBestDiff[0] && endDiff[1] < endBestDiff[1]) {
         endBestIndex = i;
         endBestDiff = endDiff;
@@ -217,64 +163,52 @@ export class MapSidebarComponent {
     }
 
     let currentBestIndex = startBestIndex;
-    let currentBestDiff = [Math.abs(this.shapes[trip.shapeId][startBestIndex].latitude - vehicle.position!.latitude!), Math.abs(this.shapes[trip.shapeId][startBestIndex].longitude - vehicle.position!.longitude!)];
+    let currentBestDiff = [Math.abs(shape[startBestIndex].latitude - vehicle.position!.latitude!), Math.abs(shape[startBestIndex].longitude - vehicle.position!.longitude!)];
 
     for (let i = startBestIndex; i < endBestIndex; i++) {
-      const currentDiff = [Math.abs(this.shapes[trip.shapeId][i].latitude - vehicle.position!.latitude!), Math.abs(this.shapes[trip.shapeId][i].longitude - vehicle.position!.longitude!)];
+      const currentDiff = [Math.abs(shape[i].latitude - vehicle.position!.latitude!), Math.abs(shape[i].longitude - vehicle.position!.longitude!)];
       if (currentDiff[0] < currentBestDiff[0] && currentDiff[1] < currentBestDiff[1]) {
         currentBestIndex = i;
         currentBestDiff = currentDiff;
       }
     }
 
-    const progress = this.currentProps.type === 'metro'
-      ? (this.shapes[trip.shapeId][currentBestIndex].distanceTravelled - this.shapes[trip.shapeId][startBestIndex].distanceTravelled) / (this.shapes[trip.shapeId][endBestIndex].distanceTravelled - this.shapes[trip.shapeId][startBestIndex].distanceTravelled)
-      : (this.shapes[trip.shapeId][currentBestIndex].sequence - this.shapes[trip.shapeId][startBestIndex].sequence) / (this.shapes[trip.shapeId][endBestIndex].sequence - this.shapes[trip.shapeId][startBestIndex].sequence)
+    const progress = this.props.type === 'metro'
+      ? (shape[currentBestIndex].distanceTravelled - shape[startBestIndex].distanceTravelled) / (shape[endBestIndex].distanceTravelled - shape[startBestIndex].distanceTravelled)
+      : (shape[currentBestIndex].sequence - shape[startBestIndex].sequence) / (shape[endBestIndex].sequence - shape[startBestIndex].sequence)
 
     const percent = progress * 100;
     const increment = 72
-    const currentProgress = increment * (nextIndex - 1) + increment * (percent / 100) + 32
+    const currentProgress = increment * (this.stopSequence - 1) + increment * (percent / 100)
     
+    const bar = document.querySelector('.sidebar-body-bar')! as HTMLElement;
+    const barCover = document.querySelector('.sidebar-body-bar-cover')! as HTMLElement;
+
+    bar.style.height = `${this.stopTimes.length * 72 - 64}px`
     barCover.style.height = `calc(${currentProgress}px)`
   }
 
   stopScroller = async () => {
     if (!this.container) return
-    if (this.currentStopScheduledServices.length === 0) return
-    if (this.container.scrollTop === 0) {
-      let temp: StopTime[] = []
-      if (this.currentProps.mode === 'metro')
-        temp = await getSydneyMetroStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
-      else if (this.currentProps.mode === 'sydneytrains')
-        temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
-      else if (this.currentProps.mode === 'combined') {
-        temp = await getSydneyCombinedStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
-        console.log(temp)
-      }
-      // const temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[0].arrivalTime, true)
+    if (this.stopTimes.length === 0) return
 
-      if (temp.length > 0)
-        this.currentStopScheduledServices = temp.concat(this.currentStopScheduledServices)
+    if (this.container.scrollTop === 0) {
+      const stopTimes: StopTime[] = await getSydneyStopScheduledStopTimes(this.props.mode, this.props.name, this.stopTimes[0].departureTime, true)
+
+      if (stopTimes.length > 0)
+        this.stopTimes = stopTimes.concat(this.stopTimes)
       else
         this.preLoadingDone = true
+
       setTimeout(() => {
         if (!this.container) return
-        this.container.scrollTop = 72 * temp.length
+        this.container.scrollTop = 72 * stopTimes.length
       }, 0)
-    } else if (this.container.scrollTop === 72 * Math.max(0, (this.currentStopScheduledServices.length - 12)) + (this.preLoadingDone ? 62 : 110)) {
-      let temp: StopTime[] = []
-      if (this.currentProps.mode === 'metro')
-        temp = await getSydneyMetroStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
-      else if (this.currentProps.mode === 'sydneytrains')
-        temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
-      else if (this.currentProps.mode === 'combined') {
-        temp = await getSydneyCombinedStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
-        console.log(temp)
-      }
-      // const temp = await getSydneyTrainsStopTimes(this.currentProps.name, this.currentStopScheduledServices[this.currentStopScheduledServices.length - 1].arrivalTime, false)
-
-      if (temp.length > 0)
-        this.currentStopScheduledServices = this.currentStopScheduledServices.concat(temp)
+    } else if (this.container.scrollTop === 72 * Math.max(0, (this.stopTimes.length - 12)) + (this.preLoadingDone ? 116 : 164)) {
+      const stopTimes: StopTime[] = await getSydneyStopScheduledStopTimes(this.props.mode, this.props.name, this.stopTimes[this.stopTimes.length - 1].departureTime, false)
+  
+      if (stopTimes.length > 0)
+        this.stopTimes = this.stopTimes.concat(stopTimes)
       else
         this.postLoadingDone = true
     }
@@ -285,10 +219,23 @@ export class MapSidebarComponent {
   }
 
   getVehicleModel(vehicleModel: string, mode: string) {
-    if (mode === 'metro')
+    if (mode === 'Metro')
       return vehiclesMap[vehicleModel] 
     return vehiclesMap[vehicleModel] 
   }
+
+  getDate(time: string) {
+    return new Date(`1970-01-01T${time}`);
+  }
+
+  getDelay(delay: number) {
+    const floored = delay < 0 ? Math.ceil(delay / 60) : Math.floor(delay / 60)
+
+    if (floored < 0) return `${Math.abs(floored)} mins early`
+    else if (floored > 0) return `${Math.abs(floored)} mins late`
+    else return 'On time'
+  }
+
   getOccupancyColour(status: number): string {
     if (status === 2 || status === 3) {
       return 'yellow'
@@ -302,13 +249,13 @@ export class MapSidebarComponent {
   }
 
   getRouteCode(routeId: string, mode: string) {
-    if (mode === 'metro')
+    if (mode === 'Metro')
       return routesMap[routeId.split('_')[1]] 
     return routesMap[routeId.split('_')[0]] 
   }
 
   getCorrespondingRouteColour(routeId: string, mode: string) {
-    if (mode === 'metro')
+    if (mode === 'Metro')
       return coloursMap[routeId.split('_')[1]] 
     return coloursMap[routeId.split('_')[0]]
   }

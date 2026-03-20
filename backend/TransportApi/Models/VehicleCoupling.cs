@@ -19,5 +19,16 @@ public class VehicleCoupling
     public int ChildSequence { get; set; }
     
     [Column("child_label")]
-    public string? ChildLabel { get; set; }
+    public string ChildLabel { get; set; } = null!;
+
+    public static VehicleCoupling ParseColumns(string[] cols)
+    {
+        return new VehicleCoupling
+        {
+            ParentId = cols[0],
+            ChildId = cols[1],
+            ChildSequence = int.Parse(cols[2]),
+            ChildLabel = cols[3]
+        };
+    }
 }

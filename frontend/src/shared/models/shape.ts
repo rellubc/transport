@@ -14,4 +14,4 @@ interface ShapeDetails {
     mode: string
 }
 
-export type Shape = Record<string, ShapeDetails[]>
+export type Shapes = Record<string, ShapeDetails[]>

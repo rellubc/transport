@@ -11,5 +11,14 @@ public class VehicleCategory
     public string VehicleCategoryId { get; set; } = null!;
     
     [Column("vehicle_category_name")]
-    public string? VehicleCategoryName { get; set; }
+    public string VehicleCategoryName { get; set; } = null!;
+
+    public static VehicleCategory ParseColumns(string[] cols)
+    {
+        return new VehicleCategory
+        {
+            VehicleCategoryId = cols[0],
+            VehicleCategoryName = cols[1]
+        };
+    }
 }

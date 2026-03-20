@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Globalization;
 
 namespace TransportApi.Models;
 
-[Table("calendar")]
+[Table("calendars")]
 public class Calendar
 {
     [Key]
@@ -11,40 +12,46 @@ public class Calendar
     public string ServiceId { get; set; } = null!;
 
     [Column("monday")]
-    [Required]
-    public bool Monday { get; set; }
+    public int Monday { get; set; }
 
     [Column("tuesday")]
-    [Required]
-    public bool Tuesday { get; set; }
+    public int Tuesday { get; set; }
 
     [Column("wednesday")]
-    [Required]
-    public bool Wednesday { get; set; }
+    public int Wednesday { get; set; }
 
     [Column("thursday")]
-    [Required]
-    public bool Thursday { get; set; }
+    public int Thursday { get; set; }
 
     [Column("friday")]
-    [Required]
-    public bool Friday { get; set; }
+    public int Friday { get; set; }
 
     [Column("saturday")]
-    [Required]
-    public bool Saturday { get; set; }
+    public int Saturday { get; set; }
 
     [Column("sunday")]
-    [Required]
-    public bool Sunday { get; set; }
+    public int Sunday { get; set; }
 
     [Column("start_date")]
-    [Required]
-    [DataType(DataType.Date)]
     public DateTime StartDate { get; set; }
 
     [Column("end_date")]
-    [Required]
-    [DataType(DataType.Date)]
     public DateTime EndDate { get; set; }
+
+    public static Calendar ParseColumns(string[] cols)
+    {
+        return new Calendar
+        {
+            ServiceId = cols[0],
+            Monday = int.Parse(cols[1]),
+            Tuesday = int.Parse(cols[2]),
+            Wednesday = int.Parse(cols[3]),
+            Thursday = int.Parse(cols[4]),
+            Friday = int.Parse(cols[5]),
+            Saturday = int.Parse(cols[6]),
+            Sunday = int.Parse(cols[7]),
+            StartDate = DateTime.ParseExact(cols[8], "yyyyMMdd", CultureInfo.InvariantCulture),
+            EndDate = DateTime.ParseExact(cols[9], "yyyyMMdd", CultureInfo.InvariantCulture)
+        };
+    }
 }

@@ -1,35 +1,21 @@
-using Microsoft.EntityFrameworkCore;
-
-using TransportApi.Data;
-using TransportApi.Models;
 using TransportApi.DTOs.Realtime;
 
 using Google.Protobuf;
-using System.Xml.Serialization;
-using System.Text.Json;
 
 using TransitRealtime;
-using TransportApi.DTOs;
 
 namespace TransportApi.Services;
 
-public interface ISydneyTrainsService
-{
-    Task<TripUpdateDto> SydneyTrainsRealtimeTripUpdates(string TripId);
-    Task<List<VehiclePositionDto>> SydneyTrainsRealtimeVehiclePositions();
-}
-
-public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory factory, ILogger<SydneyTrainsService> logger) : ISydneyTrainsService
+public class RealtimeService(IHttpClientFactory factory, ILogger<RealtimeService> logger) : IRealtimeService
 {
     private readonly IHttpClientFactory _factory = factory;
-    private readonly TransportDbContext _db = db;
-    private readonly ILogger<SydneyTrainsService> _logger = logger;
+    private readonly ILogger<RealtimeService> _logger = logger;
 
-    public async Task<TripUpdateDto> SydneyTrainsRealtimeTripUpdates(string tripId)
+    public async Task<TripUpdateDto> GetRealtimeTripUpdate(string mode, string tripId)
     {
         _logger.LogInformation("Updating vehicle trip details...");
         var client = _factory.CreateClient("TransportNSW");
-        var response = await client.GetAsync("https://api.transport.nsw.gov.au/v2/gtfs/realtime/sydneytrains");
+        var response = await client.GetAsync($"https://api.transport.nsw.gov.au/v2/gtfs/realtime/{Common.Mappings.UrlMappings[mode]}");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -64,11 +50,11 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
         return newTripUpdate;
     }
 
-    public async Task<List<VehiclePositionDto>> SydneyTrainsRealtimeVehiclePositions()
+    public async Task<List<VehiclePositionDto>> GetRealtimeVehicles(string mode)
     {
         _logger.LogInformation("Updating vehicle positions...");
         var client = _factory.CreateClient("TransportNSW");
-        var response = await client.GetAsync("https://api.transport.nsw.gov.au/v2/gtfs/vehiclepos/sydneytrains");
+        var response = await client.GetAsync($"https://api.transport.nsw.gov.au/v2/gtfs/vehiclepos/{Common.Mappings.UrlMappings[mode]}");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -81,7 +67,7 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
         var parser = FeedMessage.Parser.WithExtensionRegistry(registry);
         var feed = parser.ParseFrom(responseStream);
 
-        var newVehiclePositions = new List<VehiclePositionDto>();
+        var newVehicles = new List<VehiclePositionDto>();
 
         if (feed == null) return [];
 
@@ -90,27 +76,18 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
             try
             {
                 if (entity.Vehicle == null) continue;
-                newVehiclePositions.Add(TransformVehiclePosition(entity.Vehicle));
+                newVehicles.Add(TransformVehicle(entity.Vehicle));
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to process vehicle entity {EntityId}", entity.Id);
             }
         }
-        return newVehiclePositions;
+        return newVehicles;
     }
 
     private async Task<TripUpdateDto> TransformTripUpdate(TripUpdate tripUpdate)
     {
-        var stopIds = tripUpdate.StopTimeUpdate
-            .Select(stu => stu.StopId)
-            .Distinct()
-            .ToList();
-
-        var stopNames = await _db.Stops
-            .Where(s => stopIds.Contains(s.Id))
-            .ToDictionaryAsync(s => s.Id, s => s.Name);
-
         var trip = new TripDescriptorDto
         {
             TripId = tripUpdate.Trip.TripId,
@@ -124,7 +101,7 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
         var tfnswVehicleDescriptor = new TfnswVehicleDescriptorDto();
         if (tripUpdate.Vehicle.HasExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor))
         {
-            TfnswVehicleDescriptor tfnswVehicleDescriptorExtension = tripUpdate.Vehicle.GetExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor);
+            TransitRealtime.TfnswVehicleDescriptor tfnswVehicleDescriptorExtension = tripUpdate.Vehicle.GetExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor);
             tfnswVehicleDescriptor.AirConditioned = tfnswVehicleDescriptorExtension.AirConditioned;
             tfnswVehicleDescriptor.WheelchairAccessible = tfnswVehicleDescriptorExtension.WheelchairAccessible;
             tfnswVehicleDescriptor.VehicleModel = tfnswVehicleDescriptorExtension.VehicleModel;
@@ -179,8 +156,7 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
             newStopTimeUpdates.Add(new StopTimeUpdateDto
             {
                 StopSequence = stu.StopSequence,
-                StopName = stopNames.GetValueOrDefault(stu.StopId ?? "") ?? "",
-                StopId = stu.StopId ?? "",
+                StopId = stu.StopId,
                 Arrival = arrival,
                 Departure = departure,
                 ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipStopTimeUpdate(stu.ScheduleRelationship),
@@ -202,7 +178,7 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
         };
     }
 
-    private static VehiclePositionDto TransformVehiclePosition(VehiclePosition vehiclePosition)
+    private static VehiclePositionDto TransformVehicle(VehiclePosition vehiclePosition)
     {
         var trip = new TripDescriptorDto();
         if (vehiclePosition.Trip != null)
@@ -226,7 +202,7 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
             tfnswVehicleDescriptor.SpecialVehicleAttributes = tfnswVehicleDescriptorExtension.SpecialVehicleAttributes;
         }
 
-        var vehicle = new VehicleDescriptorDto
+        var vehicleDescriptor = new VehicleDescriptorDto
         {
             Id = vehiclePosition.Vehicle.Id,
             Label = vehiclePosition.Vehicle.Label,
@@ -273,7 +249,7 @@ public class SydneyTrainsService(TransportDbContext db, IHttpClientFactory facto
         return new VehiclePositionDto
         {
             Trip = trip,
-            Vehicle = vehicle,
+            Vehicle = vehicleDescriptor,
             Position = position,
             CurrentStopSequence = currentStopSequence,
             StopId = stopId,

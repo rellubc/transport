@@ -16,7 +16,7 @@ public class TripDto
 
     public string ShortName { get; set; } = null!;
 
-    public string? BlockId { get; set; }
+    public string BlockId { get; set; } = null!;
 
     public int WheelchairAccessible { get; set; }
 

@@ -8,11 +8,17 @@ public class Note
 {
     [Key]
     [Column("note_id")]
-    [Required]
-    [StringLength(255)]
     public string Id { get; set; } = null!;
 
     [Column("note_text")]
-    [Required]
     public string Text { get; set; } = null!;
+
+    public static Note ParseColumns(string[] cols)
+    {
+        return new Note
+        {
+            Id = cols[0],
+            Text = cols[1]
+        };
+    }
 }

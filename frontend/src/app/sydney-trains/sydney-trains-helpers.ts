@@ -1,6 +1,6 @@
 import { Calendar } from "../../shared/models/calendar"
 import { TripUpdate, VehiclePosition } from "../../shared/models/realtime"
-import { Shape } from "../../shared/models/shape"
+import { Shapes } from "../../shared/models/shape"
 import { Stop } from "../../shared/models/stop"
 import { StopTime } from "../../shared/models/stopTime"
 import { Trip } from "../../shared/models/trip"
@@ -19,19 +19,6 @@ export const getSydneyTrainsCalendars = async (serviceId: string): Promise<Calen
   }
 }
 
-export const getSydneyTrainsShapes = async (): Promise<Shape>=> {
-  try {
-    const res = await fetch('https://localhost:7284/api/sydney/trains/shapes')
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-    const data: Shape = await res.json()
-
-    return data
-  } catch (error) {
-    console.error('Fetch failed:', error)
-    return {}
-  }
-}
 
 export const getSydneyTrainsStops = async (): Promise<Stop[]>=> {
   try {
@@ -39,6 +26,8 @@ export const getSydneyTrainsStops = async (): Promise<Stop[]>=> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: Stop[] = await res.json()
+
+    // console.log(data)
 
     return data
   } catch (error) {
@@ -53,20 +42,6 @@ export const getSydneyTrainsStopsPlatforms = async (stopId: string): Promise<Sto
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: Stop[] = await res.json()
-    
-    return data
-  } catch (error) {
-    console.error('Fetch failed:', error)
-    return []
-  }
-}
-
-export const getSydneyTrainsStopTimes = async (stopName: string, timeString: string, before: boolean): Promise<StopTime[]>=> {
-  try {
-    const res = await fetch(`https://localhost:7284/api/sydney/trains/stop-times?stopName=${stopName}&timeString=${timeString}&before=${before}`)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-    const data: StopTime[] = await res.json()
 
     // console.log(data)
 
@@ -77,7 +52,48 @@ export const getSydneyTrainsStopTimes = async (stopName: string, timeString: str
   }
 }
 
-export const getSydneyTrainsTrip = async (tripId: string): Promise<Trip | null>=> {
+export const getSydneyTrainsShapes = async (): Promise<Shapes>=> {
+  try {
+    const res = await fetch('https://localhost:7284/api/sydney/trains/shapes')
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const data: Shapes = await res.json()
+
+    // console.log(data)
+
+    return data
+  } catch (error) {
+    console.error('Fetch failed:', error)
+    return {}
+  }
+}
+export const getSydneyTrainsStopTimes = async (stopName: string, timeString: string, before: boolean): Promise<StopTime[]>=> {
+  try {
+    const res = await fetch(`https://localhost:7284/api/sydney/trains/stop-times?stopName=${stopName}&timeString=${timeString}&before=${before}`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const data: StopTime[] = await res.json()
+
+    data.sort((a, b) => {
+      const normalise = (time: string) => {
+        let temp = parseInt(time.substring(0, 2))
+        if (temp < 4) {
+          temp += 24
+          time = temp.toString() + time.substring(2, time.length - 1)
+        }
+        return time
+      }
+      return normalise(a.arrivalTime).localeCompare(normalise(b.arrivalTime))
+    })
+
+    return data
+  } catch (error) {
+    console.error('Fetch failed:', error)
+    return []
+  }
+}
+
+export const getSydneyTrainsTrip = async (tripId: string): Promise<Trip>=> {
   try {
     const res = await fetch(`https://localhost:7284/api/sydney/trains/trips?tripId=${tripId}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -87,7 +103,7 @@ export const getSydneyTrainsTrip = async (tripId: string): Promise<Trip | null>=
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
-    return null
+    return { id: '', routeId: '', serviceId: '', shapeId: -1, headSign: '', directionId: -1, shortName: '', wheelchairAccessible: 0, routeDirection: '' }
   }
 }
 
@@ -98,8 +114,6 @@ export const getSydneyTrainsTripStopTimes = async (tripId: string, timeString: s
 
     const data: StopTime[] = await res.json()
 
-    // console.log(data)
-
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -107,8 +121,7 @@ export const getSydneyTrainsTripStopTimes = async (tripId: string, timeString: s
   }
 }
 
-
-export const getSydneyTrainsTripUpdates = async (tripId: string): Promise<TripUpdate | null>=> {
+export const getSydneyTrainsTripUpdates = async (tripId: string): Promise<TripUpdate>=> {
   try {
     const res = await fetch(`https://localhost:7284/api/sydney/trains/realtime-trip-updates?tripId=${tripId}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -130,8 +143,6 @@ export const getSydneyTrainsTripUpdates = async (tripId: string): Promise<TripUp
     }
 
     // console.log(data)
-
-    if (data.trip === null || data.stopTimeUpdate === null) return null
 
     return data
   } catch (error) {

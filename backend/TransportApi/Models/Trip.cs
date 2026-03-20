@@ -8,49 +8,33 @@ public class Trip
 {
     [Key]
     [Column("trip_id")]
-    [Required]
-    [StringLength(255)]
     public string Id { get; set; } = null!;
 
     [Column("route_id")]
-    [Required]
-    [StringLength(255)]
     public string RouteId { get; set; } = null!;
 
     [Column("service_id")]
-    [Required]
     public string ServiceId { get; set; } = null!;
 
-    [ForeignKey("ServiceId")]
-    public Calendar? Service { get; set; }
-
     [Column("shape_id")]
-    [Required]
     public string ShapeId { get; set; } = null!;
 
     [Column("trip_headsign")]
-    [Required]
-    [StringLength(255)]
     public string HeadSign { get; set; } = null!;
 
     [Column("direction_id")]
-    [Required]
     public int DirectionId { get; set; }
 
     [Column("trip_short_name")]
-    [StringLength(255)]
-    public string? ShortName { get; set; }
+    public string ShortName { get; set; } = null!;
 
     [Column("block_id")]
-    [StringLength(255)]
-    public string? BlockId { get; set; }
+    public string BlockId { get; set; } = null!;
 
     [Column("wheelchair_accessible")]
-    [Required]
     public int WheelchairAccessible { get; set; }
 
     [Column("trip_note")]
-    [StringLength(255)]
     public string? TripNote { get; set; }
 
     [Column("route_direction")]
@@ -61,4 +45,41 @@ public class Trip
 
     [Column("vehicle_category_id")]
     public string? VehicleCategoryId { get; set; }
+
+    public static Trip ParseColumns(string mode, string[] cols)
+    {
+        var trip = new Trip
+        {
+            RouteId = cols[0],
+            ServiceId = cols[1],
+            Id = cols[2],
+            DirectionId = int.Parse(cols[5]),
+            WheelchairAccessible = int.Parse(cols[8]),
+        };
+
+        if (mode == "metro")
+        {
+            trip.ShapeId = $"M1_{cols[3]}";
+            trip.HeadSign = cols[4];
+            trip.DirectionId = int.Parse(cols[5]);
+            trip.ShortName = cols[6];
+            trip.BlockId = cols[7];
+            trip.TripNote = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9];
+            trip.RouteDirection = string.IsNullOrWhiteSpace(cols[10]) ? null : cols[10];
+            trip.BikesAllowed = string.IsNullOrWhiteSpace(cols[11]) ? null : int.Parse(cols[11]);
+        }
+        else if (mode == "sydneytrains")
+        {
+            trip.RouteId = cols[0];
+            trip.ServiceId = cols[1];
+            trip.Id = cols[2];
+            trip.HeadSign = cols[3];
+            trip.ShortName = cols[4];
+            trip.BlockId = cols[6];
+            trip.ShapeId = cols[7];
+            trip.VehicleCategoryId = string.IsNullOrWhiteSpace(cols[9]) ? null : cols[9];
+        }
+
+        return trip;
+    }
 }

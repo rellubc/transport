@@ -8,5 +8,5 @@ public class VehicleCouplingDto
     
     public int ChildSequence { get; set; }
     
-    public string? ChildLabel { get; set; }
+    public string ChildLabel { get; set; } = null!;
 }

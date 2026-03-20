@@ -7,7 +7,7 @@ export interface Stop {
     longitude: number
     zoneId?: string
     url?: string
-    locationType: string
+    locationType: number
     parentStationId?: string
     timezone?: string
     wheelchairBoarding: boolean

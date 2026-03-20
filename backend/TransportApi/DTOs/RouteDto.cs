@@ -14,9 +14,9 @@ public class RouteDto
     
     public int Type { get; set; }
     
-    public string Colour { get; set; } = "00B5EF";
+    public string Colour { get; set; } = null!;
     
-    public string TextColour { get; set; } = "FFFFFF";
+    public string TextColour { get; set; } = null!;
     
     public string Url { get; set; } = null!;
 }

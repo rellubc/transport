@@ -1,10 +1,13 @@
 import { Component, ViewChild } from '@angular/core';
 import { MapComponent } from '../components/map/map.component';
 
-import { getSydneyMetroShapes, getSydneyMetroStops, getSydneyMetroVehiclePositions } from './sydney-metro-helpers';
 import { Stop } from '../../shared/models/stop';
-import { Shape } from '../../shared/models/shape';
+import { Shapes } from '../../shared/models/shape';
 import { VehiclePosition } from '../../shared/models/realtime';
+import { ROUTE_TYPE_METRO, routeTypeMap } from '../../shared/models/constants';
+import { getSydneyStops } from '../api/sydney-stops';
+import { getSydneyShapes } from '../api/sydney-shapes';
+import { getSydneyRealtimeVehicles } from '../api/sydney-realtime';
 
 @Component({
   selector: 'app-sydney-metro',
@@ -16,27 +19,31 @@ export class SydneyMetroComponent {
   @ViewChild(MapComponent) map!: MapComponent
 
   stops: Stop[] = []
-  shapes: Shape = {}
+  shapes: Shapes = {}
   vehicles: VehiclePosition[] = []
 
-  METRO_FIRST_SHAPE: string = "3722"
-  METRO_SECOND_SHAPE: string = "16714"
-
   async ngOnInit(): Promise<void> {
-    this.stops = await getSydneyMetroStops()
+    this.stops = await getSydneyStops(routeTypeMap[ROUTE_TYPE_METRO])
     this.map.stops = this.stops
-    this.shapes = await getSydneyMetroShapes()
+
+    this.shapes = await getSydneyShapes(routeTypeMap[ROUTE_TYPE_METRO])
     this.map.shapes = this.shapes
 
-    this.map.addShape('M1', Object.keys(this.shapes))
-    this.map.addStops('metro')
+    this.map.routeTypes[ROUTE_TYPE_METRO] = new Set()
+    this.map.routeTypes[ROUTE_TYPE_METRO].add('M1')
+    this.map.addShapeSource(ROUTE_TYPE_METRO)
+    this.map.addStopSource(ROUTE_TYPE_METRO)
+    this.map.addVehicleSource(ROUTE_TYPE_METRO)
 
-    this.vehicles = await getSydneyMetroVehiclePositions()
+    this.map.addShapes()
+    this.map.addStops()
+
+    this.vehicles = await getSydneyRealtimeVehicles(routeTypeMap[ROUTE_TYPE_METRO])
     this.map.vehicles = this.vehicles
     this.map.refresh()
 
     setInterval(async () => {
-      this.vehicles = await getSydneyMetroVehiclePositions();
+      this.vehicles = await getSydneyRealtimeVehicles(routeTypeMap[ROUTE_TYPE_METRO])
       this.map.vehicles = this.vehicles
       this.map.refresh()
     }, 15000)

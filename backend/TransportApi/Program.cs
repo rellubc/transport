@@ -19,11 +19,15 @@ var mysqlConnString = $"Server={mysqlHost};Port={mysqlPort};Database={mysqlDatab
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddMemoryCache();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient("TransportNSW", client => 
     client.DefaultRequestHeaders.Add("Authorization", $"apikey {apikey}"));
-builder.Services.AddDbContext<TransportDbContext>(options => 
-    options.UseMySql(mysqlConnString, ServerVersion.AutoDetect(mysqlConnString)));
+builder.Services.AddDbContext<TransportDbContext>(options =>
+{
+    options.UseMySql(mysqlConnString, ServerVersion.AutoDetect(mysqlConnString));
+    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", 
@@ -34,8 +38,13 @@ builder.Services.AddCors(options =>
                 .AllowAnyMethod();
         });
 });
-builder.Services.AddScoped<ISydneyMetroService, SydneyMetroService>();
-builder.Services.AddScoped<ISydneyTrainsService, SydneyTrainsService>();
+builder.Services.AddScoped<IAgencyService, AgencyService>();
+builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddScoped<IRealtimeService, RealtimeService>();
+builder.Services.AddScoped<IShapeService, ShapeService>();
+builder.Services.AddScoped<IStopService, StopService>();
+builder.Services.AddScoped<IStopTimeService, StopTimeService>();
+builder.Services.AddScoped<ITripService, TripService>();
 
 var app = builder.Build();
 
@@ -59,10 +68,10 @@ app.Map("/error", (HttpContext http) =>
 });
 
 // app.Logger.LogInformation("Metro");
-// await app.PopulateSydneyMetro();
+// await app.PopulateSydney("v2", "metro");
 
 // app.Logger.LogInformation("SydneyTrains");
-// await app.PopulateSydneyTrains();
+// await app.PopulateSydney("v1", "sydneytrains");
 
 app.Logger.LogInformation("Start Server");
 app.Run();

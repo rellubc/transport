@@ -52,7 +52,7 @@ CREATE TABLE stops (
     zone_id VARCHAR(100),
     stop_url VARCHAR(100),
     location_type TINYINT(1) NOT NULL,
-    parent_station VARCHAR(100) NOT NULL,
+    parent_station VARCHAR(100),
     stop_timezone VARCHAR(100),
     wheelchair_boarding TINYINT(1) NOT NULL,
     platform_code INT,
