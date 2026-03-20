@@ -1,5 +1,4 @@
-using TransportApi.Data;
-using TransportApi.Models.Realtime;
+using TransportApi.DTOs.Realtime;
 
 using Google.Protobuf;
 
@@ -7,19 +6,12 @@ using TransitRealtime;
 
 namespace TransportApi.Services;
 
-public interface ISydneyService
-{
-    Task<Models.Realtime.TripUpdate> SydneyRealtimeTripUpdates(string TripId, string mode);
-    Task<List<Models.Realtime.VehiclePosition>> SydneyRealtimeVehiclePositions(string mode);
-}
-
-public class SydneyService(TransportDbContext db, IHttpClientFactory factory, ILogger<SydneyService> logger) : ISydneyService
+public class RealtimeService(IHttpClientFactory factory, ILogger<RealtimeService> logger) : IRealtimeService
 {
     private readonly IHttpClientFactory _factory = factory;
-    private readonly TransportDbContext _db = db;
-    private readonly ILogger<SydneyService> _logger = logger;
+    private readonly ILogger<RealtimeService> _logger = logger;
 
-    public async Task<Models.Realtime.TripUpdate> SydneyRealtimeTripUpdates(string mode, string tripId)
+    public async Task<TripUpdateDto> GetRealtimeTripUpdate(string mode, string tripId)
     {
         _logger.LogInformation("Updating vehicle trip details...");
         var client = _factory.CreateClient("TransportNSW");
@@ -28,7 +20,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("Failed to fetch data: {Response}", response.StatusCode);
-            return new Models.Realtime.TripUpdate();
+            return new TripUpdateDto();
         }
 
         ExtensionRegistry registry = [GtfsRealtime1007ExtensionExtensions.Update, GtfsRealtime1007ExtensionExtensions.Consist, GtfsRealtime1007ExtensionExtensions.TrackDirection, GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor, GtfsRealtime1007ExtensionExtensions.CarriageSeqPredictiveOccupancy];
@@ -36,9 +28,9 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
         var parser = FeedMessage.Parser.WithExtensionRegistry(registry);
         var feed = parser.ParseFrom(responseStream);
 
-        var newTripUpdate = new Models.Realtime.TripUpdate();
+        var newTripUpdate = new TripUpdateDto();
 
-        if (feed == null) return new Models.Realtime.TripUpdate();
+        if (feed == null) return new TripUpdateDto();
 
         foreach (var entity in feed.Entity)
         {
@@ -58,7 +50,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
         return newTripUpdate;
     }
 
-    public async Task<List<Models.Realtime.VehiclePosition>> SydneyRealtimeVehiclePositions(string mode)
+    public async Task<List<VehiclePositionDto>> GetRealtimeVehicles(string mode)
     {
         _logger.LogInformation("Updating vehicle positions...");
         var client = _factory.CreateClient("TransportNSW");
@@ -75,7 +67,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
         var parser = FeedMessage.Parser.WithExtensionRegistry(registry);
         var feed = parser.ParseFrom(responseStream);
 
-        var newVehiclePositions = new List<Models.Realtime.VehiclePosition>();
+        var newVehicles = new List<VehiclePositionDto>();
 
         if (feed == null) return [];
 
@@ -84,29 +76,29 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
             try
             {
                 if (entity.Vehicle == null) continue;
-                newVehiclePositions.Add(TransformVehiclePosition(entity.Vehicle));
+                newVehicles.Add(TransformVehicle(entity.Vehicle));
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to process vehicle entity {EntityId}", entity.Id);
             }
         }
-        return newVehiclePositions;
+        return newVehicles;
     }
 
-    private async Task<Models.Realtime.TripUpdate> TransformTripUpdate(TransitRealtime.TripUpdate tripUpdate)
+    private async Task<TripUpdateDto> TransformTripUpdate(TripUpdate tripUpdate)
     {
-        var trip = new Models.Realtime.TripDescriptor
+        var trip = new TripDescriptorDto
         {
             TripId = tripUpdate.Trip.TripId,
             RouteId = tripUpdate.Trip.RouteId,
             DirectionId = tripUpdate.Trip.DirectionId,
             StartTime = tripUpdate.Trip.StartTime,
             StartDate = tripUpdate.Trip.StartDate,
-            ScheduleRelationship = Models.Realtime.RealtimeEnums.MapScheduleRelationshipTripDescriptor(tripUpdate.Trip.ScheduleRelationship) 
+            ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipTripDescriptor(tripUpdate.Trip.ScheduleRelationship) 
         };
 
-        var tfnswVehicleDescriptor = new Models.Realtime.TfnswVehicleDescriptor();
+        var tfnswVehicleDescriptor = new TfnswVehicleDescriptorDto();
         if (tripUpdate.Vehicle.HasExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor))
         {
             TransitRealtime.TfnswVehicleDescriptor tfnswVehicleDescriptorExtension = tripUpdate.Vehicle.GetExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor);
@@ -117,7 +109,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
             tfnswVehicleDescriptor.SpecialVehicleAttributes = tfnswVehicleDescriptorExtension.SpecialVehicleAttributes;
         }
 
-        var vehicle = new Models.Realtime.VehicleDescriptor
+        var vehicle = new VehicleDescriptorDto
         {
             Id = tripUpdate.Vehicle.Id,
             Label = tripUpdate.Vehicle.Label,
@@ -125,30 +117,30 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
             TfnswVehicleDescriptor = tfnswVehicleDescriptor,
         };
 
-        var newStopTimeUpdates = new List<Models.Realtime.StopTimeUpdate>();
+        var newStopTimeUpdates = new List<StopTimeUpdateDto>();
         foreach (var stu in tripUpdate.StopTimeUpdate)
         {
-            var arrival = new Models.Realtime.StopTimeEvent();
+            var arrival = new StopTimeEventDto();
             if (stu.Arrival != null) {
                 arrival.Delay = stu.Arrival.Delay;
                 arrival.Time = stu.Arrival.Time;
                 arrival.Uncertainty = stu.Arrival.Uncertainty;
             }
 
-            var departure = new Models.Realtime.StopTimeEvent();
+            var departure = new StopTimeEventDto();
             if (stu.Departure != null) {
                 departure.Delay = stu.Departure.Delay;
                 departure.Time = stu.Departure.Time;
                 departure.Uncertainty = stu.Departure.Uncertainty;
             }
 
-            var carriageSeqPredictiveOccupancy = new List<Models.Realtime.CarriageDescriptor>();
+            var carriageSeqPredictiveOccupancy = new List<CarriageDescriptorDto>();
             var CarriageSeqPredictiveOccupancyExtension = stu.GetExtension(GtfsRealtime1007ExtensionExtensions.CarriageSeqPredictiveOccupancy);
             if (CarriageSeqPredictiveOccupancyExtension != null)
             {
                 foreach (var cspo in CarriageSeqPredictiveOccupancyExtension)
                 {
-                    carriageSeqPredictiveOccupancy.Add(new Models.Realtime.CarriageDescriptor
+                    carriageSeqPredictiveOccupancy.Add(new CarriageDescriptorDto
                     {
                         Name = cspo.Name,
                         PositionInConsist = cspo.PositionInConsist,
@@ -161,7 +153,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
                 }
             }
 
-            newStopTimeUpdates.Add(new Models.Realtime.StopTimeUpdate
+            newStopTimeUpdates.Add(new StopTimeUpdateDto
             {
                 StopSequence = stu.StopSequence,
                 StopId = stu.StopId,
@@ -176,7 +168,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
         var timestamp = tripUpdate.Timestamp;
         var delay = tripUpdate.Delay;
 
-        return new Models.Realtime.TripUpdate
+        return new TripUpdateDto
         {
             Trip = trip,
             Vehicle = vehicle,
@@ -186,9 +178,9 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
         };
     }
 
-    private static Models.Realtime.VehiclePosition TransformVehiclePosition(TransitRealtime.VehiclePosition vehiclePosition)
+    private static VehiclePositionDto TransformVehicle(VehiclePosition vehiclePosition)
     {
-        var trip = new Models.Realtime.TripDescriptor();
+        var trip = new TripDescriptorDto();
         if (vehiclePosition.Trip != null)
         {
             trip.TripId = vehiclePosition.Trip.TripId;
@@ -199,7 +191,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
             trip.ScheduleRelationship = RealtimeEnums.MapScheduleRelationshipTripDescriptor(vehiclePosition.Trip.ScheduleRelationship);
         }
 
-        var tfnswVehicleDescriptor = new Models.Realtime.TfnswVehicleDescriptor();
+        var tfnswVehicleDescriptor = new TfnswVehicleDescriptorDto();
         if (vehiclePosition.Vehicle.HasExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor))
         {
             var tfnswVehicleDescriptorExtension = vehiclePosition.Vehicle.GetExtension(GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor);
@@ -210,7 +202,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
             tfnswVehicleDescriptor.SpecialVehicleAttributes = tfnswVehicleDescriptorExtension.SpecialVehicleAttributes;
         }
 
-        var vehicle = new Models.Realtime.VehicleDescriptor
+        var vehicleDescriptor = new VehicleDescriptorDto
         {
             Id = vehiclePosition.Vehicle.Id,
             Label = vehiclePosition.Vehicle.Label,
@@ -218,7 +210,7 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
             TfnswVehicleDescriptor = tfnswVehicleDescriptor,
         };
 
-        var position = new Models.Realtime.Position
+        var position = new PositionDto
         {
             Latitude = vehiclePosition.Position.Latitude,
             Longitude = vehiclePosition.Position.Longitude,
@@ -235,13 +227,13 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
         var congestionLevel = RealtimeEnums.MapCongestionLevel(vehiclePosition.CongestionLevel);
         var occupancyStatus = RealtimeEnums.MapOccupancyStatusVehiclePosition(vehiclePosition.OccupancyStatus);
 
-        var consist = new List<Models.Realtime.CarriageDescriptor>();
+        var consist = new List<CarriageDescriptorDto>();
         var consistExtension = vehiclePosition.GetExtension(GtfsRealtime1007ExtensionExtensions.Consist);
         if (consistExtension != null)
         {
             foreach (var cd in consistExtension)
             {
-                consist.Add(new Models.Realtime.CarriageDescriptor
+                consist.Add(new CarriageDescriptorDto
                 {
                     Name = cd.Name,
                     PositionInConsist = cd.PositionInConsist,
@@ -254,10 +246,10 @@ public class SydneyService(TransportDbContext db, IHttpClientFactory factory, IL
             }
         }
         
-        return new Models.Realtime.VehiclePosition
+        return new VehiclePositionDto
         {
             Trip = trip,
-            Vehicle = vehicle,
+            Vehicle = vehicleDescriptor,
             Position = position,
             CurrentStopSequence = currentStopSequence,
             StopId = stopId,

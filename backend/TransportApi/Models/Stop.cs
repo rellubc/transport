@@ -55,6 +55,9 @@ public class Stop
             Id = cols[0],
         };
 
+        var index = cols[2].IndexOf("n Platform");
+		if (index != -1) cols[2] = $"{cols[2][.. (index + 1)]},{cols[2][(index + 1)..]}";
+
         if (mode == "metro")
         {
             stop.Name = cols[1];

@@ -3,7 +3,7 @@ import { Trip } from "../../shared/models/trip"
 
 export const getSydneyTrip = async (tripId: string): Promise<Trip> => {
   try {
-    const res = await fetch(`https://localhost:7284/api/sydney/trips?tripId=${tripId}`)
+    const res = await fetch(`https://localhost:7284/api/sydney/trip/${tripId}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: Trip = await res.json()

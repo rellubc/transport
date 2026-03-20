@@ -10,7 +10,7 @@ public class AgencyDto
     
     public string Timezone { get; set; } = null!;
     
-    public string? Lang { get; set; }
+    public string? Language { get; set; }
     
     public string? Phone { get; set; }
     

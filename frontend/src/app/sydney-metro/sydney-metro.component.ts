@@ -7,7 +7,7 @@ import { VehiclePosition } from '../../shared/models/realtime';
 import { ROUTE_TYPE_METRO, routeTypeMap } from '../../shared/models/constants';
 import { getSydneyStops } from '../api/sydney-stops';
 import { getSydneyShapes } from '../api/sydney-shapes';
-import { getSydneyVehiclePositions } from '../api/sydney-realtime-vehicles';
+import { getSydneyRealtimeVehicles } from '../api/sydney-realtime';
 
 @Component({
   selector: 'app-sydney-metro',
@@ -38,13 +38,12 @@ export class SydneyMetroComponent {
     this.map.addShapes()
     this.map.addStops()
 
-    this.vehicles = await getSydneyVehiclePositions(routeTypeMap[ROUTE_TYPE_METRO])
+    this.vehicles = await getSydneyRealtimeVehicles(routeTypeMap[ROUTE_TYPE_METRO])
     this.map.vehicles = this.vehicles
     this.map.refresh()
 
-
     setInterval(async () => {
-      this.vehicles = await getSydneyVehiclePositions(routeTypeMap[ROUTE_TYPE_METRO])
+      this.vehicles = await getSydneyRealtimeVehicles(routeTypeMap[ROUTE_TYPE_METRO])
       this.map.vehicles = this.vehicles
       this.map.refresh()
     }, 15000)

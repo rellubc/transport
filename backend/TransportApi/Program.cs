@@ -38,7 +38,13 @@ builder.Services.AddCors(options =>
                 .AllowAnyMethod();
         });
 });
-builder.Services.AddScoped<ISydneyService, SydneyService>();
+builder.Services.AddScoped<IAgencyService, AgencyService>();
+builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddScoped<IRealtimeService, RealtimeService>();
+builder.Services.AddScoped<IShapeService, ShapeService>();
+builder.Services.AddScoped<IStopService, StopService>();
+builder.Services.AddScoped<IStopTimeService, StopTimeService>();
+builder.Services.AddScoped<ITripService, TripService>();
 
 var app = builder.Build();
 

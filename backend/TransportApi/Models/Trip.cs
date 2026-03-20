@@ -59,7 +59,7 @@ public class Trip
 
         if (mode == "metro")
         {
-            trip.ShapeId = $"M1_{cols[2]}";
+            trip.ShapeId = $"M1_{cols[3]}";
             trip.HeadSign = cols[4];
             trip.DirectionId = int.Parse(cols[5]);
             trip.ShortName = cols[6];

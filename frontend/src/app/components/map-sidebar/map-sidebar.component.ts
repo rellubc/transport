@@ -6,14 +6,12 @@ import { Trip } from '../../../shared/models/trip';
 import { Stop } from '../../../shared/models/stop';
 import { StopTime } from '../../../shared/models/stopTime';
 import { GalleryThumbnailsIcon, LucideAngularModule, X } from 'lucide-angular';
-import { getSydneyMetroStopTimes, getSydneyMetroTrip, getSydneyMetroTripStopTimes, getSydneyMetroTripUpdates } from '../../sydney-metro/sydney-metro-helpers';
 import { getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripStopTimes, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers';
 import { Shapes } from '../../../shared/models/shape';
-// import { getSydneyCombinedStopTimes } from '../../sydney/sydney-helpers';
 import { getCurrentScheduledTrip } from './map-sidebar-helpers';
 import { getSydneyTrip, getSydneyTripStopTimes } from '../../api/sydney-trips';
-import { getSydneyStopTimes } from '../../api/sydney-stop-times';
-import { getSydneyRealtimeTripStopTimes, getSydneyTripUpdates } from '../../api/sydney-realtime-tripupdates';
+import { getSydneyStopScheduledStopTimes, getSydneyTripRealtimeStopTimes, getSydneyTripScheduledStopTimes } from '../../api/sydney-stop-times';
+import { getSydneyRealtimeTripUpdate } from '../../api/sydney-realtime';
 
 @Component({
   selector: 'app-map-sidebar',
@@ -33,10 +31,9 @@ export class MapSidebarComponent {
   props: any = null
 
   vehicle: VehiclePosition | null = null
-  
   scheduledTrip: Trip | null = null
-  realtimeTrip: TripUpdate | null = null
   stopTimes: StopTime[] = []
+  stopSequence: number = 0
 
   container: HTMLElement | null = null
 
@@ -44,20 +41,19 @@ export class MapSidebarComponent {
   postLoadingDone: boolean = false
 
   async refresh() {
-    // if (!this.open) return
+    if (!this.open) return
 
-    // if (this.props.type === 'vehicle') {
-    //   console.log('Updating current schedule...')
+    if (this.props.type === 'vehicle') {
+      console.log('Updating current schedule...')
 
-    //   this.vehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.props.id)!
+      this.vehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.props.id)!
 
-    //   this.updateTripStopTimes()
-    //   this.updateBar()
-    // } else if (this.props.type === 'stop') {
-    //   console.log('Updating current departures...')
+      this.updateTripStopTimes()
+    } else if (this.props.type === 'stop') {
+      console.log('Updating current departures...')
 
-    //   this.stopTimes = await getSydneyMetroStopTimes(this.props.name, new Date().toISOString(), false)
-    // }
+      this.stopTimes = await getSydneyStopScheduledStopTimes(this.props.mode, this.props.name, new Date().toISOString(), false)
+    }
   }
 
   async openSidebar(incomingProps: any) {
@@ -67,6 +63,7 @@ export class MapSidebarComponent {
 
     // edge case Light Rail service on metro api
     if (incomingProps.id == "UNASSIGNED") return
+    if (incomingProps.tripId?.includes("NonTimetabled")) return
 
     this.resetSidebar()
     
@@ -74,6 +71,7 @@ export class MapSidebarComponent {
     this.props = incomingProps
 
     if (this.props.type === 'vehicle') {
+      // "M1-O-SYD_DN-CUD_UP-1-20260320-030011:X" metro strange trip id
       this.vehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.props.id)!
       console.log("Current Vehicle: ", this.vehicle)
 
@@ -84,7 +82,7 @@ export class MapSidebarComponent {
     } else if (this.props.type === 'stop') {
 
       // map current stop times for corresponding vehicle to the current stop
-      this.stopTimes = await getSydneyStopTimes(this.props.mode, this.props.name, new Date().toISOString(), false)
+      this.stopTimes = await getSydneyStopScheduledStopTimes(this.props.mode, this.props.name, new Date().toISOString(), false)
       console.log("Current Stop Times: ", this.stopTimes)
 
       if (this.stopTimes.length < 24) {
@@ -112,8 +110,6 @@ export class MapSidebarComponent {
 
     this.vehicle = null
     this.scheduledTrip = null
-    this.realtimeTrip = null
-
     this.stopTimes = []
   
     this.preLoadingDone = false
@@ -121,44 +117,29 @@ export class MapSidebarComponent {
   }
 
   async updateTripStopTimes() {
-    if (!this.vehicle || !this.scheduledTrip) return
-
-    this.realtimeTrip = await getSydneyTripUpdates(this.props.mode, this.props.tripId)
-    this.stopTimes = await getSydneyRealtimeTripStopTimes(this.props.mode, this.props.tripId, new Date().toISOString())
-
-    console.log("Current Real Time Trip: ", this.realtimeTrip)
+    this.stopTimes = await getSydneyTripRealtimeStopTimes(this.props.mode, this.props.tripId, new Date().toISOString())
     console.log("Current Trip Stop Times: ", this.stopTimes)
 
     this.updateBar()
   }
 
+  // MOVE LOGIC HERE TO BACKEND - YUCKY
   updateBar() {
     const vehicle = this.vehicle
-    const realtimeTrip = this.realtimeTrip
     const scheduledTrip = this.scheduledTrip
     const stopTimes = this.stopTimes
 
-    if (!vehicle || !realtimeTrip || !scheduledTrip || !stopTimes) return
+    if (!vehicle || !scheduledTrip || !stopTimes) return
 
-    let segmentStartStopTime: StopTime
-    let segmentEndStopTime: StopTime
-    let stopSequenceProgress: number
-    if (this.props.mode === 'Metro') {
-      segmentStartStopTime = stopTimes[vehicle.currentStopSequence! - 1]
-      segmentEndStopTime = stopTimes[vehicle.currentStopSequence!]
-      stopSequenceProgress = vehicle.currentStopSequence! - 1
-    // } else if (this.props.mode === 'Rail') {
-    } else {
-      const index = Math.max(0, stopTimes.length - realtimeTrip.stopTimeUpdate.length - 1)
-      segmentStartStopTime = stopTimes[index]
-      segmentEndStopTime = stopTimes[index + 1]
-      stopSequenceProgress = index
-    }
+    const date = new Date()
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const timeString = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    this.stopSequence = stopTimes.findIndex((st) => st.departureTime.localeCompare(timeString) >= 0)
+    const segmentStartStopTime: StopTime = stopTimes[Math.max(0, this.stopSequence - 1)]
+    const segmentEndStopTime: StopTime = stopTimes[this.stopSequence]
 
     const start = this.stops.find((stop) => stop.id === segmentStartStopTime.stopId)!
     const end = this.stops.find((stop) => stop.id === segmentEndStopTime.stopId)!
-
-    console.log(segmentStartStopTime, segmentEndStopTime)
 
     const shape = this.shapes[scheduledTrip.shapeId]
 
@@ -198,7 +179,7 @@ export class MapSidebarComponent {
 
     const percent = progress * 100;
     const increment = 72
-    const currentProgress = increment * (stopSequenceProgress) + increment * (percent / 100)
+    const currentProgress = increment * (this.stopSequence - 1) + increment * (percent / 100)
     
     const bar = document.querySelector('.sidebar-body-bar')! as HTMLElement;
     const barCover = document.querySelector('.sidebar-body-bar-cover')! as HTMLElement;
@@ -212,7 +193,7 @@ export class MapSidebarComponent {
     if (this.stopTimes.length === 0) return
 
     if (this.container.scrollTop === 0) {
-      const stopTimes: StopTime[] = await getSydneyStopTimes(this.props.mode, this.props.name, this.stopTimes[0].departureTime, true)
+      const stopTimes: StopTime[] = await getSydneyStopScheduledStopTimes(this.props.mode, this.props.name, this.stopTimes[0].departureTime, true)
 
       if (stopTimes.length > 0)
         this.stopTimes = stopTimes.concat(this.stopTimes)
@@ -224,7 +205,7 @@ export class MapSidebarComponent {
         this.container.scrollTop = 72 * stopTimes.length
       }, 0)
     } else if (this.container.scrollTop === 72 * Math.max(0, (this.stopTimes.length - 12)) + (this.preLoadingDone ? 116 : 164)) {
-      const stopTimes: StopTime[] = await getSydneyStopTimes(this.props.mode, this.props.name, this.stopTimes[this.stopTimes.length - 1].departureTime, false)
+      const stopTimes: StopTime[] = await getSydneyStopScheduledStopTimes(this.props.mode, this.props.name, this.stopTimes[this.stopTimes.length - 1].departureTime, false)
   
       if (stopTimes.length > 0)
         this.stopTimes = this.stopTimes.concat(stopTimes)

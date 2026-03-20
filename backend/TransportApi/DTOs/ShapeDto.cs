@@ -1,6 +1,6 @@
 namespace TransportApi.DTOs;
 
-public class Shape
+public class ShapeDto
 {
     public string Id { get; set; } = null!;
 
