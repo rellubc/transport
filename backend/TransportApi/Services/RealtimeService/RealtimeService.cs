@@ -3,6 +3,7 @@ using TransportApi.DTOs.Realtime;
 using Google.Protobuf;
 
 using TransitRealtime;
+using static TransitRealtime.TripUpdate.Types;
 
 namespace TransportApi.Services;
 
@@ -259,5 +260,78 @@ public class RealtimeService(IHttpClientFactory factory, ILogger<RealtimeService
             OccupancyStatus = occupancyStatus,
             Consist = consist,
         };
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public async Task<List<TripUpdate>> GetRealtimeTripUpdates(string mode)
+    {
+        _logger.LogInformation("Updating vehicle trip details...");
+        var client = _factory.CreateClient("TransportNSW");
+        var response = await client.GetAsync($"https://api.transport.nsw.gov.au/v2/gtfs/realtime/{Common.Mappings.UrlMappings[mode]}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Failed to fetch data: {Response}", response.StatusCode);
+            return [];
+        }
+
+        ExtensionRegistry registry = [GtfsRealtime1007ExtensionExtensions.Update, GtfsRealtime1007ExtensionExtensions.Consist, GtfsRealtime1007ExtensionExtensions.TrackDirection, GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor, GtfsRealtime1007ExtensionExtensions.CarriageSeqPredictiveOccupancy];
+        await using var responseStream = await response.Content.ReadAsStreamAsync();
+        var parser = FeedMessage.Parser.WithExtensionRegistry(registry);
+        var feed = parser.ParseFrom(responseStream);
+
+        if (feed == null) return [];
+
+        var tripUpdates = new List<TripUpdate>();
+        foreach (var entity in feed.Entity)
+        {
+            if (entity.TripUpdate != null) tripUpdates.Add(entity.TripUpdate);
+        }
+        _logger.LogInformation($"{tripUpdates.Count} trip updates");
+
+        return tripUpdates;
+    }
+
+    public async Task<List<VehiclePosition>> GetRealtimeVehiclePositions(string mode)
+    {
+        _logger.LogInformation("Updating vehicle positions...");
+        var client = _factory.CreateClient("TransportNSW");
+        var response = await client.GetAsync($"https://api.transport.nsw.gov.au/v2/gtfs/vehiclepos/{Common.Mappings.UrlMappings[mode]}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Failed to fetch data: {Response}", response.StatusCode);
+            return [];
+        }
+
+        ExtensionRegistry registry = [GtfsRealtime1007ExtensionExtensions.Update, GtfsRealtime1007ExtensionExtensions.Consist, GtfsRealtime1007ExtensionExtensions.TrackDirection, GtfsRealtime1007ExtensionExtensions.TfnswVehicleDescriptor, GtfsRealtime1007ExtensionExtensions.CarriageSeqPredictiveOccupancy];
+        await using var responseStream = await response.Content.ReadAsStreamAsync();
+        var parser = FeedMessage.Parser.WithExtensionRegistry(registry);
+        var feed = parser.ParseFrom(responseStream);
+
+        if (feed == null) return [];
+
+        var vehiclePositions = new List<VehiclePosition>();
+        foreach (var entity in feed.Entity)
+        {
+            if (entity.Vehicle != null) vehiclePositions.Add(entity.Vehicle);
+        }
+        _logger.LogInformation($"{vehiclePositions.Count} vehicle positions");
+
+        return vehiclePositions;
     }
 }

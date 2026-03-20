@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-
 using TransportApi.Models;
 
 namespace TransportApi.Data;
@@ -24,6 +23,9 @@ public class TransportDbContext : DbContext
     public DbSet<VehicleBoarding> VehicleBoardings { get; set; } = null!;
     public DbSet<VehicleCategory> VehicleCategories { get; set; } = null!;
     public DbSet<VehicleCoupling> VehicleCouplings { get; set; } = null!;
+    
+    public DbSet<TripUpdate> TripUpdates { get; set; } = null!;
+    public DbSet<VehiclePosition> VehiclePositions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,5 +48,11 @@ public class TransportDbContext : DbContext
             
         modelBuilder.Entity<VehicleCoupling>()
             .HasKey(vc => new { vc.ParentId, vc.ChildId, vc.ChildSequence });
+
+        modelBuilder.Entity<TripUpdate>()
+            .HasKey(tu => new { tu.TripId, tu.StuStopSequence, tu.StuCarriagePositionInConsist });
+            
+        modelBuilder.Entity<VehiclePosition>()
+            .HasKey(vp => new { vp.VehicleId, vp.StuCarriagePositionInConsist });
     }
 }

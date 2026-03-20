@@ -1,16 +1,14 @@
-import { Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { coloursMap, routesMap, vehiclesMap } from '../../../shared/models/constants';
 import { CommonModule } from '@angular/common';
-import { StopTimeUpdate, TripUpdate, VehiclePosition } from '../../../shared/models/realtime';
+import { VehiclePosition } from '../../../shared/models/realtime';
 import { Trip } from '../../../shared/models/trip';
 import { Stop } from '../../../shared/models/stop';
 import { StopTime } from '../../../shared/models/stopTime';
-import { GalleryThumbnailsIcon, LucideAngularModule, X } from 'lucide-angular';
-import { getSydneyTrainsStopTimes, getSydneyTrainsTrip, getSydneyTrainsTripStopTimes, getSydneyTrainsTripUpdates } from '../../sydney-trains/sydney-trains-helpers';
+import { LucideAngularModule, X } from 'lucide-angular';
 import { Shapes } from '../../../shared/models/shape';
-import { getCurrentScheduledTrip } from './map-sidebar-helpers';
-import { getSydneyTrip, getSydneyTripStopTimes } from '../../api/sydney-trips';
-import { getSydneyStopScheduledStopTimes, getSydneyTripRealtimeStopTimes, getSydneyTripScheduledStopTimes } from '../../api/sydney-stop-times';
+import { getSydneyTrip } from '../../api/sydney-trips';
+import { getSydneyStopScheduledStopTimes, getSydneyTripRealtimeStopTimes } from '../../api/sydney-stop-times';
 import { getSydneyRealtimeTripUpdate } from '../../api/sydney-realtime';
 
 @Component({
@@ -47,6 +45,7 @@ export class MapSidebarComponent {
       console.log('Updating current schedule...')
 
       this.vehicle = this.vehicles.find((vehicle) => vehicle.vehicle?.id === this.props.id)!
+      console.log("Current Vehicle: ", this.vehicle)
 
       this.updateTripStopTimes()
     } else if (this.props.type === 'stop') {
@@ -119,6 +118,7 @@ export class MapSidebarComponent {
   async updateTripStopTimes() {
     this.stopTimes = await getSydneyTripRealtimeStopTimes(this.props.mode, this.props.tripId, new Date().toISOString())
     console.log("Current Trip Stop Times: ", this.stopTimes)
+    console.log(await getSydneyRealtimeTripUpdate(this.props.mode, this.props.tripId))
 
     this.updateBar()
   }

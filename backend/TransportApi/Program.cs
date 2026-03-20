@@ -46,6 +46,9 @@ builder.Services.AddScoped<IStopService, StopService>();
 builder.Services.AddScoped<IStopTimeService, StopTimeService>();
 builder.Services.AddScoped<ITripService, TripService>();
 
+builder.Services.AddScoped<BackgroundService, RealtimePollingService>();
+// builder.Services.AddHostedService<RealtimePollingService>(); TO REVISIT
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

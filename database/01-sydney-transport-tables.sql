@@ -227,3 +227,88 @@ CREATE TABLE realtime_stop_times (
     INDEX idx_stop_times_drop_off_type (drop_off_type),
     INDEX idx_stop_times_stop_id (stop_id)
 );
+
+CREATE TABLE trip_updates (
+    trip_id VARCHAR(100),
+    trip_route_id VARCHAR(100),
+    trip_direction_id INT UNSIGNED,
+    trip_start_time VARCHAR(100),
+    trip_start_date VARCHAR(100),
+    trip_schedule_relationship TINYINT(1),
+
+    vehicle_id VARCHAR(100),
+    vehicle_label VARCHAR(100),
+    vehicle_license_plate VARCHAR(100),
+    vehicle_air_conditioned TINYINT(1),
+    vehicle_wheelchair_accessible TINYINT(1),
+    vehicle_model VARCHAR(100),
+    vehicle_performing_prior_trip TINYINT(1),
+    vehicle_special_vehicle_attributes INT,
+
+    stu_stop_sequence INT UNSIGNED,
+    stu_stop_id VARCHAR(100),
+    stu_arrival_delay INT,
+    stu_arrival_time BIGINT,
+    stu_arrival_uncertainty INT,
+    stu_departure_delay INT,
+    stu_departure_time BIGINT,
+    stu_departure_uncertainty INT,
+    stu_schedule_relationship TINYINT(1),
+    stu_departure_occupancy_status TINYINT(1),
+    stu_carriage_name VARCHAR(100),
+    stu_carriage_position_in_consist INT,
+    stu_carriage_occupancy_status TINYINT(1),
+    stu_carriage_quiet_carriage TINYINT(1),
+    stu_carriage_toilet TINYINT(1),
+    stu_carriage_luggage_rack TINYINT(1),
+    stu_carriage_departure_occupancy_status TINYINT(1),
+
+    timestamp BIGINT UNSIGNED,
+    delay INT,
+    
+    PRIMARY KEY (trip_id, stu_stop_sequence, stu_carriage_position_in_consist),
+    INDEX idx_trip_updates_timestamp (timestamp)
+);
+
+CREATE TABLE vehicle_positions (
+    trip_id VARCHAR(100),
+    trip_route_id VARCHAR(100),
+    trip_direction_id INT UNSIGNED,
+    trip_start_time VARCHAR(100),
+    trip_start_date VARCHAR(100),
+    trip_schedule_relationship TINYINT(1),
+
+    vehicle_id VARCHAR(100),
+    vehicle_label VARCHAR(100),
+    vehicle_license_plate VARCHAR(100),
+    vehicle_air_conditioned TINYINT(1),
+    vehicle_wheelchair_accessible TINYINT(1),
+    vehicle_model VARCHAR(100),
+    vehicle_performing_prior_trip TINYINT(1),
+    vehicle_special_vehicle_attributes INT,
+
+    position_latitude NUMERIC(9,6),
+    position_longitude NUMERIC(9,6),
+    position_bearing NUMERIC(9,6),
+    position_odometer NUMERIC(9,2),
+    position_speed NUMERIC(9,2),
+    position_track_direction TINYINT(1),
+
+    current_stop_sequence INT UNSIGNED,
+    stop_id VARCHAR(100),
+    current_status TINYINT(1),
+    timestamp BIGINT UNSIGNED,
+    congestion_level TINYINT(1),
+    occupancy_status TINYINT(1),
+
+    stu_carriage_name VARCHAR(100),
+    stu_carriage_position_in_consist INT,
+    stu_carriage_occupancy_status TINYINT(1),
+    stu_carriage_quiet_carriage TINYINT(1),
+    stu_carriage_toilet TINYINT(1),
+    stu_carriage_luggage_rack TINYINT(1),
+    stu_carriage_departure_occupancy_status TINYINT(1),
+
+    PRIMARY KEY (vehicle_id, stu_carriage_position_in_consist),
+    INDEX idx_vehicle_positions_timestamp (timestamp)
+);
