@@ -1,4 +1,15 @@
+# general
 .env
 
 ._*
 .vscode
+
+# BACKEND
+# python
+venv
+
+# c#
+bin
+obj
+
+logs
