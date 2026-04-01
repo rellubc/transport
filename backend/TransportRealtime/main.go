@@ -24,22 +24,20 @@ func main() {
 	database := db.Connect()
 	defer database.Close()
 
-	agencyRepo := &repositories.AgencyRepository{DB: database}
+	repos := repositories.NewRepositories(database)
+	router := handlers.RegisterRoutes(repos)
 
-	http.HandleFunc("/api/agencies", handlers.GetAgenciesHandler(agencyRepo))
-	http.HandleFunc("/api/agency", handlers.GetAgencyHandler(agencyRepo))
+	tasks.StartTasks(apiKey, 15*time.Second)
+	log.Println("Starting realtime data fetcher...")
 
 	port := os.Getenv("GO_PORT")
 	if port == "" {
 		port = "8080"
 	}
-	err = http.ListenAndServe(":"+port, nil)
+
+	log.Printf("Server running on port %s", port)
+	err = http.ListenAndServe(":"+port, router)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Server running on port %s", port)
-
-	tasks.StartTasks(apiKey, 15*time.Second)
-	log.Println("Starting realtime data fetcher...")
-	select {}
 }

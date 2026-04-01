@@ -4,6 +4,8 @@ import (
 	"TransportRealtime/repositories"
 	"encoding/json"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func GetAgenciesHandler(repo *repositories.AgencyRepository) http.HandlerFunc {
@@ -21,11 +23,11 @@ func GetAgenciesHandler(repo *repositories.AgencyRepository) http.HandlerFunc {
 
 func GetAgencyHandler(repo *repositories.AgencyRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.URL.Query().Get("id")
+		agencyId := chi.URLParam(r, "agency_id")
 
-		agency, err := repo.GetAgency(id)
+		agency, err := repo.GetAgency(agencyId)
 		if err != nil {
-			http.Error(w, "Failed to fetch agency "+id, http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

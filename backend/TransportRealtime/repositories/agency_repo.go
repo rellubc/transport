@@ -46,8 +46,8 @@ func (r *AgencyRepository) GetAgencies() ([]models.Agency, error) {
 	return agencies, nil
 }
 
-func (r *AgencyRepository) GetAgency(id string) (models.Agency, error) {
-	row := r.DB.QueryRow(context.Background(), "SELECT * FROM agencies WHERE id = $1", id)
+func (r *AgencyRepository) GetAgency(agencyId string) (models.Agency, error) {
+	row := r.DB.QueryRow(context.Background(), "SELECT * FROM agencies WHERE agency_id = $1", agencyId)
 
 	var a models.Agency
 	err := row.Scan(

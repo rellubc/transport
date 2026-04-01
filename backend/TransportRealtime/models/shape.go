@@ -8,6 +8,6 @@ type Shape struct {
 	ShapePtLon         float64     `json:"shape_pt_lon"`
 	ShapeGeom          *geom.Point `json:"shape_geom"`
 	ShapePtSequence    int         `json:"shape_pt_sequence"`
-	ShapeDistTravelled float64     `json:"shape_dist_traveled"`
+	ShapeDistTravelled *float64    `json:"shape_dist_traveled"`
 	Mode               string      `json:"mode"`
 }
