@@ -19,7 +19,7 @@ public class StopController : ControllerBase
     [HttpGet("stops")]
     public async Task<ActionResult<StopDTO>> GetSydneyStops(string mode)
     {
-        var stops = await _stopService.GetStops(mode);
+        var stops = await _stopService.GetStops(mode.ToLower());
         return Ok(stops);
     }
 }

@@ -11,10 +11,10 @@ public class ShapeService(TransportDbContext db, IMemoryCache cache) : IShapeSer
     private readonly TransportDbContext _db = db;
     private readonly IMemoryCache _cache = cache;
 
-    public async Task<Dictionary<string, List<ShapeDetails>>> GetShapes(string mode)
+    public async Task<Dictionary<string, List<ShapeCoordinates>>> GetShapes(string mode)
     {
         var cacheKey = $"shapes-{mode}";
-        _cache.TryGetValue(cacheKey, out Dictionary<string, List<ShapeDetails>>? shapes);
+        _cache.TryGetValue(cacheKey, out Dictionary<string, List<ShapeCoordinates>>? shapes);
 
         if (shapes != null) return shapes;
 
@@ -25,20 +25,13 @@ public class ShapeService(TransportDbContext db, IMemoryCache cache) : IShapeSer
                 g => g.Key,
                 g => g
                     .OrderBy(s => s.Sequence)
-                    .Select(s => new ShapeDetails
+                    .Select(s => new ShapeCoordinates
                     {
                         Latitude = s.Latitude,
-                        Longitude = s.Longitude,
-                        Sequence = s.Sequence,
-                        DistanceTravelled = s.DistanceTravelled
+                        Longitude = s.Longitude
                     })
                     .ToList()
             );
-
-        foreach (var shapeId in shapes.Keys)
-        {
-            shapes[shapeId] = [.. shapes[shapeId].OrderBy(s => s.DistanceTravelled)];
-        }
 
         var cacheOptions = new MemoryCacheEntryOptions()
             .SetAbsoluteExpiration(TimeSpan.FromMinutes(60));

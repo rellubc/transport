@@ -219,7 +219,7 @@ def load(conn, file, table_name, column_map, conflict_key, batch_size=10000):
                         val = None
 
                 if db_col == "mode":
-                    val = "metro"
+                    val = "rail"
 
                 if db_col == "geom":
                     val = f"SRID=4326;POINT({lon} {lat})"
@@ -265,7 +265,7 @@ def main():
                     "calendar.txt": ["service_id"],
                     "routes.txt": ["route_id"],
                     "stop_times.txt": ["trip_id", "stop_sequence"],
-                    "stops.txt": ["stop_id"],
+                    "stops.txt": ["stop_id", "mode"],
                     "trips.txt": ["trip_id"],
                     "shapes.txt": ["shape_id", "shape_pt_sequence"],
                     "vehicle_categories.txt": ["vehicle_category_id"],

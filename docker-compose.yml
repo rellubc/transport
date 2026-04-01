@@ -1,7 +1,7 @@
 services:
   db:
     container_name: transport_db
-    build: ./backend/Database
+    build: ./backend/TransportDatabase
     restart: always
     ports:
       - "5432:5432"

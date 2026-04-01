@@ -28,6 +28,9 @@ public class TransportDbContext : DbContext
 
         modelBuilder.Entity<Occupancy>()
             .HasKey(o => new { o.TripId, o.StopSequence, o.StartDate });
+            
+        modelBuilder.Entity<Stop>()
+            .HasKey(s => new { s.Id, s.Mode });
 
         modelBuilder.Entity<StopTime>()
             .HasKey(st => new { st.TripId, st.StopSequence });

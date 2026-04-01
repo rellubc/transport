@@ -29,15 +29,20 @@ builder.Services.AddDbContext<TransportDbContext>(options =>
 });
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular", 
+    options.AddPolicy("AllowSvelte", 
         policy =>
         {
-            policy.WithOrigins("http://localhost:4200")
+            policy.WithOrigins("http://localhost:5173")
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
 });
 builder.Services.AddScoped<IAgencyService, AgencyService>();
+builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddScoped<IShapeService, ShapeService>();
+builder.Services.AddScoped<IStopService, StopService>();
+builder.Services.AddScoped<IStopTimeService, StopTimeService>();
+builder.Services.AddScoped<ITripService, TripService>();
 
 var app = builder.Build();
 
@@ -48,7 +53,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAngular");
+app.UseCors("AllowSvelte");
 app.UseAuthorization();
 
 app.MapControllers();

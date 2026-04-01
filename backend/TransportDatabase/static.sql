@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS shapes (
     shape_id TEXT NOT NULL,
     shape_pt_lat NUMERIC(9,6) NOT NULL,
     shape_pt_lon NUMERIC(9,6) NOT NULL,
-    geom GEOGRAPHY(POINT, 4326) NOT NULL,
+    shape_geom GEOGRAPHY(POINT, 4326) NOT NULL,
     shape_pt_sequence INT NOT NULL,
     shape_dist_travelled NUMERIC(9,2),
     mode TEXT NOT NULL,
@@ -70,19 +70,19 @@ CREATE TABLE IF NOT EXISTS stops (
     stop_desc TEXT,
     stop_lat NUMERIC(9,6) NOT NULL,
     stop_lon NUMERIC(9,6) NOT NULL,
-    geom GEOGRAPHY(POINT, 4326) NOT NULL,
-    zone_id TEXT,
+    stop_geom GEOGRAPHY(POINT, 4326) NOT NULL,
+    stop_zone_id TEXT,
     stop_url TEXT,
-    -- 0: Platform, 1: Station, 2: Entrance/Exit, 3: Generic Node (UNUSED), 4: Boarding Area (UNUSED) --
-    location_type SMALLINT NOT NULL,
-    parent_station TEXT,
+    -- 0: Platform, 1: Station, 2: Entrance/Exit (UNUSED), 3: Generic Node (UNUSED), 4: Boarding Area (UNUSED) --
+    stop_location_type SMALLINT NOT NULL,
+    stop_parent_station TEXT,
     stop_timezone TEXT,
     -- https://gtfs.org/documentation/schedule/reference/#agencytxt --
-    wheelchair_boarding SMALLINT NOT NULL,
-    platform_code TEXT,
+    stop_wheelchair_boarding SMALLINT NOT NULL,
+    stop_platform_code TEXT,
     mode TEXT NOT NULL,
 
-    PRIMARY KEY (stop_id)
+    PRIMARY KEY (stop_id, mode)
 );
 
 CREATE TABLE IF NOT EXISTS routes (
@@ -109,18 +109,18 @@ CREATE TABLE IF NOT EXISTS trips (
     trip_headsign TEXT,
     trip_short_name TEXT,
     -- 0: Travel in one direction (e.g. outbound travel), 1: Travel in the opposite direction (e.g. inbound travel). --
-    direction_id SMALLINT NOT NULL,
-    block_id TEXT,
+    trip_direction_id SMALLINT NOT NULL,
+    trip_block_id TEXT,
     shape_id TEXT NOT NULL,
     -- 0: No accessibility information for the trip. --
     -- 1: Vehicle being used on this particular trip can accommodate at least one rider in a wheelchair. --
     -- 2: No riders in wheelchairs can be accommodated on this trip. --
-    wheelchair_accessible SMALLINT NOT NULL,
-    route_direction TEXT,
+    trip_wheelchair_accessible SMALLINT NOT NULL,
+    trip_route_direction TEXT,
     -- 0: No bike information for the trip. --
     -- 1: Vehicle being used on this particular trip can accommodate at least one bicycle. --
     -- 2: No bicycles are allowed on this trip. --
-    bikes_allowed SMALLINT,
+    trip_bikes_allowed SMALLINT,
     trip_note TEXT,
     vehicle_category_id TEXT,
 
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS stop_times (
     PRIMARY KEY (trip_id, stop_sequence),
 
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id) ON DELETE CASCADE,
-    FOREIGN KEY (stop_id) REFERENCES stops(stop_id)
+    FOREIGN KEY (stop_id, mode) REFERENCES stops(stop_id, mode)
 );
 
 CREATE TABLE IF NOT EXISTS vehicle_boardings (
@@ -215,11 +215,12 @@ CREATE TABLE IF NOT EXISTS occupancies (
 CREATE INDEX idx_calendar_start_date ON calendars(start_date);
 CREATE INDEX idx_calendar_end_date ON calendars(end_date);
 
-CREATE INDEX idx_shapes_geom ON shapes USING GIST(geom);
+CREATE INDEX idx_shapes_geom ON shapes USING GIST(shape_geom);
 
+CREATE INDEX idx_stops_id ON stops(stop_id);
 CREATE INDEX idx_stops_stop_name ON stops(stop_name);
 CREATE INDEX idx_stops_mode ON stops(mode);
-CREATE INDEX idx_stops_geom ON stops USING GIST(geom);
+CREATE INDEX idx_stops_geom ON stops USING GIST(stop_geom);
 
 CREATE INDEX idx_trips_route_id ON trips(route_id);
 CREATE INDEX idx_trips_service_id ON trips(service_id);

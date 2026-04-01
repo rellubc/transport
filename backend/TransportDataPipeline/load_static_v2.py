@@ -220,7 +220,7 @@ def main():
                 "notes.txt": ["note_id"],
                 "routes.txt": ["route_id"],
                 "stop_times.txt": ["trip_id", "stop_sequence"],
-                "stops.txt": ["stop_id"],
+                "stops.txt": ["stop_id", "mode"],
                 "trips.txt": ["trip_id"],
                 "shapes.txt": ["shape_id", "shape_pt_sequence"]
             }

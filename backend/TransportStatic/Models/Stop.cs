@@ -47,7 +47,7 @@ public class Stop
     public int WheelchairBoarding { get; set; }
 
     [Column("platform_code")]
-    public int? PlatformCode { get; set; }
+    public string? PlatformCode { get; set; }
 
     [Column("mode")]
     public string Mode { get; set; } = null!;

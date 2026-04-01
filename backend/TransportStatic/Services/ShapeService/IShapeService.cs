@@ -4,5 +4,5 @@ namespace TransportStatic.Services;
 
 public interface IShapeService
 {
-    Task<Dictionary<string, List<ShapeDetails>>> GetShapes(string mode);
+    Task<Dictionary<string, List<ShapeCoordinates>>> GetShapes(string mode);
 }

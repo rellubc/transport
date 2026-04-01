@@ -27,4 +27,6 @@ public class StopDto
     public int WheelchairBoarding { get; set; }
     
     public int? PlatformCode { get; set; }
+
+    public string Mode { get; set; } = null!;
 }

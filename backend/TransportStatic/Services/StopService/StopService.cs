@@ -6,16 +6,10 @@ using TransportStatic.DTOs;
 
 namespace TransportStatic.Services;
 
-public class StopService : IStopService
+public class StopService(TransportDbContext db, IMemoryCache cache) : IStopService
 {
-    private readonly TransportDbContext _db;
-    private readonly IMemoryCache _cache;
-
-    public StopService(TransportDbContext db, IMemoryCache cache)
-    {
-        _db = db;
-        _cache = cache;
-    }
+    private readonly TransportDbContext _db = db;
+    private readonly IMemoryCache _cache = cache;
 
     public async Task<List<StopDTO>> GetStops(string mode)
     {
@@ -32,10 +26,9 @@ public class StopService : IStopService
                 Name = s.Name,
                 Latitude = s.Latitude,
                 Longitude = s.Longitude,
-                LocationType = s.LocationType,
                 ParentStationId = s.ParentStationId,
                 WheelchairBoarding = s.WheelchairBoarding,
-                PlatformCode = s.PlatformCode,
+                PlatformCode = s.PlatformCode
             })
             .ToListAsync();
 
