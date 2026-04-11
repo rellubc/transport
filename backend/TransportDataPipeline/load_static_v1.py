@@ -75,7 +75,7 @@ MAPPINGS = {
         "shape_id": "shape_id",
         "shape_pt_lat": "shape_pt_lat",
         "shape_pt_lon": "shape_pt_lon",
-        "geom": "geom",
+        "shape_geom": "shape_geom",
         "shape_pt_sequence": "shape_pt_sequence",
         "shape_dist_traveled": "shape_dist_travelled",
         "mode": "mode"
@@ -87,13 +87,13 @@ MAPPINGS = {
         "stop_desc": "stop_desc",
         "stop_lat": "stop_lat",
         "stop_lon": "stop_lon",
-        "geom": "geom",
-        "zone_id": "zone_id",
+        "stop_geom": "stop_geom",
+        "zone_id": "stop_zone_id",
         "stop_url": "stop_url",
-        "location_type": "location_type",
-        "parent_station": "parent_station",
+        "location_type": "stop_location_type",
+        "parent_station": "stop_parent_station",
         "stop_timezone": "stop_timezone",
-        "wheelchair_boarding": "wheelchair_boarding",
+        "wheelchair_boarding": "stop_wheelchair_boarding",
         "mode": "mode"
     }),
     "vehicle_categories.txt": ("vehicle_categories", {
@@ -186,7 +186,7 @@ def time_to_seconds(s):
     h, m, sec = map(int, s.split(":"))
     return h * 3600 + m * 60 + sec
 
-def load(conn, file, table_name, column_map, conflict_key, batch_size=10000):
+def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=10000):
     reader = csv.DictReader(io.TextIOWrapper(file, "utf-8-sig"))
     
     colnames = list(column_map.values())
@@ -219,9 +219,9 @@ def load(conn, file, table_name, column_map, conflict_key, batch_size=10000):
                         val = None
 
                 if db_col == "mode":
-                    val = "rail"
+                    val = mode
 
-                if db_col == "geom":
+                if "geom" in db_col:
                     val = f"SRID=4326;POINT({lon} {lat})"
 
                 if db_col in ["arrival_time", "departure_time"]:
@@ -249,33 +249,43 @@ def main():
     conn = connect_db()
 
     for mode in MODES:
-        r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
-        r.raise_for_status()
-        zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+        # r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
+        # r.raise_for_status()
+        # zip_file = zipfile.ZipFile(io.BytesIO(r.content))
 
-        for filename, (table, columns) in MAPPINGS.items():
-            if filename not in zip_file.namelist():
-                print(f"Skipping {filename}...")
-                continue
+        # for filename, (table, columns) in MAPPINGS.items():
+        #     if filename not in zip_file.namelist():
+        #         print(f"Skipping {filename}...")
+        #         continue
 
+        #     if filename == "shapes.txt":
+        #         continue
+
+        #     print(f"Loading {filename}...")
+        #     with zip_file.open(filename) as file:
+        #         conflict_key_map = {
+        #             "agency.txt": ["agency_id"],
+        #             "calendar.txt": ["service_id"],
+        #             "routes.txt": ["route_id"],
+        #             "stop_times.txt": ["trip_id", "stop_sequence"],
+        #             "stops.txt": ["stop_id", "mode"],
+        #             "trips.txt": ["trip_id"],
+        #             "vehicle_categories.txt": ["vehicle_category_id"],
+        #             "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
+        #             "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
+        #             "occupancies.txt": ["trip_id", "stop_sequence", "start_date"]
+        #         }
+        #         conflict_key = conflict_key_map.get(filename, [])
+
+        #         load(conn, file, table, columns, conflict_key, mode)
+
+        shapes_folder = f"{os.getcwd()}/._shapes"
+        conflict_key = ["shape_id", "shape_pt_sequence"]
+
+        for filename in os.listdir(shapes_folder):
             print(f"Loading {filename}...")
-            with zip_file.open(filename) as file:
-                conflict_key_map = {
-                    "agency.txt": ["agency_id"],
-                    "calendar.txt": ["service_id"],
-                    "routes.txt": ["route_id"],
-                    "stop_times.txt": ["trip_id", "stop_sequence"],
-                    "stops.txt": ["stop_id", "mode"],
-                    "trips.txt": ["trip_id"],
-                    "shapes.txt": ["shape_id", "shape_pt_sequence"],
-                    "vehicle_categories.txt": ["vehicle_category_id"],
-                    "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
-                    "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
-                    "occupancies.txt": ["trip_id", "stop_sequence", "start_date"]
-                }
-                conflict_key = conflict_key_map.get(filename, [])
-
-                load(conn, file, table, columns, conflict_key)
+            with open(f"{shapes_folder}/{filename}", "rb") as file:
+                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode)
 
     conn.close()
     print("Loaded Sydney transport static data")

@@ -10,7 +10,14 @@ import (
 
 func Connect() *pgxpool.Pool {
 	dbURL := os.Getenv("DATABASE_URL")
-	pool, err := pgxpool.New(context.Background(), dbURL)
+
+	config, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		log.Fatalf("Unable to parse DB URL: %v", err)
+	}
+	config.MaxConns = 20
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		log.Fatalf("Unable to connect to DB: %v", err)
 	}

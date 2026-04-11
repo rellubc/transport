@@ -15,6 +15,9 @@ type Repositories struct {
 	VehicleBoarding *VehicleBoardingRepository
 	VehicleCategory *VehicleCategoryRepository
 	VehicleCoupling *VehicleCouplingRepository
+
+	TripUpdate      *TripUpdateRepository
+	VehiclePosition *VehiclePositionRepository
 }
 
 func NewRepositories(db *pgxpool.Pool) *Repositories {
@@ -31,5 +34,8 @@ func NewRepositories(db *pgxpool.Pool) *Repositories {
 		VehicleBoarding: NewVehicleBoardingRepository(db),
 		VehicleCategory: NewVehicleCategoryRepository(db),
 		VehicleCoupling: NewVehicleCouplingRepository(db),
+
+		TripUpdate:      NewTripUpdateRepository(db),
+		VehiclePosition: NewVehiclePositionRepository(db),
 	}
 }

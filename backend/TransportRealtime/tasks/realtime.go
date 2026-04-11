@@ -4,28 +4,24 @@ import (
 	"log"
 	"time"
 
-	"TransportRealtime/config"
-
-	pb "TransportRealtime/proto"
+	"TransportRealtime/helpers"
 )
-
-type FeedTask struct {
-	Name    string
-	Mode    config.TransportMode
-	Version string
-	Feed    config.FeedType
-	Fn      func(config.TransportMode, string) (*pb.FeedMessage, error)
-}
 
 func (t FeedTask) Start(apiKey string, delay time.Duration, interval time.Duration) {
 	time.Sleep(delay)
 
 	for {
-		feed, err := t.Fn(t.Mode, apiKey)
+		feed, err := t.FetchFn(t.Mode, apiKey)
+
 		if err != nil {
 			log.Printf("Error fetching %s: %v", t.Name, err)
 		} else {
 			log.Printf("[%s] Fetched %d entities for %s\n", time.Now().Format(time.RFC3339), len(feed.Entity), t.Name)
+
+			err := t.InsertFn(feed, t.DB, helpers.Clean(string(t.Mode)))
+			if err != nil {
+				log.Printf("Error inserting %s: %v", t.Name, err)
+			}
 		}
 
 		time.Sleep(interval)

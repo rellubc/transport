@@ -1,17 +1,22 @@
 export interface Shape {
-    id: string
-    latitude: number
-    longitude: number
-    sequence: number
-    distanceTravelled: number
+    shape_id: string
+    shape_pt_lat: number
+    shape_pt_lon: number
+    shape_pt_sequence: number
+    shape_pt_distanceTravelled: number
 }
 
 export interface ShapeDetails {
-    latitude: number
-    longitude: number
-    sequence: number
-    distanceTravelled: number
+    shape_pt_lat: number
+    shape_pt_lon: number
+    shape_pt_sequence: number
+    shape_pt_distanceTravelled: number
     mode: string
 }
 
-export type Shapes = Record<string, ShapeDetails[]>
+export interface ShapeCoord {
+    shape_pt_lat: number
+    shape_pt_lon: number
+}
+
+export type Shapes = Record<string, ShapeCoord[]>

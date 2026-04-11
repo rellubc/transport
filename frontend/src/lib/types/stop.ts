@@ -1,20 +1,21 @@
 export interface Stop {
-    id: string
-    code?: string
-    name: string
-    description?: string
-    latitude: number
-    longitude: number
-    zoneId?: string
-    url?: string
-    locationType: number
-    parentStationId?: string
-    timezone?: string
-    wheelchairBoarding: boolean
-    platformCode: number
+    stop_id: string
+    stop_code?: string
+    stop_name: string
+    stop_description?: string
+    stop_lat: number
+    stop_lon: number
+    stop_zone_id?: string
+    stop_url?: string
+    stop_location_type: number
+    stop_parent_station?: string
+    stop_timezone?: string
+    stop_wheelchair_boarding: boolean
+    stop_platformCode: number
     mode: string
-    network: string
 }
+
+export type Stops = Record<string, Stop[]>
 
 // export interface StopPlatformDTO {
 //     id: number

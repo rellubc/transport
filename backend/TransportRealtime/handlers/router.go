@@ -5,52 +5,69 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 )
 
 func RegisterRoutes(repos *repositories.Repositories) http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedMethods:   []string{"GET"},
+		AllowCredentials: false,
+	}))
+
 	// Agency
-	r.Get("/api/agencies", GetAgenciesHandler(repos.Agency))
-	r.Get("/api/agency/{agency_id}", GetAgencyHandler(repos.Agency))
+	r.Get("/api/sydney/agencies", GetAgenciesHandler(repos.Agency))
+	r.Get("/api/sydney/agency/{agency_id}", GetAgencyHandler(repos.Agency))
 
 	// Calendar
-	r.Get("/api/calendars", GetCalendarsHandler(repos.Calendar))
-	r.Get("/api/calendar/{service_id}", GetCalendarHandler(repos.Calendar))
+	r.Get("/api/sydney/calendars", GetCalendarsHandler(repos.Calendar))
+	r.Get("/api/sydney/calendar/{service_id}", GetCalendarHandler(repos.Calendar))
 
 	// Note
-	r.Get("/api/notes", GetNotesHandler(repos.Note))
-	r.Get("/api/note/{note_id}", GetNoteHandler(repos.Note))
+	r.Get("/api/sydney/notes", GetNotesHandler(repos.Note))
+	r.Get("/api/sydney/note/{note_id}", GetNoteHandler(repos.Note))
 
 	// Occupancy
-	r.Get("/api/occupancies", GetOccupanciesHandler(repos.Occupancy))
+	r.Get("/api/sydney/occupancies", GetOccupanciesHandler(repos.Occupancy))
 
 	// Route
-	r.Get("/api/routes", GetRoutesHandler(repos.Route))
-	r.Get("/api/route/{route_id}", GetRouteHandler(repos.Route))
+	r.Get("/api/sydney/routes", GetRoutesHandler(repos.Route))
+	r.Get("/api/sydney/route/{route_id}", GetRouteHandler(repos.Route))
 
 	// Shape
-	r.Get("/api/shapes", GetShapesHandler(repos.Shape))
+	r.Get("/api/sydney/shapes", GetShapesHandler(repos.Shape))
 
 	// Stop
-	r.Get("/api/stops", GetStopsHandler(repos.Stop))
-	r.Get("/api/stop/{stop_id}", GetStopHandler(repos.Stop))
+	r.Get("/api/sydney/stops", GetStopsHandler(repos.Stop))
+	r.Get("/api/sydney/stop/{stop_id}", GetStopHandler(repos.Stop))
 
 	// StopTime
-	r.Get("/api/stop_times", GetStopTimesHandler(repos.StopTime))
+	r.Get("/api/sydney/stop_times", GetStopTimesHandler(repos.StopTime))
 
 	// Trip
-	r.Get("/api/trips", GetTripsHandler(repos.Trip))
-	r.Get("/api/trip/{trip_id}", GetTripHandler(repos.Trip))
+	r.Get("/api/sydney/trips", GetTripsHandler(repos.Trip))
+	r.Get("/api/sydney/trip/{trip_id}", GetTripHandler(repos.Trip))
 
 	// Vehicle Boarding
-	r.Get("/api/vehicle_boardings", GetVehicleBoardingsHandler(repos.VehicleBoarding))
+	r.Get("/api/sydney/vehicle_boardings", GetVehicleBoardingsHandler(repos.VehicleBoarding))
 
 	// Vehicle Category
-	r.Get("/api/vehicle_categories", GetVehicleCategoriesHandler(repos.VehicleCategory))
+	r.Get("/api/sydney/vehicle_categories", GetVehicleCategoriesHandler(repos.VehicleCategory))
 
 	// Vehicle Coupling
-	r.Get("/api/vehicle_couplings", GetVehicleCouplingsHandler(repos.VehicleCoupling))
+	r.Get("/api/sydney/vehicle_couplings", GetVehicleCouplingsHandler(repos.VehicleCoupling))
+
+	// Realtime
+	// Trip Update
+	r.Get("/api/sydney/trip_update", GetTripUpdateHandler(repos.TripUpdate))
+	r.Get("/api/sydney/trip_update/{trip_id}/stop_time_updates", GetTripStopTimeUpdatesHandler(repos.TripUpdate))
+	r.Get("/api/sydney/trip_update/{trip_id}/{stop_id}/carriage_sequence_predictive_occupancy", GetTripStopCarriageSequencePredictiveOccupancyHandler(repos.TripUpdate))
+
+	// Vehicle Position
+	r.Get("/api/sydney/vehicle_positions", GetVehiclePositionsHandler(repos.VehiclePosition))
+	r.Get("/api/sydney/vehicle_position/{vehicle_id}", GetVehiclePositionHandler(repos.VehiclePosition))
 
 	return r
 }

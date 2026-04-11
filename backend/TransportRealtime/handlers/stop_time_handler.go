@@ -4,12 +4,13 @@ import (
 	"TransportRealtime/repositories"
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 func GetStopTimesHandler(repo *repositories.StopTimeRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		stopId := r.URL.Query().Get("stop_id")
-		tripId := r.URL.Query().Get("trip_id")
+		stopId := strings.ToLower(r.URL.Query().Get("stop_id"))
+		tripId := strings.ToLower(r.URL.Query().Get("trip_id"))
 
 		stopTimes, err := repo.GetStopTimes(stopId, tripId)
 		if err != nil {

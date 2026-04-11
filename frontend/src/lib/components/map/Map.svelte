@@ -2,14 +2,13 @@
   import { onMount } from 'svelte'
   import maplibregl from 'maplibre-gl'
   import 'maplibre-gl/dist/maplibre-gl.css'
-  import type { Feature, LineString, Point } from 'geojson';
+  import type { Feature, Point } from 'geojson'
 
-  import type { Stop } from '$lib/types/stop';
-  import metroImg from '$lib/assets/metro.png';
-  import { lineShapes, modes, shapes, stops } from '$lib/stores';
-  import { lineColours } from '$lib/constants';
-  import type { ShapeDetails } from '$lib/types/shape';
-  import { coloursMap } from '$lib/types/constants';
+  import metroImg from '$lib/assets/metro.png'
+  import railImg from '$lib/assets/rail.png'
+  import { modes, shapes, stops, vehicles } from '$lib/stores'
+  import { coloursMap } from '$lib/types/constants'
+  import type { Vehicles } from '$lib/types/realtime'
 
   let map!: maplibregl.Map
 
@@ -30,145 +29,176 @@
     localStorage.setItem('zoom', zoom.toString())
   }
 
-  const addShapeSource = (modeLine: string) => {
-    map.addSource(`${modeLine}-shape`, {
-      type: 'geojson',
-      data: {
-        type: "FeatureCollection",
-        features: []
-      }
-    })
+  const addShapes = () => {
+    Object.entries($modes).forEach(([_mode, lines]) => {
+      const coordinates: number[][][] = []
+      lines.forEach((line) => {
+        Object.entries($shapes)
+          .filter(([shapeId]) => shapeId.startsWith(line + "_"))
+          .forEach(([_, points]) => {
+            const coords = points.map(point => [
+              point.shape_pt_lon,
+              point.shape_pt_lat
+            ])
 
-    map.addLayer({
-      id: `${modeLine}-shape`,
-      type: 'line',
-      source: `${modeLine}-shape`,
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
-      },
-      paint: {
-        'line-color': coloursMap[modeLine],
-        'line-width': 2
-      }
-    })
-  }
+            coordinates.push(coords)
+          })
 
-  const addStopSource = () => {
-    // sources
-    map.addSource('stop-platforms', {
-      type: 'geojson',
-      data: {
-        type: "FeatureCollection",
-        features: []
-      }
-    })
+        map.addSource(`${line}-shape`, {
+          type: 'geojson',
+          data: {
+            type: "FeatureCollection",
+            features: [{
+              type: 'Feature',
+              properties: {
+                line
+              },
+              geometry: {
+                type: 'MultiLineString',
+                coordinates
+              }
+            }]
+          }
+        })
 
-    map.addSource('stop-stations', {
-      type: 'geojson',
-      data: {
-        type: "FeatureCollection",
-        features: []
-      }
-    })
-
-    // layers
-    map.addLayer({
-      id: 'stop-platforms',
-      type: 'symbol',
-      source: 'stop-platforms',
-      layout: {
-        'icon-image': 'metro-icon',
-        'icon-size': 0.07,
-        'icon-allow-overlap': true
-      }
-    })
-
-    map.addLayer({
-      id: 'stop-stations',
-      type: 'symbol',
-      source: 'stop-stations',
-      layout: {
-        'icon-image': 'metro-icon',
-        'icon-size': 0.07
-      }
-    })
-  }
-
-  const addVehicleSource = () => {
-
-  }
-
-  const addShapes = (modeLine: string) => {
-    let lineFeatures: Feature<LineString, { id: string }>[] = []
-    for (const line of $lineShapes[modeLine]) {
-      const points = $shapes[line]
-      lineFeatures.push({
-        type: 'Feature',
-        properties: {
-          id: line
-        },
-        geometry: {
-          type: 'LineString',
-          coordinates: points.map((point) => [point.longitude, point.latitude])
-        }
+        map.addLayer({
+          id: `${line}-shape`,
+          type: 'line',
+          source: `${line}-shape`,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': coloursMap[line],
+            'line-width': 2
+          }
+        })
       })
-    }
-
-    const lineSource = map.getSource(`${modeLine}-shape`) as maplibregl.GeoJSONSource
-
-    lineSource.setData({
-      type: 'FeatureCollection',
-      features: lineFeatures
     })
   }
 
   const addStops = () => {
-    const platformFeatures: Feature<Point, { stop: Stop }>[] = $stops.filter((stop) => stop.parentStationId).map((stop) => ({
-      type: 'Feature',
-      properties: {
-        stop: stop
-      },
-      geometry: {
-        type: 'Point',
-        coordinates: [stop.longitude, stop.latitude]
-      }
-    }))
+    // const platformFeatures: Feature<Point>[] = $stops.filter((stop: Stop) => stop.stop_parent_station).map((stop: Stop) => ({
+    //   type: 'Feature',
+    //   properties: {
+    //     stop: stop
+    //   },
+    //   geometry: {
+    //     type: 'Point',
+    //     coordinates: [stop.stop_lon, stop.stop_lat]
+    //   }
+    // }))
 
-    const stationFeatures: Feature<Point, { stop: Stop }>[] = $stops.filter((stop) => !stop.parentStationId).map((stop) => ({
-      type: 'Feature',
-      properties: {
-        stop: stop
-      },
-      geometry: {
-        type: 'Point',
-        coordinates: [stop.longitude, stop.latitude]
-      }
-    }))
+    // map.addSource('stop-platforms-source', {
+    //   type: 'geojson',
+    //   data: {
+    //     type: 'FeatureCollection',
+    //     features: platformFeatures
+    //   }
+    // })
 
-    const platformSource = map.getSource('stop-platforms') as maplibregl.GeoJSONSource
+    // map.addLayer({
+    //   id: 'stop-platforms-layer',
+    //   type: 'symbol',
+    //   source: 'stop-platforms-source',
+    //   layout: {
+    //     'icon-image': 'metro-icon',
+    //     'icon-size': 0.07,
+    //     'icon-allow-overlap': true
+    //   },
+    //   minzoom: 17
+    // })
 
-    platformSource.setData({
-      type: 'FeatureCollection',
-      features: platformFeatures
-    })
+    // const stationFeatures: Feature<Point>[] = $stops.filter((stop: Stop) => !stop.stop_parent_station).map((stop: Stop) => ({
+    //   type: 'Feature',
+    //   properties: {
+    //     stop: stop
+    //   },
+    //   geometry: {
+    //     type: 'Point',
+    //     coordinates: [stop.stop_lon, stop.stop_lat]
+    //   }
+    // }))
 
-    const stationSource = map.getSource('stop-stations') as maplibregl.GeoJSONSource
+    // map.addSource('stop-stations-source', {
+    //   type: 'geojson',
+    //   data: {
+    //     type: 'FeatureCollection',
+    //     features: stationFeatures
+    //   }
+    // })
 
-    stationSource.setData({
-      type: 'FeatureCollection',
-      features: stationFeatures
+    // map.addLayer({
+    //   id: 'stop-stations-layer',
+    //   type: 'symbol',
+    //   source: 'stop-stations-source',
+    //   layout: {
+    //     'icon-image': 'metro-icon',
+    //     'icon-size': 0.07,
+    //     'icon-allow-overlap': true
+    //   },
+    //   maxzoom: 16.99
+    // })
+  }
+
+  const initVehicles = () => {
+    Object.entries($modes).forEach(([_mode, lines]) => {
+      lines.forEach((line) => {
+        map.addSource(`${line}-vehicle-source`, {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: []
+          }
+        })
+
+        map.addLayer({
+          id: `${line}-vehicle-layer`,
+          type: 'circle',
+          source: `${line}-vehicle-source`,
+          paint: {
+            'circle-radius': 6,
+            'circle-color': coloursMap[line],
+            'circle-stroke-width': 1,
+            'circle-stroke-color': '#FFFFFF'
+          },
+        })
+      })
     })
   }
 
-  const setStopVisibility = () => {
-    const zoom = map.getZoom()
-    map.setLayoutProperty('stop-platforms', 'visibility', zoom >= 17 ? 'visible' : 'none')
-    map.setLayoutProperty('stop-stations', 'visibility', zoom < 17 ? 'visible' : 'none')
+  const updateVehicles = (vehicles: Vehicles, modes: Record<number, Set<string>>) => {
+    Object.entries(modes).forEach(([_mode, lines]) => {
+      lines.forEach((line) => {
+        const vehicleFeatures: Feature<Point>[] = vehicles[line].map((vehicle) => ({
+          type: 'Feature',
+          properties: {
+            vehicle
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: [
+              vehicle.position_longitude,
+              vehicle.position_latitude
+            ]
+          }
+        }))
+
+        const source = map.getSource(`${line}-vehicle-source`) as maplibregl.GeoJSONSource
+
+        if (source) {
+          source.setData({
+            type: 'FeatureCollection',
+            features: vehicleFeatures
+          })
+        }
+      })
+    })
   }
 
   onMount(() => {
-    console.log($modes, $lineShapes, $shapes, $stops)
+    console.log($modes, $shapes, $stops, $vehicles)
     const { centre, zoom } = getStoredView()
 
     map = new maplibregl.Map({
@@ -181,21 +211,26 @@
     map.addControl(new maplibregl.NavigationControl())
 
     map.on('load', () => {
-      const img = new Image();
+      const img = new Image()
       img.onload = () => {
-        map.addImage('metro-icon', img);
-        addStopSource();
-        addStops();
+        map.addImage('metro-icon', img)
+        addStops()
       }
-      img.src = metroImg;
+      img.src = metroImg
 
-      Object.entries($modes).forEach(([mode, modeLines]) => {
-        modeLines.forEach((modeLine) => {
-          addShapeSource(modeLine)
-          addShapes(modeLine)
-        })
+      addShapes()
+      initVehicles()
+      updateVehicles($vehicles, $modes)
+  
+      const unsubVehicles = vehicles.subscribe((v) => {
+        if (!map || !map.isStyleLoaded()) return
+        updateVehicles(v, $modes)
       })
-      addVehicleSource()
+
+      return () => {
+        unsubVehicles?.()
+        map?.remove()
+      }
     })
 
     map.on('click', (e) => {
@@ -208,10 +243,6 @@
 
     map.on('moveend', () => {
       saveView()
-    })
-
-    map.on('zoom', () => {
-      setStopVisibility()
     })
   })
 </script>

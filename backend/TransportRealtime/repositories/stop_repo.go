@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"TransportRealtime/models"
+	models "TransportRealtime/models/static"
 	"context"
 
 	"github.com/jackc/pgx/v5"
@@ -16,7 +16,7 @@ func NewStopRepository(db *pgxpool.Pool) *StopRepository {
 	return &StopRepository{DB: db}
 }
 
-func (r *StopRepository) GetStops(mode string) ([]models.Stop, error) {
+func (r *StopRepository) GetStops(mode string) (map[string][]models.Stop, error) {
 	var (
 		rows pgx.Rows
 		err  error
@@ -41,7 +41,8 @@ func (r *StopRepository) GetStops(mode string) ([]models.Stop, error) {
 	}
 	defer rows.Close()
 
-	var stops []models.Stop
+	stopMap := make(map[string][]models.Stop)
+
 	for rows.Next() {
 		var stop models.Stop
 		err := rows.Scan(
@@ -64,10 +65,10 @@ func (r *StopRepository) GetStops(mode string) ([]models.Stop, error) {
 			return nil, err
 		}
 
-		stops = append(stops, stop)
+		stopMap[stop.Mode] = append(stopMap[stop.Mode], stop)
 	}
 
-	return stops, nil
+	return stopMap, nil
 }
 
 func (r *StopRepository) GetStop(stopId string) (models.Stop, error) {
@@ -92,3 +93,98 @@ func (r *StopRepository) GetStop(stopId string) (models.Stop, error) {
 
 	return stop, err
 }
+
+// package repositories
+
+// import (
+// 	models "TransportRealtime/models/static"
+// 	"context"
+
+// 	"github.com/jackc/pgx/v5"
+// 	"github.com/jackc/pgx/v5/pgxpool"
+// )
+
+// type StopRepository struct {
+// 	DB *pgxpool.Pool
+// }
+
+// func NewStopRepository(db *pgxpool.Pool) *StopRepository {
+// 	return &StopRepository{DB: db}
+// }
+
+// func (r *StopRepository) GetStops(mode string) ([]models.Stop, error) {
+// 	var (
+// 		rows pgx.Rows
+// 		err  error
+// 	)
+
+// 	query := `
+// 		SELECT stop_id, stop_code, stop_name, stop_lat, stop_lon,
+// 		       stop_zone_id, stop_url, stop_location_type,
+// 		       stop_parent_station, stop_timezone, stop_wheelchair_boarding,
+// 		       stop_platform_code, mode
+// 		FROM stops
+// 	`
+
+// 	if mode == "" {
+// 		rows, err = r.DB.Query(context.Background(), query)
+// 	} else {
+// 		rows, err = r.DB.Query(context.Background(), query+" WHERE mode = $1", mode)
+// 	}
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
+
+// 	var stops []models.Stop
+// 	for rows.Next() {
+// 		var stop models.Stop
+// 		err := rows.Scan(
+// 			&stop.StopId,
+// 			&stop.StopCode,
+// 			&stop.StopName,
+// 			&stop.StopLat,
+// 			&stop.StopLon,
+// 			&stop.StopZoneId,
+// 			&stop.StopUrl,
+// 			&stop.StopLocationType,
+// 			&stop.StopParentStation,
+// 			&stop.StopTimezone,
+// 			&stop.StopWheelchairBoarding,
+// 			&stop.StopPlatformCode,
+// 			&stop.Mode,
+// 		)
+
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		stops = append(stops, stop)
+// 	}
+
+// 	return stops, nil
+// }
+
+// func (r *StopRepository) GetStop(stopId string) (models.Stop, error) {
+// 	row := r.DB.QueryRow(context.Background(), "SELECT * FROM stops WHERE stop_id = $1", stopId)
+
+// 	var stop models.Stop
+// 	err := row.Scan(
+// 		&stop.StopId,
+// 		&stop.StopCode,
+// 		&stop.StopName,
+// 		&stop.StopLat,
+// 		&stop.StopLon,
+// 		&stop.StopZoneId,
+// 		&stop.StopUrl,
+// 		&stop.StopLocationType,
+// 		&stop.StopParentStation,
+// 		&stop.StopTimezone,
+// 		&stop.StopWheelchairBoarding,
+// 		&stop.StopPlatformCode,
+// 		&stop.Mode,
+// 	)
+
+// 	return stop, err
+// }

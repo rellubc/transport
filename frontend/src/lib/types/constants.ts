@@ -28,7 +28,6 @@ export const vehiclesMap: Record<string, string> = {
     'M8': 'Millenium (M)',
 }
 
-
 export const coloursMap: Record<string, string> = {
     'BMT': '#F99D1C',
     'NSN': '#F99D1C',
@@ -48,6 +47,7 @@ export const coloursMap: Record<string, string> = {
     'CTY': '#F6891F',
     'HUN': '#833134',
     'M1': '#168388',
+    'T4': '#005AA3',
 }
 
 export const routesMap: Record<string, string> = {

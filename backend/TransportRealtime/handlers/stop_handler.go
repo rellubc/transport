@@ -1,19 +1,20 @@
 package handlers
 
 import (
-	"TransportRealtime/models"
+	models "TransportRealtime/models/static"
 	"TransportRealtime/repositories"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func GetStopsHandler(repo *repositories.StopRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mode := r.URL.Query().Get("mode")
+		mode := strings.ToLower(r.URL.Query().Get("mode"))
 
-		var stops []models.Stop
+		var stops map[string][]models.Stop
 		var err error
 
 		if mode != "" {

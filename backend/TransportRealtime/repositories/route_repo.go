@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"TransportRealtime/models"
+	models "TransportRealtime/models/static"
 	"context"
 
 	"github.com/jackc/pgx/v5/pgxpool"

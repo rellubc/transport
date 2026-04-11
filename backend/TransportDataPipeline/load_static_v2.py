@@ -65,7 +65,7 @@ MAPPINGS = {
         "shape_id": "shape_id",
         "shape_pt_lat": "shape_pt_lat",
         "shape_pt_lon": "shape_pt_lon",
-        "geom": "geom",
+        "shape_geom": "shape_geom",
         "shape_pt_sequence": "shape_pt_sequence",
         "shape_dist_traveled": "shape_dist_travelled",
         "mode": "mode"
@@ -75,11 +75,11 @@ MAPPINGS = {
         "stop_name": "stop_name",
         "stop_lat": "stop_lat",
         "stop_lon": "stop_lon",
-        "geom": "geom",
-        "location_type": "location_type",
-        "parent_station": "parent_station",
-        "wheelchair_boarding": "wheelchair_boarding",
-        "platform_code": "platform_code",
+        "stop_geom": "stop_geom",
+        "location_type": "stop_location_type",
+        "parent_station": "stop_parent_station",
+        "wheelchair_boarding": "stop_wheelchair_boarding",
+        "platform_code": "stop_platform_code",
         "mode": "mode"
     }),
     "trips.txt": ("trips", {
@@ -145,7 +145,7 @@ def time_to_seconds(s):
     h, m, sec = map(int, s.split(":"))
     return h * 3600 + m * 60 + sec
 
-def load(conn, file, table_name, column_map, conflict_key, batch_size=10000):
+def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=10000):
     reader = csv.DictReader(io.TextIOWrapper(file, "utf-8-sig"))
     
     colnames = list(column_map.values())
@@ -172,10 +172,13 @@ def load(conn, file, table_name, column_map, conflict_key, batch_size=10000):
                     except:
                         val = None
 
-                if db_col == "mode":
-                    val = "metro"
+                if db_col == "shape_id":
+                    val = f"M1_{val}"
 
-                if db_col == "geom":
+                if db_col == "mode":
+                    val = mode
+
+                if "geom" in db_col:
                     val = f"SRID=4326;POINT({lon} {lat})"
 
                 if db_col in ["arrival_time", "departure_time"]:
@@ -214,6 +217,7 @@ def main():
 
         print(f"Loading {filename}...")
         with zip_file.open(filename) as file:
+
             conflict_key_map = {
                 "agency.txt": ["agency_id"],
                 "calendar.txt": ["service_id"],
@@ -225,8 +229,8 @@ def main():
                 "shapes.txt": ["shape_id", "shape_pt_sequence"]
             }
             conflict_key = conflict_key_map.get(filename, [])
-
-            load(conn, file, table, columns, conflict_key)
+            
+            load(conn, file, table, columns, conflict_key, "metro")
 
     conn.close()
     print("Loaded Sydney Metro static data")

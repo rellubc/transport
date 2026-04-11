@@ -1,23 +1,39 @@
 <script lang="ts">
   import Map from '$lib/components/map/Map.svelte';
-  import { MODE_TYPE_METRO } from '$lib/constants';
+  import { MODE_TYPE_RAIL } from '$lib/constants';
   import { addMode, shapes, stops, vehicles } from '$lib/stores';
+  import { onMount } from 'svelte';
   import type { PageProps } from './$types';
+  import { getSydneyVehiclePositions } from '$lib/api/sydney';
 
   let { data }: PageProps = $props()
 
-  $effect(() => {
-    const metroLines = Object.keys(data.shapes).reduce<Record<string, string[]>>((acc, shapeId) => {
-      if (!acc['M1']) acc['M1'] = []
-      acc['M1'].push(shapeId)
-      return acc
-    }, {})
+  let loaded = $state(false)
 
-    console.log(metroLines)
+  onMount(() => {
     shapes.set(data.shapes)
     stops.set(data.stops)
     vehicles.set(data.vehicles)
-  })
+    
+    loaded = true
 
-  addMode(MODE_TYPE_METRO, 'M1')
+    const fetchVehicles = async () => {
+      console.log("Updating vehicle positions...", $vehicles)
+      vehicles.set(await getSydneyVehiclePositions(fetch))
+    }
+
+    Object.keys($shapes).forEach((line) => {
+      addMode(MODE_TYPE_RAIL, line.split("_")[0])
+    })
+
+    console.log($shapes, $stops, $vehicles)
+
+    const interval = setInterval(fetchVehicles, 15000)
+
+    return () => clearInterval(interval)
+  })
 </script>
+
+{#if loaded}
+  <Map />
+{/if}

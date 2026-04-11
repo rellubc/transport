@@ -1,92 +1,71 @@
--- NEED TO UPDATE SCHEMA
-
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE IF NOT EXISTS trip_updates (
     trip_id TEXT NOT NULL,
-    trip_route_id TEXT,
-    trip_direction_id SMALLINT,
-    trip_start_time TEXT,
-    trip_start_date TEXT,
-    trip_schedule_relationship SMALLINT,
+    trip_route_id TEXT NOT NULL,
+    trip_schedule_relationship TEXT NOT NULL,
 
     vehicle_id TEXT,
     vehicle_label TEXT,
-    vehicle_license_plate TEXT,
-    vehicle_air_conditioned BOOLEAN,
-    vehicle_wheelchair_accessible SMALLINT,
-    vehicle_model TEXT,
-    vehicle_performing_prior_trip BOOLEAN,
-    vehicle_special_vehicle_attributes INT,
+    vehicle_model TEXT NOT NULL,
 
-    stu_stop_sequence INT,
-    stu_stop_id TEXT,
-    stu_arrival_delay INT,
-    stu_arrival_time BIGINT,
-    stu_arrival_uncertainty INT,
-    stu_departure_delay INT,
-    stu_departure_time BIGINT,
-    stu_departure_uncertainty INT,
-    stu_schedule_relationship SMALLINT,
-    stu_departure_occupancy_status SMALLINT,
-    stu_carriage_name TEXT,
-    stu_carriage_position_in_consist INT NOT NULL,
-    stu_carriage_occupancy_status SMALLINT,
-    stu_carriage_quiet_carriage BOOLEAN,
-    stu_carriage_toilet BOOLEAN,
-    stu_carriage_luggage_rack BOOLEAN,
-    stu_carriage_departure_occupancy_status SMALLINT,
+    timestamp TIMESTAMPTZ NOT NULL,
 
-    timestamp BIGINT,
-    delay INT,
+    PRIMARY KEY (trip_id)
+);
 
-    PRIMARY KEY (trip_id, stu_stop_sequence, stu_carriage_position_in_consist)
+CREATE TABLE IF NOT EXISTS stop_time_updates (
+    trip_id TEXT NOT NULL,
+
+    stop_id TEXT NOT NULL,
+    stop_arrival_time TIMESTAMPTZ,
+    stop_departure_time TIMESTAMPTZ,
+
+    PRIMARY KEY (trip_id, stop_id),
+    FOREIGN KEY (trip_id) REFERENCES trip_updates(trip_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS carriage_sequence_predictive_occupancies (
+    trip_id TEXT NOT NULL,
+    stop_id TEXT NOT NULL,
+
+    position_in_consist INT NOT NULL,
+    departure_occupancy_status TEXT NOT NULL,
+
+    PRIMARY KEY (trip_id, stop_id, position_in_consist),
+    FOREIGN KEY (trip_id) REFERENCES trip_updates(trip_id) ON DELETE CASCADE,
+    FOREIGN KEY (trip_id, stop_id) REFERENCES stop_time_updates(trip_id, stop_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS vehicle_positions (
-    trip_id TEXT,
-    trip_route_id TEXT,
-    trip_direction_id SMALLINT,
-    trip_start_time TEXT,
-    trip_start_date TEXT,
-    trip_schedule_relationship SMALLINT,
+    trip_id TEXT NOT NULL,
+    trip_route_id TEXT NOT NULL,
+    trip_schedule_relationship TEXT NOT NULL,
 
     vehicle_id TEXT NOT NULL,
-    vehicle_label TEXT,
-    vehicle_license_plate TEXT,
-    vehicle_air_conditioned BOOLEAN,
-    vehicle_wheelchair_accessible BOOLEAN,
-    vehicle_model TEXT,
-    vehicle_performing_prior_trip BOOLEAN,
-    vehicle_special_vehicle_attributes INT,
+    vehicle_label TEXT NOT NULL,
+    vehicle_model TEXT NOT NULL,
 
-    position_latitude NUMERIC(9,6),
-    position_longitude NUMERIC(9,6),
-    geom GEOGRAPHY(POINT, 4326),
-    position_bearing NUMERIC(9,6),
-    position_odometer NUMERIC(9,2),
-    position_speed NUMERIC(9,2),
-    position_track_direction SMALLINT,
+    position_latitude NUMERIC(9,6) NOT NULL,
+    position_longitude NUMERIC(9,6) NOT NULL,
+    position_geom GEOGRAPHY(POINT, 4326) NOT NULL,
 
-    current_stop_sequence INT,
-    stop_id TEXT,
-    current_status SMALLINT,
-    timestamp BIGINT,
-    congestion_level SMALLINT,
-    occupancy_status SMALLINT,
+    stop_id TEXT NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL,
+    congestion_level TEXT NOT NULL,
+    occupancy_status TEXT,
 
-    stu_carriage_name TEXT,
-    stu_carriage_position_in_consist INT NOT NULL,
-    stu_carriage_occupancy_status SMALLINT,
-    stu_carriage_quiet_carriage BOOLEAN,
-    stu_carriage_toilet BOOLEAN,
-    stu_carriage_luggage_rack BOOLEAN,
-    stu_carriage_departure_occupancy_status SMALLINT,
-
-    PRIMARY KEY (vehicle_id, stu_carriage_position_in_consist)
+    PRIMARY KEY (vehicle_id)
 );
 
-CREATE INDEX idx_trip_updates_timestamp ON trip_updates(timestamp);
+CREATE TABLE IF NOT EXISTS consist (
+    vehicle_id TEXT NOT NULL,
 
-CREATE INDEX idx_vehicle_positions_timestamp ON vehicle_positions(timestamp);
-CREATE INDEX idx_vehicle_positions_geom ON vehicle_positions USING GIST(geom);
+    position_in_consist INT NOT NULL,
+    occupancy_status TEXT,
+
+    PRIMARY KEY (vehicle_id, position_in_consist),
+    FOREIGN KEY (vehicle_id) REFERENCES vehicle_positions(vehicle_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_vehicle_positions_geom ON vehicle_positions USING GIST(position_geom);
