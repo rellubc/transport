@@ -3,6 +3,7 @@ package repositories
 import (
 	models "TransportRealtime/models/realtime"
 	"context"
+	"encoding/json"
 	"strings"
 
 	"TransportRealtime/constants"
@@ -27,21 +28,44 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 
 	query := `
 		SELECT
-			trip_id,
-			trip_route_id,
-			trip_schedule_relationship,
-			vehicle_id,
-			vehicle_label,
-			vehicle_model,
-			position_latitude,
-			position_longitude,
-			stop_id,
-			timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
-			congestion_level,
-			occupancy_status,
-			mode
-		FROM vehicle_positions
-		WHERE ($1 = '' OR mode LIKE $1) AND NOW() - timestamp < INTERVAL '2 minutes'
+			vp.trip_id,
+			vp.trip_route_id,
+			vp.trip_schedule_relationship,
+			vp.vehicle_id,
+			vp.vehicle_label,
+			vp.vehicle_model,
+			vp.position_latitude,
+			vp.position_longitude,
+			vp.stop_id,
+			vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
+			vp.congestion_level,
+			vp.occupancy_status,
+			vp.mode,
+			json_agg(
+				json_build_object(
+					'vehicleId', c.vehicle_id,
+					'positionInConsist', c.position_in_consist,
+					'occupancyStatus', c.occupancy_status
+				)
+			) FILTER (WHERE c.vehicle_id IS NOT NULL) AS consist
+		FROM vehicle_positions vp
+		JOIN consist c
+			ON vp.vehicle_id = c.vehicle_id
+		WHERE ($1 = '' OR vp.mode LIKE $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes'
+		GROUP BY
+			vp.trip_id,
+			vp.trip_route_id,
+			vp.trip_schedule_relationship,
+			vp.vehicle_id,
+			vp.vehicle_label,
+			vp.vehicle_model,
+			vp.position_latitude,
+			vp.position_longitude,
+			vp.stop_id,
+			sydney_time,
+			vp.congestion_level,
+			vp.occupancy_status,
+			vp.mode
 	`
 
 	rows, err = r.DB.Query(context.Background(), query, mode)
@@ -55,6 +79,7 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 
 	for rows.Next() {
 		var vp models.VehiclePosition
+		var consistJSON []byte
 
 		err := rows.Scan(
 			&vp.TripId,
@@ -70,16 +95,16 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 			&vp.CongestionLevel,
 			&vp.OccupancyStatus,
 			&vp.Mode,
+			&consistJSON,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		consists, err := GetVehicleConsist(r, *vp.VehicleId)
+		err = json.Unmarshal(consistJSON, &vp.Consist)
 		if err != nil {
 			return nil, err
 		}
-		vp.Consist = consists
 
 		key := vp.Mode
 
@@ -101,25 +126,50 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models.VehiclePosition, error) {
 	query := `
 		SELECT
-			trip_id,
-			trip_route_id,
-			trip_schedule_relationship,
-			vehicle_id,
-			vehicle_label,
-			vehicle_model,
-			position_latitude,
-			position_longitude,
-			stop_id,
-			timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
-			congestion_level,
-			occupancy_status
-		FROM vehicle_positions
-		WHERE trip_route_id LIKE $1 AND NOW() - timestamp < INTERVAL '2 minutes'
+			vp.trip_id,
+			vp.trip_route_id,
+			vp.trip_schedule_relationship,
+			vp.vehicle_id,
+			vp.vehicle_label,
+			vp.vehicle_model,
+			vp.position_latitude,
+			vp.position_longitude,
+			vp.stop_id,
+			vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
+			vp.congestion_level,
+			vp.occupancy_status,
+			vp.mode,
+			json_agg(
+				json_build_object(
+					'vehicleId', c.vehicle_id,
+					'positionInConsist', c.position_in_consist,
+					'occupancyStatus', c.occupancy_status
+				)
+			) FILTER (WHERE c.vehicle_id IS NOT NULL) AS consist
+		FROM vehicle_positions vp
+		JOIN consist c
+			ON vp.vehicle_id = c.vehicle_id
+		WHERE ($1 = '' OR vp.mode LIKE $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes'
+		GROUP BY
+			vp.trip_id,
+			vp.trip_route_id,
+			vp.trip_schedule_relationship,
+			vp.vehicle_id,
+			vp.vehicle_label,
+			vp.vehicle_model,
+			vp.position_latitude,
+			vp.position_longitude,
+			vp.stop_id,
+			sydney_time,
+			vp.congestion_level,
+			vp.occupancy_status,
+			vp.mode
 	`
 
 	row := r.DB.QueryRow(context.Background(), query, vehicleId)
 
 	var vp models.VehiclePosition
+	var consistJSON []byte
 
 	err := row.Scan(
 		&vp.TripId,
@@ -134,16 +184,17 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 		&vp.Timestamp,
 		&vp.CongestionLevel,
 		&vp.OccupancyStatus,
+		&vp.Mode,
+		&consistJSON,
 	)
 	if err != nil {
 		return models.VehiclePosition{}, err
 	}
 
-	consists, err := GetVehicleConsist(r, *vp.VehicleId)
+	err = json.Unmarshal(consistJSON, &vp.Consist)
 	if err != nil {
 		return models.VehiclePosition{}, err
 	}
-	vp.Consist = consists
 
 	return vp, err
 }

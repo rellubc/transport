@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -133,8 +132,6 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 			stu.progress
 	`
 	baseQuery += "ORDER BY st.stop_sequence"
-
-	log.Println(baseQuery, args)
 
 	rows, err := r.DB.Query(context.Background(), baseQuery, args...)
 	if err != nil {
