@@ -56,13 +56,10 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 	for rows.Next() {
 		var vp models.VehiclePosition
 
-		var scheduleStr string
-		var congestionStr string
-		var occupancyStr string
 		err := rows.Scan(
 			&vp.TripId,
 			&vp.RouteId,
-			&scheduleStr,
+			&vp.ScheduleRelationship,
 			&vp.VehicleId,
 			&vp.VehicleLabel,
 			&vp.VehicleModel,
@@ -70,17 +67,13 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 			&vp.Longitude,
 			&vp.StopId,
 			&vp.Timestamp,
-			&congestionStr,
-			&occupancyStr,
+			&vp.CongestionLevel,
+			&vp.OccupancyStatus,
 			&vp.Mode,
 		)
 		if err != nil {
 			return nil, err
 		}
-
-		vp.ScheduleRelationship = models.ParseScheduleRelationship(scheduleStr)
-		vp.CongestionLevel = models.ParseCongestionLevel(congestionStr)
-		vp.OccupancyStatus = models.ParseOccupancyStatus(occupancyStr)
 
 		consists, err := GetVehicleConsist(r, *vp.VehicleId)
 		if err != nil {
@@ -128,13 +121,10 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 
 	var vp models.VehiclePosition
 
-	var scheduleStr string
-	var congestionStr string
-	var occupancyStr string
 	err := row.Scan(
 		&vp.TripId,
 		&vp.RouteId,
-		&scheduleStr,
+		&vp.ScheduleRelationship,
 		&vp.VehicleId,
 		&vp.VehicleLabel,
 		&vp.VehicleModel,
@@ -142,16 +132,12 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 		&vp.Longitude,
 		&vp.StopId,
 		&vp.Timestamp,
-		&congestionStr,
-		&occupancyStr,
+		&vp.CongestionLevel,
+		&vp.OccupancyStatus,
 	)
 	if err != nil {
 		return models.VehiclePosition{}, err
 	}
-
-	vp.ScheduleRelationship = models.ParseScheduleRelationship(scheduleStr)
-	vp.CongestionLevel = models.ParseCongestionLevel(congestionStr)
-	vp.OccupancyStatus = models.ParseOccupancyStatus(occupancyStr)
 
 	consists, err := GetVehicleConsist(r, *vp.VehicleId)
 	if err != nil {
@@ -172,17 +158,14 @@ func GetVehicleConsist(r *VehiclePositionRepository, vehicleId string) ([]models
 	var consists []models.Consist
 	for rows.Next() {
 		var consist models.Consist
-		var occupancyStr string
 		err := rows.Scan(
 			&consist.VehicleId,
 			&consist.PositionInConsist,
-			&occupancyStr,
+			&consist.OccupancyStatus,
 		)
 		if err != nil {
 			return nil, err
 		}
-
-		consist.OccupancyStatus = models.ParseOccupancyStatus(occupancyStr)
 
 		consists = append(consists, consist)
 	}

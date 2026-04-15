@@ -5,13 +5,13 @@ export const ROUTE_TYPE_BUS = 3
 export const ROUTE_TYPE_FERRY = 4
 export const ROUTE_TYPE_REGIONAL_RAIL = 105
 
-export const routeTypeMap: Record<number, string> = {
-    0: 'Light Rail',
-    401: 'Metro',
-    2: 'Rail',
-    3: 'Bus',
-    4: 'Ferry',
-    105: 'Regional Rail',
+export const modeMap: Record<number, string> = {
+    0: 'lightrail',
+    401: 'metro',
+    2: 'sydneytrains',
+    3: 'bus',
+    4: 'ferry',
+    105: 'regionalrail',
 }
 
 export const vehiclesMap: Record<string, string> = {
@@ -72,3 +72,13 @@ export const routesMap: Record<string, string> = {
 }
 
 export const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
+export const occupancyColours: Record<string, string> = {
+    'EMPTY': '#22C55E',
+    'MANY_SEATS_AVAILABLE': '#16A34A',
+    'FEW_SEATS_AVAILABLE': '#FACC15',
+    'STANDING_ROOM_ONLY': '#F97316',
+    'CRUSHED_STANDING_ROOM_ONLY': '#EF4444',
+    'FULL': '#B91C1C',
+    'NOT_ACCEPTING_PASSENGERS': '#6B7280',
+}

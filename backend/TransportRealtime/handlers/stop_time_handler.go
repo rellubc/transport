@@ -4,15 +4,30 @@ import (
 	"TransportRealtime/repositories"
 	"encoding/json"
 	"net/http"
-	"strings"
 )
 
-func GetStopTimesHandler(repo *repositories.StopTimeRepository) http.HandlerFunc {
+func GetStaticStopTimesHandler(repo *repositories.StopTimeRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		stopId := strings.ToLower(r.URL.Query().Get("stop_id"))
-		tripId := strings.ToLower(r.URL.Query().Get("trip_id"))
+		stopId := r.URL.Query().Get("stop_id")
+		tripId := r.URL.Query().Get("trip_id")
 
-		stopTimes, err := repo.GetStopTimes(stopId, tripId)
+		stopTimes, err := repo.GetStaticStopTimes(stopId, tripId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(stopTimes)
+	}
+}
+
+func GetRealtimeStopTimesHandler(repo *repositories.StopTimeRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		stopId := r.URL.Query().Get("stop_id")
+		tripId := r.URL.Query().Get("trip_id")
+
+		stopTimes, err := repo.GetRealtimeStopTimes(stopId, tripId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

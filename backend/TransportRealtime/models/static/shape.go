@@ -3,20 +3,20 @@ package models
 import "github.com/twpayne/go-geom"
 
 type Shape struct {
-	ShapeId            string      `json:"shape_id"`
-	ShapePtLat         float64     `json:"shape_pt_lat"`
-	ShapePtLon         float64     `json:"shape_pt_lon"`
-	ShapeGeom          *geom.Point `json:"shape_geom"`
-	ShapePtSequence    int         `json:"shape_pt_sequence"`
-	ShapeDistTravelled *float64    `json:"shape_dist_traveled"`
+	ShapeId            string      `json:"shapeId"`
+	ShapePtLat         float64     `json:"shapePtLat"`
+	ShapePtLon         float64     `json:"shapePtLon"`
+	ShapeGeom          *geom.Point `json:"shapeGeom"`
+	ShapePtSequence    int         `json:"shapePtSequence"`
+	ShapeDistTravelled *float64    `json:"shapeDistTravelled"`
 	Mode               string      `json:"mode"`
 }
 
 type ShapeDetails struct {
-	ShapePtLat         float64     `json:"shape_pt_lat"`
-	ShapePtLon         float64     `json:"shape_pt_lon"`
-	ShapeGeom          *geom.Point `json:"shape_geom"`
-	ShapePtSequence    int         `json:"shape_pt_sequence"`
-	ShapeDistTravelled *float64    `json:"shape_dist_traveled"`
+	ShapePtLat         float64     `json:"shapePtLat"`
+	ShapePtLon         float64     `json:"shapePtLon"`
+	ShapeGeom          *geom.Point `json:"shapeGeom"`
+	ShapePtSequence    int         `json:"shapePtSequence"`
+	ShapeDistTravelled *float64    `json:"shapeDistTravelled"`
 	Mode               string      `json:"mode"`
 }

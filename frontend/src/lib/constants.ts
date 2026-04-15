@@ -6,12 +6,12 @@ export const MODE_TYPE_FERRY = 4
 export const MODE_TYPE_REGIONAL_RAIL = 105
 
 export const modeTypeMap: Record<number, string> = {
-    0: 'Light Rail',
-    401: 'Metro',
-    2: 'Rail',
-    3: 'Bus',
-    4: 'Ferry',
-    105: 'Regional Rail',
+    0: 'lightrail',
+    401: 'metro',
+    2: 'sydneytrains',
+    3: 'bus',
+    4: 'ferry',
+    105: 'regionalrail',
 }
 
 export const vehiclesMap: Record<string, string> = {

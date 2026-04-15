@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Calendar struct {
-	ServiceId string    `json:"service_id"`
+	ServiceId string    `json:"serviceI"`
 	Monday    bool      `json:"monday"`
 	Tuesday   bool      `json:"tuesday"`
 	Wednesday bool      `json:"wednesday"`
@@ -11,6 +11,6 @@ type Calendar struct {
 	Friday    bool      `json:"friday"`
 	Saturday  bool      `json:"saturday"`
 	Sunday    bool      `json:"sunday"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate time.Time `json:"startDate"`
+	EndDate   time.Time `json:"endDate"`
 }

@@ -11,8 +11,16 @@ type TripUpdateRepository struct {
 	DB *pgxpool.Pool
 }
 
+type CarriageOccupancyRepository struct {
+	DB *pgxpool.Pool
+}
+
 func NewTripUpdateRepository(db *pgxpool.Pool) *TripUpdateRepository {
 	return &TripUpdateRepository{DB: db}
+}
+
+func NewCarriageOccupancyRepository(db *pgxpool.Pool) *CarriageOccupancyRepository {
+	return &CarriageOccupancyRepository{DB: db}
 }
 
 func (r *TripUpdateRepository) GetTripUpdate(tripId string) (models.TripUpdate, error) {
@@ -55,29 +63,4 @@ func (r *TripUpdateRepository) GetTripStopTimeUpdates(tripId string) ([]models.S
 	}
 
 	return stus, nil
-}
-
-func (r *TripUpdateRepository) GetTripStopCarriageSequencePredictiveOccupancy(tripId string, stopId string) ([]models.CarriageSequencePredictiveOccupancy, error) {
-	rows, err := r.DB.Query(context.Background(), "SELECT * FROM carriage_sequence_predictive_occupancy WHERE trip_id = $1 AND stop_id = $2", tripId, stopId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var cspos []models.CarriageSequencePredictiveOccupancy
-	for rows.Next() {
-		var cspo models.CarriageSequencePredictiveOccupancy
-		err := rows.Scan(
-			&cspo.TripId,
-			&cspo.StopId,
-			&cspo.PositionInConsist,
-			&cspo.DepartureOccupancyStatus,
-		)
-		if err != nil {
-			return nil, err
-		}
-		cspos = append(cspos, cspo)
-	}
-
-	return cspos, nil
 }

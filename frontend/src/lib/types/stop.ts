@@ -1,17 +1,17 @@
 export interface Stop {
-    stop_id: string
-    stop_code?: string
-    stop_name: string
-    stop_description?: string
-    stop_lat: number
-    stop_lon: number
-    stop_zone_id?: string
-    stop_url?: string
-    stop_location_type: number
-    stop_parent_station?: string
-    stop_timezone?: string
-    stop_wheelchair_boarding: boolean
-    stop_platformCode: number
+    stopId: string
+    stopCode?: string
+    stopName: string
+    stopDescription?: string
+    stopLat: number
+    stopLon: number
+    stopZoneId?: string
+    stopUrl?: string
+    stopLocationType: number
+    stopParentStation?: string
+    stopTimezone?: string
+    stopWheelchairBoarding: boolean
+    stopPlatformCode: number
     mode: string
 }
 

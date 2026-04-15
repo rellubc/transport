@@ -38,19 +38,3 @@ func GetTripStopTimeUpdatesHandler(repo *repositories.TripUpdateRepository) http
 		json.NewEncoder(w).Encode(cspos)
 	}
 }
-
-func GetTripStopCarriageSequencePredictiveOccupancyHandler(repo *repositories.TripUpdateRepository) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		tripId := chi.URLParam(r, "trip_id")
-		stopId := chi.URLParam(r, "stop_id")
-
-		cspos, err := repo.GetTripStopCarriageSequencePredictiveOccupancy(tripId, stopId)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cspos)
-	}
-}

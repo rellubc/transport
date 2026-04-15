@@ -2,6 +2,7 @@ package realtime
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -136,24 +137,42 @@ func InsertTripUpdatesV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode string) er
 		)
 
 		for _, stu := range tripUpdate.StopTimeUpdate {
+			var arrivalTime *time.Time
+			if stu.Arrival != nil && stu.Arrival.Time != nil && stu.GetArrival().GetTime() != 0 {
+				t := time.Unix(int64(stu.GetArrival().GetTime()), 0).UTC()
+				arrivalTime = &t
+			}
+
+			var departureTime *time.Time
+			if stu.Departure != nil && stu.Departure.Time != nil && stu.GetDeparture().GetTime() != 0 {
+				t := time.Unix(int64(stu.GetDeparture().GetTime()), 0).UTC()
+				departureTime = &t
+			}
+
 			batch.Queue(`
-				INSERT INTO stop_time_updates (trip_id, stop_id, stop_arrival_time, stop_departure_time)
-				VALUES ($1,$2,$3,$4)
+				INSERT INTO stop_time_updates (trip_id, stop_id, stop_arrival_time, stop_arrival_delay, stop_departure_time, stop_departure_delay, timestamp)
+				VALUES ($1,$2,$3,$4,$5,$6,$7)
 				ON CONFLICT (trip_id, stop_id) DO UPDATE SET
 					stop_arrival_time=EXCLUDED.stop_arrival_time,
-					stop_departure_time=EXCLUDED.stop_departure_time
-			`, tripUpdate.GetTrip().GetTripId(), stu.GetStopId(), time.Unix(int64(stu.GetArrival().GetTime()), 0).UTC(), time.Unix(int64(stu.GetDeparture().GetTime()), 0).UTC())
+					stop_arrival_delay=EXCLUDED.stop_arrival_delay,
+					stop_departure_time=EXCLUDED.stop_departure_time,
+					stop_departure_delay=EXCLUDED.stop_departure_delay,
+					timestamp=EXCLUDED.timestamp
+			`, tripUpdate.GetTrip().GetTripId(), stu.GetStopId(), arrivalTime, stu.GetArrival().GetDelay(), departureTime, stu.GetDeparture().GetDelay(), time.Unix(int64(tripUpdate.GetTimestamp()), 0).UTC())
 
 			ext := proto.GetExtension(stu, pb.E_CarriageSeqPredictiveOccupancy)
-			carriageOccupancies := ext.([]*pb.CarriageDescriptor)
-
-			for _, co := range carriageOccupancies {
-				batch.Queue(`
-					INSERT INTO carriage_sequence_predictive_occupancies (trip_id, stop_id, position_in_consist, departure_occupancy_status)
-					VALUES ($1,$2,$3,$4)
-					ON CONFLICT (trip_id, stop_id, position_in_consist) DO UPDATE SET
-						departure_occupancy_status=EXCLUDED.departure_occupancy_status
-				`, tripUpdate.GetTrip().GetTripId(), stu.GetStopId(), co.GetPositionInConsist(), co.GetOccupancyStatus().String())
+			if ext != nil {
+				carriageOccupancies, ok := ext.([]*pb.CarriageDescriptor)
+				if ok {
+					for _, co := range carriageOccupancies {
+						batch.Queue(`
+							INSERT INTO carriage_occupancies (trip_id, stop_id, position_in_consist, departure_occupancy_status)
+							VALUES ($1,$2,$3,$4)
+							ON CONFLICT (trip_id, stop_id, position_in_consist) DO UPDATE SET
+								departure_occupancy_status=EXCLUDED.departure_occupancy_status
+						`, tripUpdate.GetTrip().GetTripId(), stu.GetStopId(), co.GetPositionInConsist(), co.GetOccupancyStatus().String())
+					}
+				}
 			}
 		}
 	}
@@ -163,7 +182,8 @@ func InsertTripUpdatesV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode string) er
 	for i := 0; i < batch.Len(); i++ {
 		_, err := br.Exec()
 		if err != nil {
-			log.Printf("Failed to execute batch query: %v", err)
+			br.Close()
+			return fmt.Errorf("batch failed: %w", err)
 		}
 	}
 

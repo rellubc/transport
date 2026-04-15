@@ -18,8 +18,9 @@
     loaded = true
 
     const fetchVehicles = async () => {
-      console.log("Updating vehicle positions...", $vehicles)
+      console.log("Updating vehicle positions...")
       vehicles.set(await getSydneyVehiclePositions(fetch))
+      console.log($vehicles)
     }
 
     Object.keys($shapes).forEach((line) => {

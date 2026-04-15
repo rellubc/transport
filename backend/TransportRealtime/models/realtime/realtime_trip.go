@@ -3,27 +3,27 @@ package models
 import "time"
 
 type TripUpdate struct {
-	TripId               string               `json:"trip_id"`
-	RouteId              string               `json:"trip_route_id"`
-	ScheduleRelationship ScheduleRelationship `json:"trip_schedule_relationship"`
-	VehicleId            *string              `json:"vehicle_id"`
-	VehicleLabel         *string              `json:"vehicle_label"`
-	VehicleModel         string               `json:"vehicle_model"`
+	TripId               string  `json:"tripId"`
+	RouteId              string  `json:"tripRouteId"`
+	ScheduleRelationship string  `json:"tripScheduleRelationship"`
+	VehicleId            *string `json:"vehicleId"`
+	VehicleLabel         *string `json:"vehicleLabel"`
+	VehicleModel         string  `json:"vehicleModel"`
 	StopTimeUpdates      []StopTimeUpdate
 	Timestamp            time.Time `json:"timestamp"`
 	Mode                 string    `json:"mode"`
 }
 
 type StopTimeUpdate struct {
-	TripId        string    `json:"trip_id"`
-	StopId        string    `json:"stop_id"`
-	ArrivalTime   time.Time `json:"stop_arrival_time"`
-	DepartureTime time.Time `json:"stop_departure_time"`
+	TripId         string    `json:"tripId"`
+	StopId         string    `json:"stopId"`
+	ArrivalTime    time.Time `json:"stopArrivalTime"`
+	DepartureTime  time.Time `json:"stopDepartureTime"`
+	ArrivalDelay   int64     `json:"stopArrivalDelay"`
+	DepartureDelay int64     `json:"stopDepartureDelay"`
 }
 
-type CarriageSequencePredictiveOccupancy struct {
-	TripId                   string          `json:"trip_id"`
-	StopId                   string          `json:"stop_id"`
-	PositionInConsist        uint            `json:"position_in_consist"`
-	DepartureOccupancyStatus OccupancyStatus `json:"departure_occupancy_status"`
+type CarriageOccupancy struct {
+	PositionInConsist        uint   `json:"positionInConsist"`
+	DepartureOccupancyStatus string `json:"departureOccupancyStatus"`
 }

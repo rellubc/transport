@@ -1,23 +1,23 @@
 export interface VehiclePosition {
-  trip_id: string
-  trip_route_id: string
-  trip_schedule_relationship: number
-  vehicle_id?: string
-  vehicle_label?: string
-  vehicle_model: string
-  position_latitude: number
-  position_longitude: number
-  stop_id: string
+  tripId: string
+  tripRouteId: string
+  tripScheduleRelationship: string
+  vehicleId?: string
+  vehicleLabel?: string
+  vehicleModel: string
+  positionLatitude: number
+  positionLongitude: number
+  stopId: string
   timestamp: string
-  congestion_level: number
-  occupancy_status?: number
+  congestion_level: string
+  occupancy_status?: string
   consist?: Consist[]
 }
 
 export interface Consist {
-  vehicle_id: string
-  position_in_consist: number
-  occupancy_status: number
+  vehicleId: string
+  positionInConsist: number
+  occupancyStatus: string
 }
 
 export type Vehicles = Record<string, VehiclePosition[]>

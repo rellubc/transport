@@ -6,8 +6,8 @@ import { getSydneyVehiclePositions } from '$lib/api/sydney'
 
 export const load: PageLoad = async ({ fetch }) => {
   const shapes = await getSydneyShapes(fetch)
-  const stops = await getSydneyStops(fetch, 'sydneytrains')
-  const vehicles = await getSydneyVehiclePositions(fetch, undefined, 'sydneytrains')
+  const stops = await getSydneyStops(fetch)
+  const vehicles = await getSydneyVehiclePositions(fetch)
 
   return { shapes, stops, vehicles }
 }

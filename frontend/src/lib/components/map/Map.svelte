@@ -1,16 +1,27 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
   import maplibregl from 'maplibre-gl'
   import 'maplibre-gl/dist/maplibre-gl.css'
   import type { Feature, Point } from 'geojson'
 
   import metroImg from '$lib/assets/metro.png'
-  import railImg from '$lib/assets/rail.png'
+  import sydneytrainsImg from '$lib/assets/sydneytrains.png'
   import { modes, shapes, stops, vehicles } from '$lib/stores'
-  import { coloursMap } from '$lib/types/constants'
+  import { coloursMap, modeMap, routesMap } from '$lib/types/constants'
   import type { Vehicles } from '$lib/types/realtime'
+  import type { ShapeCoord, Shapes } from '$lib/types/shape';
+  import type { Stop, Stops } from '$lib/types/stop';
+  import MapSidebar from './MapSidebar.svelte';
+
+  const icons = [
+    { name: 'metro-icon', url: metroImg },
+    { name: 'sydneytrains-icon', url: sydneytrainsImg }
+  ]
 
   let map!: maplibregl.Map
+  let subVehicles: (() => void)
+
+  let selectedFeature: any = $state(null)
 
   const getStoredView = () => {
     const storedCentre = localStorage.getItem('centre')
@@ -29,16 +40,16 @@
     localStorage.setItem('zoom', zoom.toString())
   }
 
-  const addShapes = () => {
-    Object.entries($modes).forEach(([_mode, lines]) => {
+  const addShapes = (shapes: Shapes, modes: Record<number, Set<string>>) => {
+    Object.entries(modes).forEach(([_mode, lines]) => {
       const coordinates: number[][][] = []
       lines.forEach((line) => {
-        Object.entries($shapes)
+        Object.entries(shapes)
           .filter(([shapeId]) => shapeId.startsWith(line + "_"))
           .forEach(([_, points]) => {
-            const coords = points.map(point => [
-              point.shape_pt_lon,
-              point.shape_pt_lat
+            const coords = points.map((point: ShapeCoord) => [
+              point.shapePtLon,
+              point.shapePtLat
             ])
 
             coordinates.push(coords)
@@ -78,72 +89,86 @@
     })
   }
 
-  const addStops = () => {
-    // const platformFeatures: Feature<Point>[] = $stops.filter((stop: Stop) => stop.stop_parent_station).map((stop: Stop) => ({
-    //   type: 'Feature',
-    //   properties: {
-    //     stop: stop
-    //   },
-    //   geometry: {
-    //     type: 'Point',
-    //     coordinates: [stop.stop_lon, stop.stop_lat]
-    //   }
-    // }))
+  const addStops = (stops: Stops, modes: Record<number, Set<string>>) => {
+    Object.keys(modes).forEach((mode) => {
+      const modeText = modeMap[Number(mode)]
 
-    // map.addSource('stop-platforms-source', {
-    //   type: 'geojson',
-    //   data: {
-    //     type: 'FeatureCollection',
-    //     features: platformFeatures
-    //   }
-    // })
+      let platformFeatures: Feature<Point>[] = []
+      Object.entries(stops)
+        .filter(([stopsMode, _stops]) => stopsMode === modeText)
+        .forEach(([_stopsMode, modeStops]) => {
+          platformFeatures = modeStops.filter((stop) => stop.stopParentStation).map((stop) => ({
+            type: 'Feature',
+            properties: {
+              stop: stop
+            },
+            geometry: {
+              type: 'Point',
+              coordinates: [stop.stopLon, stop.stopLat]
+            }
+          }))
+        })
 
-    // map.addLayer({
-    //   id: 'stop-platforms-layer',
-    //   type: 'symbol',
-    //   source: 'stop-platforms-source',
-    //   layout: {
-    //     'icon-image': 'metro-icon',
-    //     'icon-size': 0.07,
-    //     'icon-allow-overlap': true
-    //   },
-    //   minzoom: 17
-    // })
+      let stationFeatures: Feature<Point>[] = []
+      Object.entries(stops)
+        .filter(([stopsMode, _stops]) => stopsMode === modeText)
+        .forEach(([_stopsMode, modeStops]) => {
+          stationFeatures = modeStops.filter((stop) => !stop.stopParentStation).map((stop) => ({
+            type: 'Feature',
+            properties: {
+              stop: stop
+            },
+            geometry: {
+              type: 'Point',
+              coordinates: [stop.stopLon, stop.stopLat]
+            }
+          }))
+        })
 
-    // const stationFeatures: Feature<Point>[] = $stops.filter((stop: Stop) => !stop.stop_parent_station).map((stop: Stop) => ({
-    //   type: 'Feature',
-    //   properties: {
-    //     stop: stop
-    //   },
-    //   geometry: {
-    //     type: 'Point',
-    //     coordinates: [stop.stop_lon, stop.stop_lat]
-    //   }
-    // }))
+      map.addSource(`${mode}-platforms-source`, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: platformFeatures
+        }
+      })
 
-    // map.addSource('stop-stations-source', {
-    //   type: 'geojson',
-    //   data: {
-    //     type: 'FeatureCollection',
-    //     features: stationFeatures
-    //   }
-    // })
+      map.addLayer({
+        id: `${mode}-platforms-layer`,
+        type: 'symbol',
+        source: `${mode}-platforms-source`,
+        layout: {
+          'icon-image': 'sydneytrains-icon',
+          'icon-size': 0.06,
+          'icon-allow-overlap': true
+        },
+        minzoom: 17
+      })
 
-    // map.addLayer({
-    //   id: 'stop-stations-layer',
-    //   type: 'symbol',
-    //   source: 'stop-stations-source',
-    //   layout: {
-    //     'icon-image': 'metro-icon',
-    //     'icon-size': 0.07,
-    //     'icon-allow-overlap': true
-    //   },
-    //   maxzoom: 16.99
-    // })
+      map.addSource(`${mode}-stations-source`, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: stationFeatures
+        }
+      })
+
+      map.addLayer({
+        id: `${mode}-stations-layer`,
+        type: 'symbol',
+        source: `${mode}-stations-source`,
+        layout: {
+          'icon-image': 'sydneytrains-icon',
+          'icon-size': 0.06,
+          'icon-allow-overlap': false
+        },
+        maxzoom: 16.99
+      })
+    })
   }
 
-  const initVehicles = () => {
-    Object.entries($modes).forEach(([_mode, lines]) => {
+  const initVehicles = (modes: Record<number, Set<string>>) => {
+    Object.entries(modes).forEach(([_mode, lines]) => {
       lines.forEach((line) => {
         map.addSource(`${line}-vehicle-source`, {
           type: 'geojson',
@@ -174,13 +199,22 @@
         const vehicleFeatures: Feature<Point>[] = vehicles[line].map((vehicle) => ({
           type: 'Feature',
           properties: {
-            vehicle
+            type: 'vehicle',
+            id: vehicle.vehicleId,
+            tripId: vehicle.tripId,
+            tripRouteId: vehicle.tripRouteId,
+            vehicleLabel: vehicle.vehicleLabel,
+            vehicleModel: vehicle.vehicleModel,
+            stopId: vehicle.stopId,
+            congestionLevel: vehicle.congestion_level,
+            occupancyStatus: vehicle.occupancy_status,
+            consist: vehicle.consist
           },
           geometry: {
             type: 'Point',
             coordinates: [
-              vehicle.position_longitude,
-              vehicle.position_latitude
+              vehicle.positionLongitude,
+              vehicle.positionLatitude
             ]
           }
         }))
@@ -210,27 +244,27 @@
 
     map.addControl(new maplibregl.NavigationControl())
 
-    map.on('load', () => {
-      const img = new Image()
-      img.onload = () => {
-        map.addImage('metro-icon', img)
-        addStops()
-      }
-      img.src = metroImg
+    map.on('load', async () => {
+      addShapes($shapes, $modes)
 
-      addShapes()
-      initVehicles()
+      await Promise.all(
+        icons.map(async ({ name, url }) => {
+          const img = new Image()
+          img.onload = () => {
+            map.addImage(name, img)
+          }
+          img.src = url
+        }
+      ))
+
+      addStops($stops, $modes)
+
+      initVehicles($modes)
       updateVehicles($vehicles, $modes)
   
-      const unsubVehicles = vehicles.subscribe((v) => {
-        if (!map || !map.isStyleLoaded()) return
+      subVehicles = vehicles.subscribe((v) => {
         updateVehicles(v, $modes)
       })
-
-      return () => {
-        unsubVehicles?.()
-        map?.remove()
-      }
     })
 
     map.on('click', (e) => {
@@ -238,6 +272,20 @@
 
       if (features.length > 0) {
         console.log('Clicked:', features[0].properties)
+        selectedFeature = features[0].properties
+
+        if (selectedFeature.type === 'vehicle') {
+          Object.entries($modes).forEach(([_mode, lines]) => {
+            lines.forEach((line) => {
+              map.setPaintProperty(`${line}-vehicle-layer`, 'circle-radius', [
+                'case',
+                ['==', ['get', 'id'], selectedFeature.id],
+                10,
+                6
+              ]);
+            })
+          })
+        }
       }
     })
 
@@ -245,13 +293,16 @@
       saveView()
     })
   })
+
+  onDestroy(() => {
+    subVehicles?.()
+    map?.remove()
+  })
 </script>
 
-<div id="map"></div>
-
-<style>
-  #map {
-    width: 100%;
-    height: 100vh;
-  }
-</style>
+<div class="relative w-screen h-screen">
+  <div id="map" class="w-full h-full"></div>
+  {#if selectedFeature}
+    <MapSidebar selectedFeature={selectedFeature} />
+  {/if}
+</div>

@@ -19,13 +19,16 @@ CREATE TABLE IF NOT EXISTS stop_time_updates (
 
     stop_id TEXT NOT NULL,
     stop_arrival_time TIMESTAMPTZ,
+    stop_arrival_delay BIGINT,
     stop_departure_time TIMESTAMPTZ,
+    stop_departure_delay BIGINT,
+    timestamp TIMESTAMPTZ,
 
     PRIMARY KEY (trip_id, stop_id),
     FOREIGN KEY (trip_id) REFERENCES trip_updates(trip_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS carriage_sequence_predictive_occupancies (
+CREATE TABLE IF NOT EXISTS carriage_occupancies (
     trip_id TEXT NOT NULL,
     stop_id TEXT NOT NULL,
 

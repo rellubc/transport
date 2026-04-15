@@ -1,13 +1,13 @@
 package models
 
 type Route struct {
-	RouteId          string  `json:"route_id"`
-	AgencyId         string  `json:"agency_id"`
-	RouteShortName   *string `json:"route_short_name"`
-	RouteLongName    string  `json:"route_long_name"`
-	RouteDescription string  `json:"route_desc"`
-	RouteType        int     `json:"route_type"`
-	RouteColor       string  `json:"route_color"`
-	RouteTextColor   string  `json:"route_text_color"`
-	RouteUrl         *string `json:"route_url"`
+	RouteId          string  `json:"routeId"`
+	AgencyId         string  `json:"agencyUd"`
+	RouteShortName   *string `json:"routeShortName"`
+	RouteLongName    string  `json:"routeLongName"`
+	RouteDescription string  `json:"routeDesc"`
+	RouteType        int     `json:"routeType"`
+	RouteColor       string  `json:"routeColor"`
+	RouteTextColor   string  `json:"routeTextColor"`
+	RouteUrl         *string `json:"routeUrl"`
 }

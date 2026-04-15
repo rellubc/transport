@@ -7,25 +7,25 @@ import (
 )
 
 type VehiclePosition struct {
-	TripId               string               `json:"trip_id"`
-	RouteId              string               `json:"trip_route_id"`
-	ScheduleRelationship ScheduleRelationship `json:"trip_schedule_relationship"`
-	VehicleId            *string              `json:"vehicle_id"`
-	VehicleLabel         *string              `json:"vehicle_label"`
-	VehicleModel         string               `json:"vehicle_model"`
-	Latitude             float32              `json:"position_latitude"`
-	Longitude            float32              `json:"position_longitude"`
-	Geom                 *geom.Point          `json:"position_geom"`
-	StopId               string               `json:"stop_id"`
-	Timestamp            time.Time            `json:"timestamp"`
-	CongestionLevel      CongestionLevel      `json:"congestion_level"`
-	OccupancyStatus      OccupancyStatus      `json:"occupancy_status"`
-	Consist              []Consist            `json:"consist"`
-	Mode                 string               `json:"mode"`
+	TripId               string      `json:"tripId"`
+	RouteId              string      `json:"tripRouteId"`
+	ScheduleRelationship string      `json:"tripScheduleRelationship"`
+	VehicleId            *string     `json:"vehicleId"`
+	VehicleLabel         *string     `json:"vehicleLabel"`
+	VehicleModel         string      `json:"vehicleModel"`
+	Latitude             float32     `json:"positionLatitude"`
+	Longitude            float32     `json:"positionLongitude"`
+	Geom                 *geom.Point `json:"positionGeom"`
+	StopId               string      `json:"stopId"`
+	Timestamp            time.Time   `json:"timestamp"`
+	CongestionLevel      string      `json:"congestionLevel"`
+	OccupancyStatus      string      `json:"occupancyStatus"`
+	Consist              []Consist   `json:"consist"`
+	Mode                 string      `json:"mode"`
 }
 
 type Consist struct {
-	VehicleId         string          `json:"vehicle_id"`
-	PositionInConsist uint            `json:"position_in_consist"`
-	OccupancyStatus   OccupancyStatus `json:"occupancy_status"`
+	VehicleId         string `json:"vehicleId"`
+	PositionInConsist uint   `json:"positionInConsist"`
+	OccupancyStatus   string `json:"occupancyStatus"`
 }

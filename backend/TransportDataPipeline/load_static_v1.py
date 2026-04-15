@@ -249,35 +249,35 @@ def main():
     conn = connect_db()
 
     for mode in MODES:
-        # r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
-        # r.raise_for_status()
-        # zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+        r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
+        r.raise_for_status()
+        zip_file = zipfile.ZipFile(io.BytesIO(r.content))
 
-        # for filename, (table, columns) in MAPPINGS.items():
-        #     if filename not in zip_file.namelist():
-        #         print(f"Skipping {filename}...")
-        #         continue
+        for filename, (table, columns) in MAPPINGS.items():
+            if filename not in zip_file.namelist():
+                print(f"Skipping {filename}...")
+                continue
 
-        #     if filename == "shapes.txt":
-        #         continue
+            if filename == "shapes.txt":
+                continue
 
-        #     print(f"Loading {filename}...")
-        #     with zip_file.open(filename) as file:
-        #         conflict_key_map = {
-        #             "agency.txt": ["agency_id"],
-        #             "calendar.txt": ["service_id"],
-        #             "routes.txt": ["route_id"],
-        #             "stop_times.txt": ["trip_id", "stop_sequence"],
-        #             "stops.txt": ["stop_id", "mode"],
-        #             "trips.txt": ["trip_id"],
-        #             "vehicle_categories.txt": ["vehicle_category_id"],
-        #             "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
-        #             "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
-        #             "occupancies.txt": ["trip_id", "stop_sequence", "start_date"]
-        #         }
-        #         conflict_key = conflict_key_map.get(filename, [])
+            print(f"Loading {filename}...")
+            with zip_file.open(filename) as file:
+                conflict_key_map = {
+                    "agency.txt": ["agency_id"],
+                    "calendar.txt": ["service_id"],
+                    "routes.txt": ["route_id"],
+                    "stop_times.txt": ["trip_id", "stop_sequence"],
+                    "stops.txt": ["stop_id", "mode"],
+                    "trips.txt": ["trip_id"],
+                    "vehicle_categories.txt": ["vehicle_category_id"],
+                    "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
+                    "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
+                    "occupancies.txt": ["trip_id", "stop_sequence", "start_date"]
+                }
+                conflict_key = conflict_key_map.get(filename, [])
 
-        #         load(conn, file, table, columns, conflict_key, mode)
+                load(conn, file, table, columns, conflict_key, mode)
 
         shapes_folder = f"{os.getcwd()}/._shapes"
         conflict_key = ["shape_id", "shape_pt_sequence"]

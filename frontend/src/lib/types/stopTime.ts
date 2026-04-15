@@ -1,17 +1,34 @@
-export interface StopTime {
+export interface StaticStopTime {
   tripId: string
-  arrivalTime: string
-  departureTime: string
   stopId: string
   stopName: string
-  routeId: string
+  arrivalTime: number
+  departureTime: number
   stopSequence: number
-  stopHeadSign?: string
+  stopHeadsign: string
   pickupType: number
   dropOffType: number
   shapeDistTravelled: number
-  timepoint?: number
-  stopNote?: string
+  timepoint: number
+  stopNote: string
   mode: string
-  delay?: number
+}
+
+export interface RealtimeStopTime {
+  stopId: string
+  stopName: string
+  stopSequence: number
+  stopHeadsign: string
+  arrivalTime: number
+  departureTime: number
+  arrivalDelay: number
+  departureDelay: number
+  status: string
+  progress: string
+  carriageOccupancies: CarriageOccupancy[]
+}
+
+export interface CarriageOccupancy {
+  positionInConsist: number
+  departureOccupancyStatus: string
 }
