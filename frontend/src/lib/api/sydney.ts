@@ -49,6 +49,8 @@ export const getSydneyVehiclePositions = async (fetchFn: typeof fetch, routeId?:
 
     const data: Vehicles = await res.json()
 
+    console.log(data)
+
     return data
   } catch (error) {
     console.error('Fetch failed:', error)
@@ -100,6 +102,8 @@ export const getSydneyRealtimeStopTimes = async (fetchFn: typeof fetch, stopId: 
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: RealtimeStopTime[] = await res.json()
+
+    console.log(data)
 
     return data
   } catch (error) {

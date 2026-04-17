@@ -86,21 +86,27 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 			COALESCE(
 				json_agg(
 					json_build_object(
-						'positionInConsist', co.position_in_consist,
-						'departureOccupancyStatus', co.departure_occupancy_status
+						'positionInConsist', c.position_in_consist,
+						'occupancyStatus', c.occupancy_status
 					)
-				) FILTER (WHERE co.trip_id IS NOT NULL),
+					ORDER BY c.position_in_consist ASC
+				) FILTER (WHERE c.trip_id IS NOT NULL),
 				'[]'
-			) AS carriage_occupancies
+			) AS consist
 		FROM stop_times st
 		LEFT JOIN stop_time_updates_with_progress stu
 			ON st.stop_id = stu.stop_id
 			AND st.trip_id = stu.trip_id
 		JOIN stops s
 			ON st.stop_id = s.stop_id
-		LEFT JOIN carriage_occupancies co
-			ON st.stop_id = co.stop_id
-			AND st.trip_id = co.trip_id
+		LEFT JOIN LATERAL (
+			SELECT position_in_consist, occupancy_status, trip_id
+			FROM consist
+			WHERE trip_id = st.trip_id 
+				AND EXTRACT(EPOCH FROM timestamp AT TIME ZONE 'Australia/Sydney')::integer % 86400 <= (st.departure_time + COALESCE(stu.stop_departure_delay, 0))
+			ORDER BY timestamp DESC
+			LIMIT CASE WHEN st.mode = 'metro' THEN 6 ELSE 8 END
+		) c ON true
 	`
 	args := []any{}
 	conditions := []string{}
@@ -142,7 +148,7 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 	var sts []models.RealtimeStopTime
 	for rows.Next() {
 		var st models.RealtimeStopTime
-		var occupanciesJSON []byte
+		var consistJSON []byte
 
 		err := rows.Scan(
 			&st.StopId,
@@ -154,14 +160,14 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 			&st.DepartureTime,
 			&st.DepartureDelay,
 			&st.Progress,
-			&occupanciesJSON,
+			&consistJSON,
 		)
 
 		if err != nil {
 			return nil, err
 		}
 
-		err = json.Unmarshal(occupanciesJSON, &st.CarriageOccupancies)
+		err = json.Unmarshal(consistJSON, &st.Consist)
 		if err != nil {
 			return nil, err
 		}

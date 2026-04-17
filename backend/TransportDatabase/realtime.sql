@@ -66,8 +66,9 @@ CREATE TABLE IF NOT EXISTS consist (
 
     position_in_consist INT NOT NULL,
     occupancy_status TEXT,
+    timestamp TIMESTAMPTZ NOT NULL,
 
-    PRIMARY KEY (vehicle_id, position_in_consist),
+    PRIMARY KEY (vehicle_id, position_in_consist, timestamp),
     FOREIGN KEY (vehicle_id) REFERENCES vehicle_positions(vehicle_id) ON DELETE CASCADE
 );
 

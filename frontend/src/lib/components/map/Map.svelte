@@ -12,10 +12,11 @@
   import type { ShapeCoord, Shapes } from '$lib/types/shape';
   import type { Stop, Stops } from '$lib/types/stop';
   import MapSidebar from './MapSidebar.svelte';
+  import { modeTypeMap } from '$lib/constants';
 
   const icons = [
+    { name: 'sydneytrains-icon', url: sydneytrainsImg },
     { name: 'metro-icon', url: metroImg },
-    { name: 'sydneytrains-icon', url: sydneytrainsImg }
   ]
 
   let map!: maplibregl.Map
@@ -125,7 +126,7 @@
           }))
         })
 
-      map.addSource(`${mode}-platforms-source`, {
+      map.addSource(`${modeText}-platforms-source`, {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
@@ -134,18 +135,18 @@
       })
 
       map.addLayer({
-        id: `${mode}-platforms-layer`,
+        id: `${modeText}-platforms-layer`,
         type: 'symbol',
-        source: `${mode}-platforms-source`,
+        source: `${modeText}-platforms-source`,
         layout: {
-          'icon-image': 'sydneytrains-icon',
+          'icon-image': `${modeText}-icon`,
           'icon-size': 0.06,
           'icon-allow-overlap': true
         },
         minzoom: 17
       })
 
-      map.addSource(`${mode}-stations-source`, {
+      map.addSource(`${modeText}-stations-source`, {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
@@ -154,11 +155,11 @@
       })
 
       map.addLayer({
-        id: `${mode}-stations-layer`,
+        id: `${modeText}-stations-layer`,
         type: 'symbol',
-        source: `${mode}-stations-source`,
+        source: `${modeText}-stations-source`,
         layout: {
-          'icon-image': 'sydneytrains-icon',
+          'icon-image': `${modeText}-icon`,
           'icon-size': 0.06,
           'icon-allow-overlap': false
         },
@@ -194,7 +195,7 @@
   }
 
   const updateVehicles = (vehicles: Vehicles, modes: Record<number, Set<string>>) => {
-    Object.entries(modes).forEach(([_mode, lines]) => {
+    Object.entries(modes).forEach(([mode, lines]) => {false
       lines.forEach((line) => {
         const vehicleFeatures: Feature<Point>[] = vehicles[line].map((vehicle) => ({
           type: 'Feature',
@@ -208,7 +209,7 @@
             stopId: vehicle.stopId,
             congestionLevel: vehicle.congestion_level,
             occupancyStatus: vehicle.occupancy_status,
-            consist: vehicle.consist
+            mode: modeTypeMap[Number(mode)]
           },
           geometry: {
             type: 'Point',

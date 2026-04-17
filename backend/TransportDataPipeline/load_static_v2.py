@@ -21,7 +21,9 @@ DB_NAME = os.getenv("POSTGRES_DB", "transport_db")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
-GTFS_METRO_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/metro"
+GTFS_METRO_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/"
+
+MODES = ["metro"]
 
 MAPPINGS = {
     "agency.txt": ("agencies", { 
@@ -67,7 +69,7 @@ MAPPINGS = {
         "shape_pt_lon": "shape_pt_lon",
         "shape_geom": "shape_geom",
         "shape_pt_sequence": "shape_pt_sequence",
-        "shape_dist_traveled": "shape_dist_travelled",
+        "shape_dist_travelled": "shape_dist_travelled",
         "mode": "mode"
     }),
     "stops.txt": ("stops", {
@@ -105,7 +107,7 @@ MAPPINGS = {
         "stop_headsign": "stop_headsign",
         "pickup_type": "pickup_type",
         "drop_off_type": "drop_off_type",
-        "shape_dist_traveled": "shape_dist_travelled",
+        "shape_dist_travelled": "shape_dist_travelled",
         "timepoint": "timepoint",
         "stop_note": "stop_note",
         "mode": "mode"
@@ -152,7 +154,12 @@ def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=1000
     placeholders = ", ".join(["%s"] * len(colnames))
     updates = ", ".join([f"{col}=EXCLUDED.{col}" for col in colnames if col not in conflict_key])
 
-    query = f"INSERT INTO {table_name} ({', '.join(colnames)}) VALUES ({placeholders}) ON CONFLICT ({', '.join(conflict_key)}) DO UPDATE SET {updates};"
+    query = f"""
+        INSERT INTO {table_name} ({', '.join(colnames)})
+        VALUES ({placeholders})
+        ON CONFLICT ({', '.join(conflict_key)})
+        DO UPDATE SET {updates};
+    """
 
     batch = []
     with conn.cursor() as cur:
@@ -171,9 +178,6 @@ def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=1000
                         val = TYPE_CASTS[db_col](val)
                     except:
                         val = None
-
-                if db_col == "shape_id":
-                    val = f"M1_{val}"
 
                 if db_col == "mode":
                     val = mode
@@ -206,31 +210,41 @@ def main():
     
     conn = connect_db()
 
-    r = requests.get(GTFS_METRO_URL, headers=headers)
-    r.raise_for_status()
-    zip_file = zipfile.ZipFile(io.BytesIO(r.content))
-    
-    for filename, (table, columns) in MAPPINGS.items():
-        if filename not in zip_file.namelist():
-            print(f"Skipping {filename}...")
-            continue
+    # for mode in MODES:
+    #     r = requests.get(GTFS_METRO_URL, headers=headers)
+    #     r.raise_for_status()
+    #     zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+        
+    #     for filename, (table, columns) in MAPPINGS.items():
+    #         if filename not in zip_file.namelist():
+    #             print(f"Skipping {filename}...")
+    #             continue
 
-        print(f"Loading {filename}...")
-        with zip_file.open(filename) as file:
+    #         print(f"Loading {filename}...")
+    #         with zip_file.open(filename) as file:
 
-            conflict_key_map = {
-                "agency.txt": ["agency_id"],
-                "calendar.txt": ["service_id"],
-                "notes.txt": ["note_id"],
-                "routes.txt": ["route_id"],
-                "stop_times.txt": ["trip_id", "stop_sequence"],
-                "stops.txt": ["stop_id", "mode"],
-                "trips.txt": ["trip_id"],
-                "shapes.txt": ["shape_id", "shape_pt_sequence"]
-            }
-            conflict_key = conflict_key_map.get(filename, [])
-            
-            load(conn, file, table, columns, conflict_key, "metro")
+    #             conflict_key_map = {
+    #                 "agency.txt": ["agency_id"],
+    #                 "calendar.txt": ["service_id"],
+    #                 "notes.txt": ["note_id"],
+    #                 "routes.txt": ["route_id"],
+    #                 "stop_times.txt": ["trip_id", "stop_sequence"],
+    #                 "stops.txt": ["stop_id", "mode"],
+    #                 "trips.txt": ["trip_id"],
+    #                 "shapes.txt": ["shape_id", "shape_pt_sequence"]
+    #             }
+    #             conflict_key = conflict_key_map.get(filename, [])
+                
+    #             load(conn, file, table, columns, conflict_key, mode)
+
+    shapes_folder = f"{os.getcwd()}/._shapes"
+    conflict_key = ["shape_id", "shape_pt_sequence"]
+
+    for mode in MODES:
+        for filename in os.listdir(f"{shapes_folder}/{mode}"):
+            print(f"Loading {filename}...")
+            with open(f"{shapes_folder}/{mode}/{filename}", "rb") as file:
+                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode)
 
     conn.close()
     print("Loaded Sydney Metro static data")

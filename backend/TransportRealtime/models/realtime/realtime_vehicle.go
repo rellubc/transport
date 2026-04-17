@@ -20,12 +20,10 @@ type VehiclePosition struct {
 	Timestamp            time.Time   `json:"timestamp"`
 	CongestionLevel      string      `json:"congestionLevel"`
 	OccupancyStatus      string      `json:"occupancyStatus"`
-	Consist              []Consist   `json:"consist"`
 	Mode                 string      `json:"mode"`
 }
 
 type Consist struct {
-	VehicleId         string `json:"vehicleId"`
 	PositionInConsist uint   `json:"positionInConsist"`
 	OccupancyStatus   string `json:"occupancyStatus"`
 }

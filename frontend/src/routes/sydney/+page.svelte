@@ -1,6 +1,6 @@
 <script lang="ts">
   import Map from '$lib/components/map/Map.svelte';
-  import { MODE_TYPE_RAIL } from '$lib/constants';
+  import { MODE_TYPE_METRO, MODE_TYPE_RAIL } from '$lib/constants';
   import { addMode, shapes, stops, vehicles } from '$lib/stores';
   import { onMount } from 'svelte';
   import type { PageProps } from './$types';
@@ -20,14 +20,15 @@
     const fetchVehicles = async () => {
       console.log("Updating vehicle positions...")
       vehicles.set(await getSydneyVehiclePositions(fetch))
-      console.log($vehicles)
     }
 
-    Object.keys($shapes).forEach((line) => {
+    Object.keys($shapes).filter((shapeId) => shapeId.startsWith('T')).forEach((line) => {
       addMode(MODE_TYPE_RAIL, line.split("_")[0])
     })
 
-    console.log($shapes, $stops, $vehicles)
+    Object.keys($shapes).filter((shapeId) => shapeId.startsWith('M')).forEach((line) => {
+      addMode(MODE_TYPE_METRO, line.split("_")[0])
+    })
 
     const interval = setInterval(fetchVehicles, 15000)
 

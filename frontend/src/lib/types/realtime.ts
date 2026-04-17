@@ -11,13 +11,6 @@ export interface VehiclePosition {
   timestamp: string
   congestion_level: string
   occupancy_status?: string
-  consist?: Consist[]
-}
-
-export interface Consist {
-  vehicleId: string
-  positionInConsist: number
-  occupancyStatus: string
 }
 
 export type Vehicles = Record<string, VehiclePosition[]>

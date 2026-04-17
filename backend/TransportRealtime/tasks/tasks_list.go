@@ -21,11 +21,11 @@ type FeedTask struct {
 
 func GetRealtimeTasks() []FeedTask {
 	return []FeedTask{
-		{"Metro VehiclePositions", config.Metro, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
 		{"Metro TripUpdates", config.Metro, config.V2, config.TripUpdates, realtime.FetchTripUpdatesV2, realtime.InsertTripUpdatesV2, nil},
-		{"SydneyTrains VehiclePositions", config.SydneyTrains, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
+		{"Metro VehiclePositions", config.Metro, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
 		{"SydneyTrains TripUpdates", config.SydneyTrains, config.V2, config.TripUpdates, realtime.FetchTripUpdatesV2, realtime.InsertTripUpdatesV2, nil},
-		{"Innerwest Lightrail VehiclePositions", config.InnerwestLightrail, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
+		{"SydneyTrains VehiclePositions", config.SydneyTrains, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
 		{"Innerwest Lightrail TripUpdates", config.InnerwestLightrail, config.V2, config.TripUpdates, realtime.FetchTripUpdatesV2, realtime.InsertTripUpdatesV2, nil},
+		{"Innerwest Lightrail VehiclePositions", config.InnerwestLightrail, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
 	}
 }

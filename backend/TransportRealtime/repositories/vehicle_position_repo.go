@@ -3,7 +3,6 @@ package repositories
 import (
 	models "TransportRealtime/models/realtime"
 	"context"
-	"encoding/json"
 	"strings"
 
 	"TransportRealtime/constants"
@@ -40,17 +39,8 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 			vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
 			vp.congestion_level,
 			vp.occupancy_status,
-			vp.mode,
-			json_agg(
-				json_build_object(
-					'vehicleId', c.vehicle_id,
-					'positionInConsist', c.position_in_consist,
-					'occupancyStatus', c.occupancy_status
-				)
-			) FILTER (WHERE c.vehicle_id IS NOT NULL) AS consist
+			vp.mode
 		FROM vehicle_positions vp
-		JOIN consist c
-			ON vp.vehicle_id = c.vehicle_id
 		WHERE ($1 = '' OR vp.mode LIKE $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes'
 		GROUP BY
 			vp.trip_id,
@@ -79,7 +69,6 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 
 	for rows.Next() {
 		var vp models.VehiclePosition
-		var consistJSON []byte
 
 		err := rows.Scan(
 			&vp.TripId,
@@ -95,13 +84,7 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 			&vp.CongestionLevel,
 			&vp.OccupancyStatus,
 			&vp.Mode,
-			&consistJSON,
 		)
-		if err != nil {
-			return nil, err
-		}
-
-		err = json.Unmarshal(consistJSON, &vp.Consist)
 		if err != nil {
 			return nil, err
 		}
@@ -138,17 +121,8 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 			vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
 			vp.congestion_level,
 			vp.occupancy_status,
-			vp.mode,
-			json_agg(
-				json_build_object(
-					'vehicleId', c.vehicle_id,
-					'positionInConsist', c.position_in_consist,
-					'occupancyStatus', c.occupancy_status
-				)
-			) FILTER (WHERE c.vehicle_id IS NOT NULL) AS consist
+			vp.mode
 		FROM vehicle_positions vp
-		JOIN consist c
-			ON vp.vehicle_id = c.vehicle_id
 		WHERE ($1 = '' OR vp.mode LIKE $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes'
 		GROUP BY
 			vp.trip_id,
@@ -169,7 +143,6 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 	row := r.DB.QueryRow(context.Background(), query, vehicleId)
 
 	var vp models.VehiclePosition
-	var consistJSON []byte
 
 	err := row.Scan(
 		&vp.TripId,
@@ -185,41 +158,10 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 		&vp.CongestionLevel,
 		&vp.OccupancyStatus,
 		&vp.Mode,
-		&consistJSON,
 	)
 	if err != nil {
 		return models.VehiclePosition{}, err
 	}
 
-	err = json.Unmarshal(consistJSON, &vp.Consist)
-	if err != nil {
-		return models.VehiclePosition{}, err
-	}
-
 	return vp, err
-}
-
-func GetVehicleConsist(r *VehiclePositionRepository, vehicleId string) ([]models.Consist, error) {
-	rows, err := r.DB.Query(context.Background(), "SELECT * FROM consist WHERE vehicle_id = $1", vehicleId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var consists []models.Consist
-	for rows.Next() {
-		var consist models.Consist
-		err := rows.Scan(
-			&consist.VehicleId,
-			&consist.PositionInConsist,
-			&consist.OccupancyStatus,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		consists = append(consists, consist)
-	}
-
-	return consists, nil
 }

@@ -23,7 +23,7 @@ type StopTimeUpdate struct {
 	DepartureDelay int64     `json:"stopDepartureDelay"`
 }
 
-type CarriageOccupancy struct {
-	PositionInConsist        uint   `json:"positionInConsist"`
-	DepartureOccupancyStatus string `json:"departureOccupancyStatus"`
-}
+// type CarriageOccupancy struct {
+// 	PositionInConsist        uint   `json:"positionInConsist"`
+// 	DepartureOccupancyStatus string `json:"departureOccupancyStatus"`
+// }

@@ -25,10 +25,10 @@ export interface RealtimeStopTime {
   departureDelay: number
   status: string
   progress: string
-  carriageOccupancies: CarriageOccupancy[]
+  consist: Consist[]
 }
 
-export interface CarriageOccupancy {
+export interface Consist {
   positionInConsist: number
-  departureOccupancyStatus: string
+  occupancyStatus: string
 }
