@@ -24,6 +24,15 @@ var M1ShapeIds = []int{
 }
 
 var RoutesLookup = map[string]string{
+	"WST": "T1",
+	"NSN": "T1",
+	"IWL": "T2",
+	"T3":  "T3",
 	"ESI": "T4",
-	"M1":  "M1",
+	"CMB": "T5",
+	"T6":  "T6",
+	"APS": "T8",
+	"NTH": "T9",
+
+	"M1": "M1",
 }

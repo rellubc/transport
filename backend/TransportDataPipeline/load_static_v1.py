@@ -23,7 +23,7 @@ DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
 GTFS_URL = "https://api.transport.nsw.gov.au/v1/gtfs/schedule/"
 
-MODES = ["sydneytrains"]
+MODES = ["sydneytrains", "lightrail"]
 # MODES = ["sydneytrains", "nswtrains", "buses"]
 # still need other modes
 

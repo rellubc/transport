@@ -1,8 +1,8 @@
 <script lang="ts">
   import { getSydneyRealtimeStopTimes, getSydneyScheduledStopTimes, getSydneyScheduledTrip } from "$lib/api/sydney";
-  import { routesMap } from "$lib/constants";
-  import { coloursMap } from "$lib/types/constants";
-  import type { RealtimeStopTime, StaticStopTime } from "$lib/types/stopTime";
+  import { LineRoutes } from "$lib/constants";
+  import { LineColours } from "$lib/constants";
+  import type { RealtimeStopTime, StaticStopTime } from "$lib/types/stop-time";
   import type { Trip } from "$lib/types/trip";
   import SidebarHeader from "./sidebar/SidebarHeader.svelte";
   import SidebarListings from "./sidebar/SidebarListings.svelte";
@@ -32,9 +32,9 @@
         scheduledTrip = await getSydneyScheduledTrip(fetch, feature.tripId)
         if (scheduledTrip === null) return
 
-        if (feature.mode === 'metro') route = routesMap[scheduledTrip.routeId.split('_')[1]]
-        else if (feature.mode === 'sydneytrains') route = routesMap[scheduledTrip.routeId.split('_')[0]]
-        colour = coloursMap[route]
+        if (feature.mode === 'metro') route = LineRoutes[scheduledTrip.routeId.split('_')[1]]
+        else if (feature.mode === 'sydneytrains') route = LineRoutes[scheduledTrip.routeId.split('_')[0]]
+        colour = LineColours[route]
         scheduledStopTimes = await getSydneyScheduledStopTimes(fetch, null, feature.tripId)
         realtimeStopTimes = await getSydneyRealtimeStopTimes(fetch, null, feature.tripId)
       }

@@ -3,7 +3,6 @@ package repositories
 import (
 	models "TransportRealtime/models/static"
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -148,8 +147,6 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 	var sts []models.RealtimeStopTime
 	for rows.Next() {
 		var st models.RealtimeStopTime
-		var consistJSON []byte
-
 		err := rows.Scan(
 			&st.StopId,
 			&st.StopName,
@@ -160,14 +157,9 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 			&st.DepartureTime,
 			&st.DepartureDelay,
 			&st.Progress,
-			&consistJSON,
+			&st.Consist,
 		)
 
-		if err != nil {
-			return nil, err
-		}
-
-		err = json.Unmarshal(consistJSON, &st.Consist)
 		if err != nil {
 			return nil, err
 		}

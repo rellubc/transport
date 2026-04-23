@@ -23,16 +23,16 @@ func (r *ShapeRepository) GetShapes(lines []string) (map[string][]models.ShapeDe
 		err  error
 	)
 
-	query := "SELECT shape_id, shape_pt_lat, shape_pt_lon FROM shapes"
+	query := "SELECT shape_id, shape_pt_lat, shape_pt_lon, shape_pt_sequence FROM shapes"
 
 	if len(lines) == 0 {
-		rows, err = r.DB.Query(context.Background(), query+" WHERE shape_id ~ '^[A-Z][0-9]+_[0-9]$'")
+		rows, err = r.DB.Query(context.Background(), query+" WHERE shape_id ~ '^[A-Z]+[0-9]*[A-Z]*_[0-9]$'")
 	} else {
 		patterns := []string{}
 		for _, l := range lines {
 			patterns = append(patterns, string(l)+"_%")
 		}
-		rows, err = r.DB.Query(context.Background(), query+" WHERE shape_id LIKE ANY($1) AND shape_id ~ '^[A-Z][0-9]+_[0-9]$'", patterns)
+		rows, err = r.DB.Query(context.Background(), query+" WHERE shape_id LIKE ANY($1) AND shape_id ~ '^[A-Z]+[0-9]*[A-Z]*_[0-9]$'", patterns)
 	}
 
 	if err != nil {
@@ -48,6 +48,7 @@ func (r *ShapeRepository) GetShapes(lines []string) (map[string][]models.ShapeDe
 			&shape.ShapeId,
 			&shape.ShapePtLat,
 			&shape.ShapePtLon,
+			&shape.ShapePtSequence,
 		)
 
 		if err != nil {
@@ -55,8 +56,9 @@ func (r *ShapeRepository) GetShapes(lines []string) (map[string][]models.ShapeDe
 		}
 
 		details := models.ShapeDetails{
-			ShapePtLat: shape.ShapePtLat,
-			ShapePtLon: shape.ShapePtLon,
+			ShapePtLat:      shape.ShapePtLat,
+			ShapePtLon:      shape.ShapePtLon,
+			ShapePtSequence: shape.ShapePtSequence,
 		}
 
 		shapeMap[shape.ShapeId] = append(shapeMap[shape.ShapeId], details)

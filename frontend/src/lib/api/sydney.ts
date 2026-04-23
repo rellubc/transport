@@ -1,7 +1,7 @@
 import type { Vehicles } from "$lib/types/realtime"
 import type { Shapes } from "$lib/types/shape"
 import type { Stops } from "$lib/types/stop"
-import type { RealtimeStopTime, StaticStopTime } from "$lib/types/stopTime"
+import type { RealtimeStopTime, StaticStopTime } from "$lib/types/stop-time"
 import type { Trip } from "$lib/types/trip"
 
 export const getSydneyStops = async (fetchFn: typeof fetch, mode?: string): Promise<Stops>=> {
@@ -48,8 +48,6 @@ export const getSydneyVehiclePositions = async (fetchFn: typeof fetch, routeId?:
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: Vehicles = await res.json()
-
-    console.log(data)
 
     return data
   } catch (error) {
@@ -102,8 +100,6 @@ export const getSydneyRealtimeStopTimes = async (fetchFn: typeof fetch, stopId: 
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
     const data: RealtimeStopTime[] = await res.json()
-
-    console.log(data)
 
     return data
   } catch (error) {

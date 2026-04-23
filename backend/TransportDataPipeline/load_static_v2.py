@@ -21,7 +21,7 @@ DB_NAME = os.getenv("POSTGRES_DB", "transport_db")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
-GTFS_METRO_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/"
+GTFS_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/"
 
 MODES = ["metro"]
 
@@ -128,7 +128,7 @@ TYPE_CASTS = {
     "wheelchair_boarding": int,
     "wheelchair_accessible": int,
     "bikes_allowed": int,
-    "timepoint": lambda v: bool(int(v)) if v != "" else None
+    "timepoint": int
 }
 
 def connect_db():
@@ -210,32 +210,32 @@ def main():
     
     conn = connect_db()
 
-    # for mode in MODES:
-    #     r = requests.get(GTFS_METRO_URL, headers=headers)
-    #     r.raise_for_status()
-    #     zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+    for mode in MODES:
+        r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
+        r.raise_for_status()
+        zip_file = zipfile.ZipFile(io.BytesIO(r.content))
         
-    #     for filename, (table, columns) in MAPPINGS.items():
-    #         if filename not in zip_file.namelist():
-    #             print(f"Skipping {filename}...")
-    #             continue
+        for filename, (table, columns) in MAPPINGS.items():
+            if filename not in zip_file.namelist():
+                print(f"Skipping {filename}...")
+                continue
 
-    #         print(f"Loading {filename}...")
-    #         with zip_file.open(filename) as file:
+            print(f"Loading {filename}...")
+            with zip_file.open(filename) as file:
 
-    #             conflict_key_map = {
-    #                 "agency.txt": ["agency_id"],
-    #                 "calendar.txt": ["service_id"],
-    #                 "notes.txt": ["note_id"],
-    #                 "routes.txt": ["route_id"],
-    #                 "stop_times.txt": ["trip_id", "stop_sequence"],
-    #                 "stops.txt": ["stop_id", "mode"],
-    #                 "trips.txt": ["trip_id"],
-    #                 "shapes.txt": ["shape_id", "shape_pt_sequence"]
-    #             }
-    #             conflict_key = conflict_key_map.get(filename, [])
+                conflict_key_map = {
+                    "agency.txt": ["agency_id"],
+                    "calendar.txt": ["service_id"],
+                    "notes.txt": ["note_id"],
+                    "routes.txt": ["route_id"],
+                    "stop_times.txt": ["trip_id", "stop_sequence"],
+                    "stops.txt": ["stop_id", "mode"],
+                    "trips.txt": ["trip_id"],
+                    "shapes.txt": ["shape_id", "shape_pt_sequence"]
+                }
+                conflict_key = conflict_key_map.get(filename, [])
                 
-    #             load(conn, file, table, columns, conflict_key, mode)
+                load(conn, file, table, columns, conflict_key, mode)
 
     shapes_folder = f"{os.getcwd()}/._shapes"
     conflict_key = ["shape_id", "shape_pt_sequence"]

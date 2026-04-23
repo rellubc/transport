@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RealtimeStopTime } from "$lib/types/stopTime";
+  import type { RealtimeStopTime } from "$lib/types/stop-time";
   import SidebarListing from "./SidebarListing.svelte";
 
   const { colour, realtimeStopTimes }: { colour: string, realtimeStopTimes: RealtimeStopTime[] } = $props()
@@ -36,13 +36,13 @@
     let passes = 0
     for (let i = 0; i <= currentStop; i++) {
       if (realtimeStopTimes[i].progress === 'passed') {
-        if (realtimeStopTimes[i].consist.length === 0) newOffset += 76
+        if (realtimeStopTimes[i].consist.length === 0) newOffset += 88
         else newOffset += 94
         passes++
       }
 
       if (passes === 1) {
-        newOffset += 60 * skips
+        newOffset += 72 * skips
         passes--
         skips = 0
       }

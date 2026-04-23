@@ -1,7 +1,7 @@
 <script lang="ts">
   import { secondsToTime, stopDelay } from "$lib/helpers";
-  import { occupancyColours } from "$lib/types/constants";
-  import type { RealtimeStopTime } from "$lib/types/stopTime";
+  import { OccupancyColours } from "$lib/constants";
+  import type { RealtimeStopTime } from "$lib/types/stop-time";
 
   let { colour, stopTime, last }: { colour: string, stopTime: RealtimeStopTime, last: boolean } = $props()
 
@@ -14,7 +14,7 @@
 
 <div class='relative px-8 pl-9 pb-8 z-50'>
   <div
-    style={`background-color: ${stopTime.progress === 'not_passed' ? colour : '#d3d3dd3'}`}
+    style={`background-color: ${stopTime.progress === 'not_passed' ? colour : stopTime.status !== 'stop' ? '' : '#d3d3d3'}`}
     class={`absolute ${stopTime.status !== 'stop' ? 'top-1.5' : 'top-3.5'} left-3 w-4 h-4 z-30 rounded-full`}>
   </div>
   <div
@@ -40,7 +40,7 @@
         {#if stopTime.status === 'stop'}
           {#each consist as occupancy}
             <div
-              style={`background-color: ${occupancyColours[occupancy.occupancyStatus]}`}
+              style={`background-color: ${OccupancyColours[occupancy.occupancyStatus]}`}
               class="w-4.5 h-4.5 flex flex-row justify-center items-center rounded-full"
             >
               <p class="text-sm">{occupancy.positionInConsist}</p>  

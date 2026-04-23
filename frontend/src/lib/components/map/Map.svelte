@@ -6,93 +6,130 @@
 
   import metroImg from '$lib/assets/metro.png'
   import sydneytrainsImg from '$lib/assets/sydneytrains.png'
+  import lightrailImg from '$lib/assets/lightrail.png'
+
   import { modes, shapes, stops, vehicles } from '$lib/stores'
-  import { coloursMap, modeMap, routesMap } from '$lib/types/constants'
+  import { LineColours, ModeLabels, ModeType } from '$lib/constants'
+  import { getRouteColours } from '$lib/helpers';
   import type { Vehicles } from '$lib/types/realtime'
   import type { ShapeCoord, Shapes } from '$lib/types/shape';
-  import type { Stop, Stops } from '$lib/types/stop';
-  import MapSidebar from './MapSidebar.svelte';
-  import { modeTypeMap } from '$lib/constants';
+  import type { Stops } from '$lib/types/stop';
+  import type { ModeIcon } from '$lib/types/general';
 
-  const icons = [
+  import MapSidebar from './MapSidebar.svelte';
+  import TransportModes from './modes/TransportModes.svelte';
+
+  const icons: ModeIcon[] = [
     { name: 'sydneytrains-icon', url: sydneytrainsImg },
     { name: 'metro-icon', url: metroImg },
+    { name: 'lightrail-icon', url: lightrailImg }
   ]
 
   let map!: maplibregl.Map
+  let subModes: (() => void)
   let subVehicles: (() => void)
-
   let selectedFeature: any = $state(null)
 
   const getStoredView = () => {
     const storedCentre = localStorage.getItem('centre')
     const centre: maplibregl.LngLatLike = storedCentre ? [Number(storedCentre.split(',')[0]), Number(storedCentre.split(',')[1])] : [151.05, -33.82]
-    const storedZoom = localStorage.getItem('zoom')
-    const zoom = storedZoom ? Number(storedZoom) : 11.8
+    const zoom = Number(localStorage.getItem('zoom')) ?? 11.8
   
     return { centre, zoom }
   }
 
   const saveView = () => {
-    const centre = map.getCenter()
-    const zoom = map.getZoom()
+    const { lng, lat } = map.getCenter()
 
-    localStorage.setItem('centre', `${centre.lng},${centre.lat}`)
-    localStorage.setItem('zoom', zoom.toString())
+    localStorage.setItem('centre', `${lng},${lat}`)
+    localStorage.setItem('zoom', map.getZoom().toString())
   }
 
   const addShapes = (shapes: Shapes, modes: Record<number, Set<string>>) => {
-    Object.entries(modes).forEach(([_mode, lines]) => {
-      const coordinates: number[][][] = []
-      lines.forEach((line) => {
-        Object.entries(shapes)
-          .filter(([shapeId]) => shapeId.startsWith(line + "_"))
-          .forEach(([_, points]) => {
-            const coords = points.map((point: ShapeCoord) => [
-              point.shapePtLon,
-              point.shapePtLat
-            ])
+    for (const [shapeId, points] of Object.entries(shapes)) {
+      const line = shapeId.split("_")[0]
 
-            coordinates.push(coords)
-          })
+      let skip = false
+      if (line[0] === 'T') {
+        for (let i = 1; i < line.length; i++) {
+          if (!modes[ModeType.RAIL].has(line[0] + line[i])) skip = true
+        }
+      } else if (line[0] === 'M') {
+        for (let i = 1; i < line.length; i++) {
+          if (!modes[ModeType.METRO].has(line[0] + line[i])) skip = true
+        }
+      } else if (line[0] === 'L') {
+        for (let i = 1; i < line.length; i++) {
+          if (!modes[ModeType.LIGHT_RAIL].has(line[0] + line[i])) skip = true
+        }
+      }
+      if (skip) continue
+      
+      const coords = points.map((point: ShapeCoord) => [
+        point.shapePtLon,
+        point.shapePtLat
+      ])
 
-        map.addSource(`${line}-shape`, {
+      const sourceId = `${shapeId}-shape`
+
+      if (!map.getSource(sourceId)) {
+        map.addSource(sourceId, {
           type: 'geojson',
           data: {
             type: "FeatureCollection",
             features: [{
               type: 'Feature',
-              properties: {
-                line
-              },
+              properties: { line },
               geometry: {
-                type: 'MultiLineString',
-                coordinates
+                type: 'LineString',
+                coordinates: coords
               }
             }]
           }
         })
+      }
 
-        map.addLayer({
-          id: `${line}-shape`,
-          type: 'line',
-          source: `${line}-shape`,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round'
-          },
-          paint: {
-            'line-color': coloursMap[line],
-            'line-width': 2
+      const colours = getRouteColours(line)
+
+      if (colours.size === 1) {
+        if (!map.getLayer(`${shapeId}-shape`)) {
+          map.addLayer({
+            id: `${shapeId}-shape`,
+            type: 'line',
+            source: sourceId,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+              'line-color': [...colours][0],
+              'line-width': 2,
+              'line-dasharray': [1, 0],
+            }
+          })
+        }
+      } else {
+        [...colours].forEach((colour, index) => {
+          if (!map.getLayer(`${shapeId}-shape-${index}`)) {
+            const offset = (index - (colours.size - 1) / 2) * 3
+            map.addLayer({
+              id: `${shapeId}-shape-${index}`,
+              type: 'line',
+              source: sourceId,
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': colour,
+                'line-width': 2,
+                'line-dasharray': [1, 0],
+                'line-offset': offset
+              }
+            })
           }
         })
-      })
-    })
+      }
+    }
   }
 
   const addStops = (stops: Stops, modes: Record<number, Set<string>>) => {
     Object.keys(modes).forEach((mode) => {
-      const modeText = modeMap[Number(mode)]
+      const modeText = ModeLabels[Number(mode)]
 
       let platformFeatures: Feature<Point>[] = []
       Object.entries(stops)
@@ -171,6 +208,8 @@
   const initVehicles = (modes: Record<number, Set<string>>) => {
     Object.entries(modes).forEach(([_mode, lines]) => {
       lines.forEach((line) => {
+        if (!/^[TML](\d||CC)$/.test(line)) return
+
         map.addSource(`${line}-vehicle-source`, {
           type: 'geojson',
           data: {
@@ -185,7 +224,7 @@
           source: `${line}-vehicle-source`,
           paint: {
             'circle-radius': 6,
-            'circle-color': coloursMap[line],
+            'circle-color': LineColours[line],
             'circle-stroke-width': 1,
             'circle-stroke-color': '#FFFFFF'
           },
@@ -197,6 +236,7 @@
   const updateVehicles = (vehicles: Vehicles, modes: Record<number, Set<string>>) => {
     Object.entries(modes).forEach(([mode, lines]) => {false
       lines.forEach((line) => {
+        if (!vehicles[line]) return
         const vehicleFeatures: Feature<Point>[] = vehicles[line].map((vehicle) => ({
           type: 'Feature',
           properties: {
@@ -209,7 +249,7 @@
             stopId: vehicle.stopId,
             congestionLevel: vehicle.congestion_level,
             occupancyStatus: vehicle.occupancy_status,
-            mode: modeTypeMap[Number(mode)]
+            mode: ModeLabels[Number(mode)]
           },
           geometry: {
             type: 'Point',
@@ -232,6 +272,33 @@
     })
   }
 
+  const clearShapes = (modes: Record<number, Set<string>>) => {
+    const style = map.getStyle()
+    if (!style) return
+
+    const activeLines = new Set(Object.values(modes).flatMap((lines) => [...lines]))
+
+    style.layers
+      .filter(layer => layer.id.includes('-shape'))
+      .forEach(layer => {
+        const shapeId = layer.id.replace(/-shape.*$/, '')
+        const line = shapeId[0] + shapeId[1]
+        if (!activeLines.has(line) && map.getLayer(layer.id)) {
+          map.removeLayer(layer.id)
+        }
+      })
+
+    Object.keys(style.sources)
+      .filter(sourceId => sourceId.includes('-shape'))
+      .forEach(sourceId => {
+        const shapeId = sourceId.replace(/-shape.*$/, '')
+        const line = shapeId[0] + shapeId[1]
+        if (!activeLines.has(line) && map.getSource(sourceId)) {
+          map.removeSource(sourceId)
+        }
+      })
+  }
+
   onMount(() => {
     console.log($modes, $shapes, $stops, $vehicles)
     const { centre, zoom } = getStoredView()
@@ -249,23 +316,27 @@
       addShapes($shapes, $modes)
 
       await Promise.all(
-        icons.map(async ({ name, url }) => {
-          const img = new Image()
-          img.onload = () => {
-            map.addImage(name, img)
-          }
-          img.src = url
+        icons.map(({ name, url }) => {
+          new Promise<void>((resolve) => {
+            const img = new Image()
+            img.onload = () => {
+              map.addImage(name, img)
+              resolve()
+            }
+            img.src = url
+          })
         }
       ))
 
-      addStops($stops, $modes)
-
-      initVehicles($modes)
-      updateVehicles($vehicles, $modes)
+      // addStops($stops, $modes)
+      // initVehicles($modes)
+      // updateVehicles($vehicles, $modes)
   
-      subVehicles = vehicles.subscribe((v) => {
-        updateVehicles(v, $modes)
+      subModes = modes.subscribe((m) => {
+        clearShapes(m)
+        addShapes($shapes, m)
       })
+      subVehicles = vehicles.subscribe((v) => updateVehicles(v, $modes))
     })
 
     map.on('click', (e) => {
@@ -278,6 +349,7 @@
         if (selectedFeature.type === 'vehicle') {
           Object.entries($modes).forEach(([_mode, lines]) => {
             lines.forEach((line) => {
+              if (!/^[TML](\d||CC)$/.test(line)) return
               map.setPaintProperty(`${line}-vehicle-layer`, 'circle-radius', [
                 'case',
                 ['==', ['get', 'id'], selectedFeature.id],
@@ -296,6 +368,7 @@
   })
 
   onDestroy(() => {
+    subModes?.()
     subVehicles?.()
     map?.remove()
   })
@@ -306,4 +379,5 @@
   {#if selectedFeature}
     <MapSidebar selectedFeature={selectedFeature} />
   {/if}
+  <TransportModes />
 </div>
