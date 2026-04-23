@@ -2,6 +2,7 @@
   import { MODEICONS, ModeLabels, ModeType } from "$lib/constants";
   import { addModes, modes, shapes } from "$lib/stores";
   import type { ModeIcon } from "$lib/types/general";
+  import { get } from "svelte/store";
 
   let disabledModes = $state<Set<string>>(new Set())
 
@@ -16,7 +17,7 @@
       disabledModes = new Set(disabledModes)
 
       const newModes: Partial<Record<number, string[]>> = {}
-      Object.keys($shapes).forEach((shapeId) => {
+      Object.keys(get(shapes)).forEach((shapeId) => {
         for (let i = 1; i <  shapeId.split('_')[0].length; i++) {
           const line = shapeId[0] + shapeId[i]
 

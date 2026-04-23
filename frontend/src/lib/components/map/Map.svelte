@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte'
+  import { get } from 'svelte/store'
+  
   import maplibregl from 'maplibre-gl'
   import 'maplibre-gl/dist/maplibre-gl.css'
   import type { Feature, Point } from 'geojson'
@@ -10,7 +12,7 @@
 
   import { modes, shapes, stops, vehicles } from '$lib/stores'
   import { LineColours, ModeLabels, ModeType } from '$lib/constants'
-  import { getRouteColours } from '$lib/helpers';
+  import { checkDisabled, getRouteColours } from '$lib/helpers';
   import type { Vehicles } from '$lib/types/realtime'
   import type { ShapeCoord, Shapes } from '$lib/types/shape';
   import type { Stops } from '$lib/types/stop';
@@ -24,6 +26,12 @@
     { name: 'metro-icon', url: metroImg },
     { name: 'lightrail-icon', url: lightrailImg }
   ]
+
+  const stopLayerToPrefix: Record<string, string> = {
+    'lightrail':    'L',
+    'metro':        'M',
+    'sydneytrains': 'T',
+  }
 
   let map!: maplibregl.Map
   let subModes: (() => void)
@@ -49,21 +57,7 @@
     for (const [shapeId, points] of Object.entries(shapes)) {
       const line = shapeId.split("_")[0]
 
-      let skip = false
-      if (line[0] === 'T') {
-        for (let i = 1; i < line.length; i++) {
-          if (!modes[ModeType.RAIL].has(line[0] + line[i])) skip = true
-        }
-      } else if (line[0] === 'M') {
-        for (let i = 1; i < line.length; i++) {
-          if (!modes[ModeType.METRO].has(line[0] + line[i])) skip = true
-        }
-      } else if (line[0] === 'L') {
-        for (let i = 1; i < line.length; i++) {
-          if (!modes[ModeType.LIGHT_RAIL].has(line[0] + line[i])) skip = true
-        }
-      }
-      if (skip) continue
+      if (checkDisabled(line, modes)) continue
       
       const coords = points.map((point: ShapeCoord) => [
         point.shapePtLon,
@@ -102,6 +96,7 @@
               'line-color': [...colours][0],
               'line-width': 2,
               'line-dasharray': [1, 0],
+              'line-offset': 0
             }
           })
         }
@@ -163,78 +158,58 @@
           }))
         })
 
-      map.addSource(`${modeText}-platforms-source`, {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: platformFeatures
-        }
-      })
-
-      map.addLayer({
-        id: `${modeText}-platforms-layer`,
-        type: 'symbol',
-        source: `${modeText}-platforms-source`,
-        layout: {
-          'icon-image': `${modeText}-icon`,
-          'icon-size': 0.06,
-          'icon-allow-overlap': true
-        },
-        minzoom: 17
-      })
-
-      map.addSource(`${modeText}-stations-source`, {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: stationFeatures
-        }
-      })
-
-      map.addLayer({
-        id: `${modeText}-stations-layer`,
-        type: 'symbol',
-        source: `${modeText}-stations-source`,
-        layout: {
-          'icon-image': `${modeText}-icon`,
-          'icon-size': 0.06,
-          'icon-allow-overlap': false
-        },
-        maxzoom: 16.99
-      })
-    })
-  }
-
-  const initVehicles = (modes: Record<number, Set<string>>) => {
-    Object.entries(modes).forEach(([_mode, lines]) => {
-      lines.forEach((line) => {
-        if (!/^[TML](\d||CC)$/.test(line)) return
-
-        map.addSource(`${line}-vehicle-source`, {
+      if (!map.getSource(`${modeText}-platforms-source`)) {
+        map.addSource(`${modeText}-platforms-source`, {
           type: 'geojson',
           data: {
             type: 'FeatureCollection',
-            features: []
+            features: platformFeatures
           }
         })
+      }
 
-        map.addLayer({
-          id: `${line}-vehicle-layer`,
-          type: 'circle',
-          source: `${line}-vehicle-source`,
-          paint: {
-            'circle-radius': 6,
-            'circle-color': LineColours[line],
-            'circle-stroke-width': 1,
-            'circle-stroke-color': '#FFFFFF'
-          },
+      if (!map.getSource(`${modeText}-stations-source`)) {
+        map.addSource(`${modeText}-stations-source`, {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: stationFeatures
+          }
         })
-      })
+      }
+
+      if (!map.getLayer(`${modeText}-platforms-layer`)) {
+        map.addLayer({
+          id: `${modeText}-platforms-layer`,
+          type: 'symbol',
+          source: `${modeText}-platforms-source`,
+          layout: {
+            'icon-image': `${modeText}-icon`,
+            'icon-size': 0.06,
+            'icon-allow-overlap': true
+          },
+          minzoom: 17
+        })
+      }
+
+      if (!map.getLayer(`${modeText}-stations-layer`)) {
+        map.addLayer({
+          id: `${modeText}-stations-layer`,
+          type: 'symbol',
+          source: `${modeText}-stations-source`,
+          layout: {
+            'icon-image': `${modeText}-icon`,
+            'icon-size': 0.06,
+            'icon-allow-overlap': false
+          },
+          maxzoom: 16.99
+        })
+      }
     })
   }
 
-  const updateVehicles = (vehicles: Vehicles, modes: Record<number, Set<string>>) => {
-    Object.entries(modes).forEach(([mode, lines]) => {false
+  const addVehicles = (vehicles: Vehicles, modes: Record<number, Set<string>>) => {
+    Object.entries(modes).forEach(([mode, lines]) => {
       lines.forEach((line) => {
         if (!vehicles[line]) return
         const vehicleFeatures: Feature<Point>[] = vehicles[line].map((vehicle) => ({
@@ -260,12 +235,27 @@
           }
         }))
 
-        const source = map.getSource(`${line}-vehicle-source`) as maplibregl.GeoJSONSource
+        if (!map.getSource(`${line}-vehicle-source`)) {
+          map.addSource(`${line}-vehicle-source`, {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: vehicleFeatures
+            }
+          })
+        }
 
-        if (source) {
-          source.setData({
-            type: 'FeatureCollection',
-            features: vehicleFeatures
+        if (!map.getLayer(`${line}-vehicle-layer`)) {
+          map.addLayer({
+            id: `${line}-vehicle-layer`,
+            type: 'circle',
+            source: `${line}-vehicle-source`,
+            paint: {
+              'circle-radius': 6,
+              'circle-color': LineColours[line],
+              'circle-stroke-width': 1,
+              'circle-stroke-color': '#FFFFFF'
+            },
           })
         }
       })
@@ -279,28 +269,66 @@
     const activeLines = new Set(Object.values(modes).flatMap((lines) => [...lines]))
 
     style.layers
-      .filter(layer => layer.id.includes('-shape'))
+      .filter(layer => layer.id.includes('shape'))
       .forEach(layer => {
-        const shapeId = layer.id.replace(/-shape.*$/, '')
-        const line = shapeId[0] + shapeId[1]
-        if (!activeLines.has(line) && map.getLayer(layer.id)) {
-          map.removeLayer(layer.id)
+        const shapeLayerId = layer.id.replace(/-shape.*$/, '')
+        const line = shapeLayerId[0] + shapeLayerId[1]
+        if (map.getLayer(layer.id)) {
+          map.setLayoutProperty(
+            layer.id,
+            'visibility',
+            activeLines.has(line) ? 'visible' : 'none'
+          )
         }
       })
+  }
 
-    Object.keys(style.sources)
-      .filter(sourceId => sourceId.includes('-shape'))
-      .forEach(sourceId => {
-        const shapeId = sourceId.replace(/-shape.*$/, '')
-        const line = shapeId[0] + shapeId[1]
-        if (!activeLines.has(line) && map.getSource(sourceId)) {
-          map.removeSource(sourceId)
+  const clearStops = (modes: Record<number, Set<string>>) => {
+    const style = map.getStyle()
+    if (!style) return
+
+    const activeLines = new Set(Object.values(modes).flatMap((lines) => [...lines]))
+
+    style.layers
+      .filter(layer => layer.id.includes('-platforms-layer') || layer.id.includes('-stations-layer'))
+      .forEach(layer => {
+        const stopLayerId = layer.id.replace(/-platforms-layer.*$/, '').replace(/-stations-layer.*$/, '')
+        const prefix = stopLayerToPrefix[stopLayerId]
+        const hasActiveLine = prefix ? [...activeLines].some((line) => line.startsWith(prefix)) : false
+
+        if (map.getLayer(layer.id)) {
+          map.setLayoutProperty(
+            layer.id,
+            'visibility',
+            hasActiveLine ? 'visible' : 'none'
+          )
+        }
+      })
+  }
+
+  const clearVehicles = (modes: Record<number, Set<string>>) => {
+    const style = map.getStyle()
+    if (!style) return
+
+    const activeLines = new Set(Object.values(modes).flatMap((lines) => [...lines]))
+
+    style.layers
+      .filter(layer => layer.id.includes('vehicle-layer'))
+      .forEach(layer => {
+        const vehicleLayerId = layer.id.replace(/-vehicle-layer.*$/, '')
+        const line = vehicleLayerId[0] + vehicleLayerId[1]
+        if (map.getLayer(layer.id)) {
+          map.setLayoutProperty(
+            layer.id,
+            'visibility',
+            activeLines.has(line) ? 'visible' : 'none'
+          )
         }
       })
   }
 
   onMount(() => {
-    console.log($modes, $shapes, $stops, $vehicles)
+    console.log(get(modes), get(shapes), get(stops), get(vehicles))
     const { centre, zoom } = getStoredView()
 
     map = new maplibregl.Map({
@@ -313,7 +341,7 @@
     map.addControl(new maplibregl.NavigationControl())
 
     map.on('load', async () => {
-      addShapes($shapes, $modes)
+      addShapes(get(shapes), get(modes))
 
       await Promise.all(
         icons.map(({ name, url }) => {
@@ -328,15 +356,18 @@
         }
       ))
 
-      // addStops($stops, $modes)
-      // initVehicles($modes)
-      // updateVehicles($vehicles, $modes)
+      addStops(get(stops), get(modes))
+      addVehicles(get(vehicles), get(modes))
   
       subModes = modes.subscribe((m) => {
         clearShapes(m)
-        addShapes($shapes, m)
+        clearStops(m)
+        clearVehicles(m)
+        addShapes(get(shapes), m)
+        addStops(get(stops), m)
+        addVehicles(get(vehicles), m)
       })
-      subVehicles = vehicles.subscribe((v) => updateVehicles(v, $modes))
+      subVehicles = vehicles.subscribe((v) => addVehicles(v, get(modes)))
     })
 
     map.on('click', (e) => {
@@ -347,7 +378,7 @@
         selectedFeature = features[0].properties
 
         if (selectedFeature.type === 'vehicle') {
-          Object.entries($modes).forEach(([_mode, lines]) => {
+          Object.entries(get(modes)).forEach(([_mode, lines]) => {
             lines.forEach((line) => {
               if (!/^[TML](\d||CC)$/.test(line)) return
               map.setPaintProperty(`${line}-vehicle-layer`, 'circle-radius', [

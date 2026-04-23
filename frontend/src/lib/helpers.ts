@@ -1,4 +1,4 @@
-import { LineColours } from "./constants"
+import { LineColours, ModeType } from "./constants"
 
 export const secondsToTime = (seconds: number) => {
   const h = Math.floor(seconds / 3600)
@@ -40,4 +40,21 @@ export const getRouteColours = (line: string): Set<string> => {
   }
 
   return found.size ? found : new Set(['#000000'])
+}
+
+export const checkDisabled = (line: string, modes: Record<number, Set<string>>) => {
+  if (line[0] === 'T') {
+    for (let i = 1; i < line.length; i++) {
+      if (modes[ModeType.RAIL].has(line[0] + line[i])) return false
+    }
+  } else if (line[0] === 'M') {
+    for (let i = 1; i < line.length; i++) {
+      if (modes[ModeType.METRO].has(line[0] + line[i])) return false
+    }
+  } else if (line[0] === 'L') {
+    for (let i = 1; i < line.length; i++) {
+      if (modes[ModeType.LIGHT_RAIL].has(line[0] + line[i])) return false
+    }
+  }
+  return true
 }

@@ -35,4 +35,6 @@ var RoutesLookup = map[string]string{
 	"NTH": "T9",
 
 	"M1": "M1",
+
+	"IWLR": "L1",
 }
