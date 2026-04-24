@@ -24,18 +24,18 @@
   <div class={`${stopTime.progress === 'not_passed' ? '' : 'opacity-50'}`}>
     <div class="flex flex-row justify-between items-center">
       <div>
-        <p class="text-xl">{stopTime.stopName.split(',')[0]}</p>
+        <p class="text-lg">{stopTime.stopName.split(',')[0]}</p>
       </div>
       {#if stopTime.status === 'stop'}
         <div class="flex flex-col items-center">
-          <p class="text-base">{time}</p>
+          <p class="text-sm">{time}</p>
           <!-- <p>{delayTime}</p> -->
-          <p class="text-sm">{delay}</p>
+          <p class="text-xs">{delay}</p>
         </div>
       {/if}
     </div>
     <div class="flex flex-row justify-between items-center">
-      <p class="text-base/3">{stopTime.stopName.split(',')[1]}</p>
+      <p class="text-sm">{stopTime.stopName.split(',')[1]}</p>
       <div class="flex flex-row justify-end gap-1">
         {#if stopTime.status === 'stop'}
           {#each consist as occupancy}

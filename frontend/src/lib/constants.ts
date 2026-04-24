@@ -83,7 +83,6 @@ export const LineColours: Record<string, string> = {
 }
 
 export const LineRoutes: Record<string, string> = {
-    'BMT': 'BMT',
     'NSN': 'T1',
     'RTTA': 'T1',
     'WST': 'T1',
@@ -95,12 +94,17 @@ export const LineRoutes: Record<string, string> = {
     'T6': 'T6',
     'OLY': 'T7',
     'APS': 'T8',
-    'SHL': 'SHL',
     'NTH': 'T9',
+
+    'BMT': 'BMT',
+    'SHL': 'SHL',
     'CCN': 'CCN',
     'CTY': 'CTY',
     'HUN': 'HUN',
+
     'M1': 'M1',
+
+    'IWLR': 'L1',
 }
 
 export const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']

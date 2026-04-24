@@ -17,6 +17,8 @@ export interface StaticStopTime {
 export interface RealtimeStopTime {
   stopId: string
   stopName: string
+  stopPtSequence: number
+  vehiclePtSequence: number
   stopSequence: number
   stopHeadsign: string
   arrivalTime: number

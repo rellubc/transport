@@ -6,6 +6,7 @@ import { ObjectFlags } from "typescript";
 
 export const modes: Writable<Record<string, Set<string>>> = writable<Record<string, Set<string>>>({})
 
+export const routes: Writable<Shapes> = writable<Shapes>({})
 export const shapes: Writable<Shapes> = writable<Shapes>({})
 export const stops: Writable<Stops> = writable<Stops>({})
 export const vehicles: Writable<Vehicles> = writable<Vehicles>({})

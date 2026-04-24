@@ -220,6 +220,9 @@ def main():
                 print(f"Skipping {filename}...")
                 continue
 
+            if filename == "shapes.txt":
+                continue
+
             print(f"Loading {filename}...")
             with zip_file.open(filename) as file:
 

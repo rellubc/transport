@@ -11,7 +11,7 @@ type Stop struct {
 	StopGeom               *geom.Point `json:"stopGeom"`
 	StopZoneId             *string     `json:"stopZoneId"`
 	StopUrl                *string     `json:"stopUrl"`
-	StopLocationType       int         `json:"stopLocationType"`
+	StopLocationType       *int        `json:"stopLocationType"`
 	StopParentStation      *string     `json:"stopParentStation"`
 	StopTimezone           *string     `json:"stopTimezone"`
 	StopWheelchairBoarding int         `json:"stopWheelchairBoarding"`

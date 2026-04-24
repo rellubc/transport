@@ -17,24 +17,16 @@ func NewShapeRepository(db *pgxpool.Pool) *ShapeRepository {
 	return &ShapeRepository{DB: db}
 }
 
-func (r *ShapeRepository) GetShapes(lines []string) (map[string][]models.ShapeDetails, error) {
+func (r *ShapeRepository) GetShapes(shapeType string) (map[string][]models.ShapeDetails, error) {
 	var (
 		rows pgx.Rows
 		err  error
 	)
 
 	query := "SELECT shape_id, shape_pt_lat, shape_pt_lon, shape_pt_sequence FROM shapes"
+	prefix := shapeType + "_%"
 
-	if len(lines) == 0 {
-		rows, err = r.DB.Query(context.Background(), query+" WHERE shape_id ~ '^[A-Z]+[0-9]*[A-Z]*_[0-9]$'")
-	} else {
-		patterns := []string{}
-		for _, l := range lines {
-			patterns = append(patterns, string(l)+"_%")
-		}
-		rows, err = r.DB.Query(context.Background(), query+" WHERE shape_id LIKE ANY($1) AND shape_id ~ '^[A-Z]+[0-9]*[A-Z]*_[0-9]$'", patterns)
-	}
-
+	rows, err = r.DB.Query(context.Background(), query+" WHERE shape_id LIKE $1", prefix)
 	if err != nil {
 		return nil, err
 	}

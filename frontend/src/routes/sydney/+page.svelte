@@ -1,7 +1,7 @@
 <script lang="ts">
   import Map from '$lib/components/map/Map.svelte';
   import { ModeType } from '$lib/constants';
-  import { addModes, modes, shapes, stops, vehicles } from '$lib/stores';
+  import { addModes, routes, shapes, stops, vehicles } from '$lib/stores';
   import { onMount } from 'svelte';
   import { getSydneyVehiclePositions } from '$lib/api/sydney';
   import type { PageProps } from './$types';
@@ -13,6 +13,7 @@
     shapes.set(data.shapes)
     stops.set(data.stops)
     vehicles.set(data.vehicles)
+    routes.set(data.routes)
     
     loaded = true
 
@@ -22,18 +23,16 @@
     }
 
     const newModes: Partial<Record<number, string[]>> = {}
-    Object.keys($shapes).forEach((shapeId) => {
-      for (let i = 1; i <  shapeId.split('_')[0].length; i++) {
-        const line = shapeId[0] + shapeId[i]
+    Object.keys(data.routes).forEach((routeId) => {
+      const line = routeId.split('_')[1]
 
-        let modeType: number | null = null
-        if (/^T[0-9]$/.test(line)) modeType = ModeType.RAIL
-        if (/^M[0-9]$/.test(line)) modeType = ModeType.METRO
-        if (/^L[0-9]$/.test(line)) modeType = ModeType.LIGHT_RAIL
+      let modeType: number | null = null
+      if (/^T[0-9]$/.test(line)) modeType = ModeType.RAIL
+      if (/^M[0-9]$/.test(line)) modeType = ModeType.METRO
+      if (/^L[0-9]$/.test(line)) modeType = ModeType.LIGHT_RAIL
 
-        if (modeType !== null) {
-          newModes[modeType] = [...(newModes[modeType] ?? []), line]
-        }
+      if (modeType !== null) {
+        newModes[modeType] = [...(newModes[modeType] ?? []), line]
       }
     })
 

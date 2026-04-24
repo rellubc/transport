@@ -34,6 +34,7 @@
 
         if (feature.mode === 'metro') route = LineRoutes[scheduledTrip.routeId.split('_')[1]]
         else if (feature.mode === 'sydneytrains') route = LineRoutes[scheduledTrip.routeId.split('_')[0]]
+        else if (feature.mode === 'lightrail') route = LineRoutes[scheduledTrip.routeId.split('-')[0]]
         colour = LineColours[route]
         scheduledStopTimes = await getSydneyScheduledStopTimes(fetch, null, feature.tripId)
         realtimeStopTimes = await getSydneyRealtimeStopTimes(fetch, null, feature.tripId)
@@ -44,6 +45,7 @@
       const fetchStopTimes = async () => {
         console.log("Updating stop times...")
         realtimeStopTimes = await getSydneyRealtimeStopTimes(fetch, null, feature.tripId)
+        console.log(realtimeStopTimes)
       }
 
       interval = setInterval(fetchStopTimes, 15000);
@@ -71,7 +73,7 @@
           realtimeStopTimes = []
         }}/>
 
-      <SidebarListings colour={colour} realtimeStopTimes={realtimeStopTimes} />
+      <SidebarListings mode={currentFeature.mode} colour={colour} realtimeStopTimes={realtimeStopTimes} />
     {/if}
   </div>
 {/if}

@@ -19,7 +19,7 @@ type VehiclePosition struct {
 	StopId               string      `json:"stopId"`
 	Timestamp            time.Time   `json:"timestamp"`
 	CongestionLevel      string      `json:"congestionLevel"`
-	OccupancyStatus      string      `json:"occupancyStatus"`
+	OccupancyStatus      *string     `json:"occupancyStatus"`
 	Mode                 string      `json:"mode"`
 }
 

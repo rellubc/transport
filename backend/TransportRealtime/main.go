@@ -27,7 +27,7 @@ func main() {
 	repos := repositories.NewRepositories(database)
 	router := handlers.RegisterRoutes(repos)
 
-	tasks.StartTasks(apiKey, database, 15*time.Second)
+	tasks.StartTasks(apiKey, database, 30*time.Second)
 	log.Println("Starting realtime data fetcher...")
 
 	port := os.Getenv("GO_PORT")

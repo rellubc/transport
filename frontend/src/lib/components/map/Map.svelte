@@ -10,7 +10,7 @@
   import sydneytrainsImg from '$lib/assets/sydneytrains.png'
   import lightrailImg from '$lib/assets/lightrail.png'
 
-  import { modes, shapes, stops, vehicles } from '$lib/stores'
+  import { modes, routes, shapes, stops, vehicles } from '$lib/stores'
   import { LineColours, ModeLabels, ModeType } from '$lib/constants'
   import { checkDisabled, getRouteColours } from '$lib/helpers';
   import type { Vehicles } from '$lib/types/realtime'
@@ -55,7 +55,7 @@
 
   const addShapes = (shapes: Shapes, modes: Record<number, Set<string>>) => {
     for (const [shapeId, points] of Object.entries(shapes)) {
-      const line = shapeId.split("_")[0]
+      const line = shapeId.split("_")[1]
 
       if (checkDisabled(line, modes)) continue
       
@@ -243,6 +243,11 @@
               features: vehicleFeatures
             }
           })
+        } else {
+          (map.getSource(`${line}-vehicle-source`) as maplibregl.GeoJSONSource).setData({
+            type: 'FeatureCollection',
+            features: vehicleFeatures
+          })
         }
 
         if (!map.getLayer(`${line}-vehicle-layer`)) {
@@ -271,7 +276,7 @@
     style.layers
       .filter(layer => layer.id.includes('shape'))
       .forEach(layer => {
-        const shapeLayerId = layer.id.replace(/-shape.*$/, '')
+        const shapeLayerId = layer.id.replace(/-shape.*$/, '').replace(/DISPLAY_/,'')
         const line = shapeLayerId[0] + shapeLayerId[1]
         if (map.getLayer(layer.id)) {
           map.setLayoutProperty(
@@ -328,7 +333,7 @@
   }
 
   onMount(() => {
-    console.log(get(modes), get(shapes), get(stops), get(vehicles))
+    console.log(get(modes), get(routes), get(shapes), get(stops), get(vehicles))
     const { centre, zoom } = getStoredView()
 
     map = new maplibregl.Map({
@@ -367,7 +372,11 @@
         addStops(get(stops), m)
         addVehicles(get(vehicles), m)
       })
-      subVehicles = vehicles.subscribe((v) => addVehicles(v, get(modes)))
+      subVehicles = vehicles.subscribe((v) => {
+        console.log('asdf')
+        console.log(v, get(modes))
+        addVehicles(v, get(modes))
+      })
     })
 
     map.on('click', (e) => {
@@ -381,6 +390,7 @@
           Object.entries(get(modes)).forEach(([_mode, lines]) => {
             lines.forEach((line) => {
               if (!/^[TML](\d||CC)$/.test(line)) return
+              if (!map.getLayer(`${line}-vehicle-layer`)) return
               map.setPaintProperty(`${line}-vehicle-layer`, 'circle-radius', [
                 'case',
                 ['==', ['get', 'id'], selectedFeature.id],

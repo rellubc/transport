@@ -23,7 +23,29 @@ DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
 GTFS_URL = "https://api.transport.nsw.gov.au/v1/gtfs/schedule/"
 
-MODES = ["sydneytrains", "lightrail"]
+MODES = [
+    "sydneytrains",
+    "nswtrains",
+
+    "lightrail/innerwest",
+    "lightrail/newcastle",
+    "lightrail/parramatta",
+    "lightrail/cbdandsoutheast",
+
+    "ferries/sydneyferries",
+    "ferries/MFF",
+
+    "buses/SBSC006",
+    "buses/GSBC001",
+    "buses/GSBC002",
+    "buses/GSBC003",
+    "buses/GSBC004",
+    "buses/GSBC007",
+    "buses/GSBC008",
+    "buses/GSBC009",
+    "buses/GSBC010",
+    "buses/GSBC014",
+]
 # MODES = ["sydneytrains", "nswtrains", "buses"]
 # still need other modes
 
@@ -218,6 +240,9 @@ def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=1000
                     except:
                         val = None
 
+                if db_col == "stop_name":
+                    val = val.replace("Station Platform", "Station, Platform")
+
                 if db_col == "mode":
                     val = mode
 
@@ -248,36 +273,41 @@ def main():
     }
     conn = connect_db()
 
-    # for mode in MODES:
-    #     r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
-    #     r.raise_for_status()
-    #     zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+    for mode in MODES:
+        r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
+        r.raise_for_status()
+        zip_file = zipfile.ZipFile(io.BytesIO(r.content))
 
-    #     for filename, (table, columns) in MAPPINGS.items():
-    #         if filename not in zip_file.namelist():
-    #             print(f"Skipping {filename}...")
-    #             continue
+        print(f"Fetching {mode} static data...")
 
-    #         if filename == "shapes.txt":
-    #             continue
+        for filename, (table, columns) in MAPPINGS.items():
+            if filename not in zip_file.namelist():
+                print(f"Skipping {filename}...")
+                continue
 
-    #         print(f"Loading {filename}...")
-    #         with zip_file.open(filename) as file:
-    #             conflict_key_map = {
-    #                 "agency.txt": ["agency_id"],
-    #                 "calendar.txt": ["service_id"],
-    #                 "routes.txt": ["route_id"],
-    #                 "stop_times.txt": ["trip_id", "stop_sequence"],
-    #                 "stops.txt": ["stop_id", "mode"],
-    #                 "trips.txt": ["trip_id"],
-    #                 "vehicle_categories.txt": ["vehicle_category_id"],
-    #                 "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
-    #                 "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
-    #                 "occupancies.txt": ["trip_id", "stop_sequence", "start_date"]
-    #             }
-    #             conflict_key = conflict_key_map.get(filename, [])
+            if filename == "shapes.txt":
+                continue
 
-    #             load(conn, file, table, columns, conflict_key, mode)
+            print(f"Loading {filename}...")
+            with zip_file.open(filename) as file:
+                conflict_key_map = {
+                    "agency.txt": ["agency_id"],
+                    "calendar.txt": ["service_id"],
+                    "routes.txt": ["route_id"],
+                    "stop_times.txt": ["trip_id", "stop_sequence"],
+                    "stops.txt": ["stop_id", "mode"],
+                    "trips.txt": ["trip_id"],
+                    "vehicle_categories.txt": ["vehicle_category_id"],
+                    "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
+                    "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
+                    "occupancies.txt": ["trip_id", "stop_sequence", "start_date"]
+                }
+                conflict_key = conflict_key_map.get(filename, [])
+
+                print(file.readline().decode('utf-8-sig').strip())
+                file.seek(0)
+
+                load(conn, file, table, columns, conflict_key, mode)
 
     shapes_folder = f"{os.getcwd()}/._shapes"
     conflict_key = ["shape_id", "shape_pt_sequence"]

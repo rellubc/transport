@@ -20,8 +20,17 @@ const (
 	Metro              TransportMode = "metro"
 	SydneyTrains       TransportMode = "sydneytrains"
 	InnerwestLightrail TransportMode = "lightrail/innerwest"
-	NSWTrains          TransportMode = "nswtrains"
-	Buses              TransportMode = "buses"
+
+	NSWTrains TransportMode = "nswtrains"
+
+	CBDSouthEast TransportMode = "lightrail/cbdandsoutheast"
+	Newcastle    TransportMode = "lightrail/newcastle"
+	Parramatta   TransportMode = "lightrail/parramatta"
+
+	Buses TransportMode = "buses"
+
+	SydneyFerries TransportMode = "ferries/sydneyferries"
+	MFFerries     TransportMode = "ferries/MFF"
 )
 
 func BuildFeedURL(version string, feedType FeedType, mode TransportMode) string {

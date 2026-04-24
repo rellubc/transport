@@ -21,8 +21,27 @@ export const getSydneyStops = async (fetchFn: typeof fetch, mode?: string): Prom
   }
 }
 
-export const getSydneyShapes = async (fetchFn: typeof fetch, mode?: string): Promise<Shapes> => {
-  const url = `http://localhost:8080/api/sydney/shapes`
+export const getSydneyShapes = async (fetchFn: typeof fetch, shapeType: string): Promise<Shapes> => {
+  let url = `http://localhost:8080/api/sydney/shapes`
+  if (shapeType) url = url.concat(`?shape_type=${shapeType}`)
+
+    console.log(url)
+
+  try {
+    const res = await fetchFn(url)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const data: Shapes = await res.json()
+
+    return data
+  } catch (error) {
+    console.error('Fetch failed:', error)
+    return {}
+  }
+}
+
+export const getSydneyRoutes = async (fetchFn: typeof fetch, mode?: string): Promise<Shapes> => {
+  const url = `http://localhost:8080/api/sydney/shapes/routes`
   if (mode) url.concat(`?mode=${mode}`)
 
   try {

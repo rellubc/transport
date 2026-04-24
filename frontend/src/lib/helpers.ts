@@ -56,5 +56,6 @@ export const checkDisabled = (line: string, modes: Record<number, Set<string>>) 
       if (modes[ModeType.LIGHT_RAIL].has(line[0] + line[i])) return false
     }
   }
+  console.log(line)
   return true
 }
