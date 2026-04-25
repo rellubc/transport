@@ -123,12 +123,17 @@
   }
 
   const addStops = (stops: Stops, modes: Record<number, Set<string>>) => {
+    for (const [line, lineStops] of Object.entries(stops)) {
+      
+    }
+
+
     Object.keys(modes).forEach((mode) => {
       const modeText = ModeLabels[Number(mode)]
 
       let platformFeatures: Feature<Point>[] = []
       Object.entries(stops)
-        .filter(([stopsMode, _stops]) => stopsMode === modeText)
+        .filter(([stopsMode, _stops]) => stopsMode.includes(modeText))
         .forEach(([_stopsMode, modeStops]) => {
           platformFeatures = modeStops.filter((stop) => stop.stopParentStation).map((stop) => ({
             type: 'Feature',
@@ -144,12 +149,26 @@
 
       let stationFeatures: Feature<Point>[] = []
       Object.entries(stops)
-        .filter(([stopsMode, _stops]) => stopsMode === modeText)
+        .filter(([stopsMode, _stops]) => stopsMode.includes(modeText))
         .forEach(([_stopsMode, modeStops]) => {
           stationFeatures = modeStops.filter((stop) => !stop.stopParentStation).map((stop) => ({
             type: 'Feature',
             properties: {
-              stop: stop
+              type: 'stop',
+              stopId: stop.stopId,
+              stopCode: stop.stopCode,
+              stopName: stop.stopName,
+              stopDescription: stop.stopDescription,
+              stopLat: stop.stopLat,
+              stopLon: stop.stopLon,
+              stopZoneId: stop.stopZoneId,
+              stopUrl: stop.stopUrl,
+              stopLocationType: stop.stopLocationType,
+              stopParentStation: stop.stopParentStation,
+              stopTimezone: stop.stopTimezone,
+              stopWheelchairBoarding: stop.stopWheelchairBoarding,
+              stopPlatformCode: stop.stopPlatformCode,
+              mode: stop.mode,
             },
             geometry: {
               type: 'Point',
@@ -346,8 +365,6 @@
     map.addControl(new maplibregl.NavigationControl())
 
     map.on('load', async () => {
-      addShapes(get(shapes), get(modes))
-
       await Promise.all(
         icons.map(({ name, url }) => {
           new Promise<void>((resolve) => {
@@ -360,9 +377,6 @@
           })
         }
       ))
-
-      addStops(get(stops), get(modes))
-      addVehicles(get(vehicles), get(modes))
   
       subModes = modes.subscribe((m) => {
         clearShapes(m)
@@ -373,8 +387,7 @@
         addVehicles(get(vehicles), m)
       })
       subVehicles = vehicles.subscribe((v) => {
-        console.log('asdf')
-        console.log(v, get(modes))
+        console.log(v)
         addVehicles(v, get(modes))
       })
     })

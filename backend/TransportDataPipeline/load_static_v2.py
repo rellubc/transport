@@ -244,6 +244,7 @@ def main():
     conflict_key = ["shape_id", "shape_pt_sequence"]
 
     for mode in MODES:
+        os.makedirs(f"{shapes_folder}/{mode}", exist_ok=True)
         for filename in os.listdir(f"{shapes_folder}/{mode}"):
             print(f"Loading {filename}...")
             with open(f"{shapes_folder}/{mode}/{filename}", "rb") as file:

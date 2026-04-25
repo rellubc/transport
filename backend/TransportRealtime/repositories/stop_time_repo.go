@@ -4,7 +4,6 @@ import (
 	models "TransportRealtime/models/static"
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -146,8 +145,6 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 	}
 
 	query := fmt.Sprintf(baseQuery, whereClause)
-
-	log.Println(query, args)
 
 	rows, err := r.DB.Query(context.Background(), query, args...)
 	if err != nil {

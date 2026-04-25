@@ -31,10 +31,31 @@ var RoutesLookup = map[string]string{
 	"ESI": "T4",
 	"CMB": "T5",
 	"T6":  "T6",
+	"OLY": "T7",
 	"APS": "T8",
 	"NTH": "T9",
+
+	"BMT": "BMT",
+	"CCN": "CCN",
+	"SCO": "SCO",
+	"SHL": "SHL",
 
 	"M1": "M1",
 
 	"IWLR": "L1",
+	"L2":   "L2",
+	"L3":   "L3",
+	"L4":   "L4",
+
+	"MFF": "MFF",
+	"F1":  "F1",
+	"F2":  "F2",
+	"F3":  "F3",
+	"F4":  "F4",
+	"F5":  "F5",
+	"F6":  "F6",
+	"F7":  "F7",
+	"F8":  "F8",
+	"F9":  "F9",
+	"F10": "F10",
 }

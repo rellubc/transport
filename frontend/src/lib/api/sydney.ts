@@ -25,8 +25,6 @@ export const getSydneyShapes = async (fetchFn: typeof fetch, shapeType: string):
   let url = `http://localhost:8080/api/sydney/shapes`
   if (shapeType) url = url.concat(`?shape_type=${shapeType}`)
 
-    console.log(url)
-
   try {
     const res = await fetchFn(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)

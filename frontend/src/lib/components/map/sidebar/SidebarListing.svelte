@@ -41,7 +41,7 @@
           {#each consist as occupancy}
             <div
               style={`background-color: ${OccupancyColours[occupancy.occupancyStatus]}`}
-              class="w-4.5 h-4.5 flex flex-row justify-center items-center rounded-full"
+              class="w-5 h-5 flex flex-row justify-center items-center rounded-full"
             >
               <p class="text-sm">{occupancy.positionInConsist}</p>  
             </div>

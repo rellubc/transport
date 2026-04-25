@@ -26,9 +26,8 @@ export const ModeLabels: Record<number, string> = {
     0: 'lightrail',
     401: 'metro',
     2: 'sydneytrains',
-    3: 'bus',
-    4: 'ferry',
-    105: 'regionalrail',
+    3: 'buses',
+    4: 'ferries',
 }
 
 export const VehicleLabels: Record<string, string> = {

@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { RealtimeStopTime } from "$lib/types/stop-time";
-  import { ChartNoAxesColumnIcon } from "lucide-svelte";
   import SidebarListing from "./SidebarListing.svelte";
 
   const { mode, colour, realtimeStopTimes }: { mode: string, colour: string, realtimeStopTimes: RealtimeStopTime[] } = $props()
@@ -31,8 +30,6 @@
         break
       }
     }
-
-    console.log(mode)
 
     let newOffset = 0
     skips = 0

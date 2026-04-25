@@ -10,10 +10,10 @@
   let loaded = $state(false)
 
   onMount(() => {
+    routes.set(data.routes)
     shapes.set(data.shapes)
     stops.set(data.stops)
     vehicles.set(data.vehicles)
-    routes.set(data.routes)
     
     loaded = true
 

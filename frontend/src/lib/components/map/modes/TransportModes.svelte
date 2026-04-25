@@ -1,6 +1,6 @@
 <script lang="ts">
   import { MODEICONS, ModeLabels, ModeType } from "$lib/constants";
-  import { addModes, modes, shapes } from "$lib/stores";
+  import { addModes, modes, routes } from "$lib/stores";
   import type { ModeIcon } from "$lib/types/general";
   import { get } from "svelte/store";
 
@@ -17,18 +17,16 @@
       disabledModes = new Set(disabledModes)
 
       const newModes: Partial<Record<number, string[]>> = {}
-      Object.keys(get(shapes)).forEach((shapeId) => {
-        for (let i = 1; i <  shapeId.split('_')[0].length; i++) {
-          const line = shapeId[0] + shapeId[i]
+      Object.keys(get(routes)).forEach((routeId) => {
+        const line = routeId.split('_')[1]
 
-          let modeType: number | null = null
-          if (/^T[0-9]$/.test(line) && modeKey === ModeType.RAIL) modeType = ModeType.RAIL
-          if (/^M[0-9]$/.test(line) && modeKey === ModeType.METRO) modeType = ModeType.METRO
-          if (/^L[0-9]$/.test(line) && modeKey === ModeType.LIGHT_RAIL) modeType = ModeType.LIGHT_RAIL
+        let modeType: number | null = null
+        if (/^T[0-9]$/.test(line) && modeKey === ModeType.RAIL) modeType = ModeType.RAIL
+        if (/^M[0-9]$/.test(line) && modeKey === ModeType.METRO) modeType = ModeType.METRO
+        if (/^L[0-9]$/.test(line) && modeKey === ModeType.LIGHT_RAIL) modeType = ModeType.LIGHT_RAIL
 
-          if (modeType !== null) {
-            newModes[modeType] = [...(newModes[modeType] ?? []), line]
-          }
+        if (modeType !== null) {
+          newModes[modeType] = [...(newModes[modeType] ?? []), line]
         }
       })
 

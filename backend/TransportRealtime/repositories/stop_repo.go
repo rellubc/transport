@@ -3,6 +3,7 @@ package repositories
 import (
 	models "TransportRealtime/models/static"
 	"context"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -65,7 +66,7 @@ func (r *StopRepository) GetStops(mode string) (map[string][]models.Stop, error)
 			return nil, err
 		}
 
-		stopMap[stop.Mode] = append(stopMap[stop.Mode], stop)
+		stopMap[strings.Split(stop.Mode, "/")[0]] = append(stopMap[strings.Split(stop.Mode, "/")[0]], stop)
 	}
 
 	return stopMap, nil

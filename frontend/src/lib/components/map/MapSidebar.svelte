@@ -38,6 +38,9 @@
         colour = LineColours[route]
         scheduledStopTimes = await getSydneyScheduledStopTimes(fetch, null, feature.tripId)
         realtimeStopTimes = await getSydneyRealtimeStopTimes(fetch, null, feature.tripId)
+        console.log($state.snapshot(realtimeStopTimes))
+      } else if (feature.type === 'stop') {
+        console.log('asdf')
       }
 
       loaded = true
@@ -45,7 +48,7 @@
       const fetchStopTimes = async () => {
         console.log("Updating stop times...")
         realtimeStopTimes = await getSydneyRealtimeStopTimes(fetch, null, feature.tripId)
-        console.log(realtimeStopTimes)
+        console.log($state.snapshot(realtimeStopTimes))
       }
 
       interval = setInterval(fetchStopTimes, 15000);

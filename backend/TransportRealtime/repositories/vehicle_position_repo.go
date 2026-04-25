@@ -93,7 +93,31 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 
 		if vp.RouteId != "" {
 			for k, v := range constants.RoutesLookup {
-				if strings.Contains(vp.RouteId, k) {
+				if vp.Mode == "metro" && strings.Split(vp.RouteId, "_")[1] == k {
+					key = v
+					break
+				} else if vp.Mode == "sydneytrains" && strings.Split(vp.RouteId, "_")[0] == k {
+					key = v
+					break
+				} else if vp.Mode == "nswtrains" && strings.Split(vp.RouteId, ".")[2] == k {
+					key = v
+					break
+				} else if vp.Mode == "buses" && strings.Split(vp.RouteId, "_")[1] == k {
+					key = v
+					break
+				} else if vp.Mode == "lightrail/cbdandsoutheast" && strings.Split(vp.RouteId, "_")[1] == k {
+					key = v
+					break
+				} else if vp.Mode == "lightrail/innerwest" && strings.Split(vp.RouteId, "-")[0] == k {
+					key = v
+					break
+				} else if vp.Mode == "lightrail/parramatta" && strings.Split(vp.RouteId, "_")[1] == k {
+					key = v
+					break
+				} else if vp.Mode == "ferries/sydneyferries" && strings.Split(vp.RouteId, "-")[1] == k {
+					key = v
+					break
+				} else if vp.Mode == "ferries/MFF" && strings.Split(vp.RouteId, "-")[0] == k {
 					key = v
 					break
 				}
