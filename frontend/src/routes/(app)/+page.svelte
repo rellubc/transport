@@ -46,7 +46,7 @@
           stopTimes = [...newTimes, ...stopTimes]
 
           await tick()
-          list.scrollTop = newTimes.length * 44
+          list.scrollTop = newTimes.length * 60 + 20
         } catch (error) {
           console.error(error)
         } finally {
@@ -107,16 +107,20 @@
       <p class="text-2xl font-bold">{activeStop.stopName}</p>
       <p class="text-xs font-light">{activeStop.stopId}</p>
     </div>
-    <div bind:this={listElement} /*style:scrollbar-width="none"*/ class="flex flex-col overflow-y-scroll">
-    <!-- <div bind:this={listElement} style:scrollbar-width="none" class="flex flex-col overflow-y-scroll"> -->
+    <!-- <div bind:this={listElement} /*style:scrollbar-width="none"*/ class="flex flex-col overflow-y-scroll"> -->
+    <div bind:this={listElement} style:scrollbar-width="none" class="flex flex-col overflow-y-scroll">
       <div style:height={`${BUFFER_PX}px`} class="w-full shrink-0"></div>
-        {#each stopTimes as stopTime}
-          <div class="flex flex-row justify-between items-center">
+        {#each stopTimes as stopTime, index}
+          <div style:opacity={stopTime.stopType === 'pass' ? 0.5 : 1} class="flex flex-row justify-between items-center py-2">
             <div>
               <p>{stopTime.tripHeadsign}</p>
             </div>
             <div class="flex flex-col justify-center w-26">
-              <p class="text-center">{secondsToTime(stopTime.effectiveDepartureTime)}</p>
+              {#if stopTime.stopType === 'terminate'}
+                <p class="text-center">{secondsToTime(stopTime.effectiveArrivalTime)}</p>
+              {:else}
+                <p class="text-center">{secondsToTime(stopTime.effectiveDepartureTime)}</p>
+              {/if}
               {#if stopTime.isRealtime}
                 <p style:color={stopDelayColour(stopTime.departureDelay)} class="text-sm text-center">{stopDelayText(stopTime.departureDelay)}</p>
               {:else}
@@ -124,6 +128,9 @@
               {/if}
               </div>
           </div>
+          {#if index !== stopTimes.length - 1}
+            <div class="border-b border-slate-200"></div>
+          {/if}
         {/each}
       <div style:height={`${BUFFER_PX}px`} class="w-full shrink-0"></div>
     </div>

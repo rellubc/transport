@@ -27,7 +27,9 @@ func main() {
 	repos := repositories.NewRepositories(database)
 	router := handlers.RegisterRoutes(repos)
 
-	tasks.StartMaterialisedViewRefresh(database)
+	if err := repos.StopTime.WarmCache(); err != nil {
+		log.Printf("warn: cache warmup failed: %v", err)
+	}
 
 	tasks.StartTasks(apiKey, database, 30*time.Second)
 	log.Println("Starting realtime data fetcher...")

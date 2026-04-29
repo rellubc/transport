@@ -80,7 +80,7 @@ func InsertVehiclePositionsV1(feed *pb.FeedMessage, db *pgxpool.Pool) error {
 		ext = proto.GetExtension(vehicle, pb.E_Consist)
 		consist := ext.([]*pb.CarriageDescriptor)
 
-		// need to double check ordering for metro consists
+		// need to double check ordering for consists
 		index := int32(1)
 		for _, c := range consist {
 			positionInConsist := c.GetPositionInConsist()
