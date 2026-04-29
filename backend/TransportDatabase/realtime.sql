@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS trip_updates (
     vehicle_model TEXT NOT NULL,
 
     timestamp TIMESTAMPTZ NOT NULL,
+    route_type INT,
 
     PRIMARY KEY (trip_id)
 );
@@ -26,18 +27,6 @@ CREATE TABLE IF NOT EXISTS stop_time_updates (
 
     PRIMARY KEY (trip_id, stop_id),
     FOREIGN KEY (trip_id) REFERENCES trip_updates(trip_id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS carriage_occupancies (
-    trip_id TEXT NOT NULL,
-    stop_id TEXT NOT NULL,
-
-    position_in_consist INT NOT NULL,
-    departure_occupancy_status TEXT NOT NULL,
-
-    PRIMARY KEY (trip_id, stop_id, position_in_consist),
-    FOREIGN KEY (trip_id) REFERENCES trip_updates(trip_id) ON DELETE CASCADE,
-    FOREIGN KEY (trip_id, stop_id) REFERENCES stop_time_updates(trip_id, stop_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS vehicle_positions (
@@ -67,9 +56,8 @@ CREATE TABLE IF NOT EXISTS consist (
     position_in_consist INT NOT NULL,
     occupancy_status TEXT,
     timestamp TIMESTAMPTZ NOT NULL,
+    trip_id TEXT NOT NULL,
 
-    PRIMARY KEY (vehicle_id, position_in_consist, timestamp),
+    PRIMARY KEY (vehicle_id, position_in_consist, timestamp, trip_id),
     FOREIGN KEY (vehicle_id) REFERENCES vehicle_positions(vehicle_id) ON DELETE CASCADE
 );
-
-CREATE INDEX idx_vehicle_positions_geom ON vehicle_positions USING GIST(position_geom);

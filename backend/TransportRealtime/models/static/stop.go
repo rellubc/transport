@@ -6,6 +6,7 @@ type Stop struct {
 	StopId                 string      `json:"stopId"`
 	StopCode               *string     `json:"stopCode"`
 	StopName               string      `json:"stopName"`
+	StopDescription        *string     `json:"stopDescription"`
 	StopLat                float64     `json:"stopLat"`
 	StopLon                float64     `json:"stopLon"`
 	StopGeom               *geom.Point `json:"stopGeom"`
@@ -16,5 +17,5 @@ type Stop struct {
 	StopTimezone           *string     `json:"stopTimezone"`
 	StopWheelchairBoarding int         `json:"stopWheelchairBoarding"`
 	StopPlatformCode       *string     `json:"stopPlatformCode"`
-	Mode                   string      `json:"mode"`
+	RouteType              *int        `json:"routeType"`
 }

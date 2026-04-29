@@ -23,43 +23,29 @@ DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
 GTFS_URL = "https://api.transport.nsw.gov.au/v1/gtfs/schedule/"
 
-MODES = [
-    "sydneytrains",
-    "nswtrains",
+MODES = {
+    "sydneytrains": 2,
+    "nswtrains": 100,
 
-    "lightrail/innerwest",
-    "lightrail/newcastle",
-    "lightrail/parramatta",
-    "lightrail/cbdandsoutheast",
+    "lightrail/newcastle": 0,
+    "lightrail/innerwest": 900,
+    "lightrail/parramatta": 900,
+    "lightrail/cbdandsoutheast": 900,
 
-    "ferries/sydneyferries",
-    "ferries/MFF",
+    "ferries/sydneyferries": 4,
+    "ferries/MFF": 4,
 
-    "buses/SBSC006",
-    "buses/GSBC001",
-    "buses/GSBC002",
-    "buses/GSBC003",
-    "buses/GSBC004",
-    "buses/GSBC007",
-    "buses/GSBC008",
-    "buses/GSBC009",
-    "buses/GSBC010",
-    "buses/GSBC014",
-]
-# MODES = ["sydneytrains", "nswtrains", "buses"]
-# still need other modes
-
-# agency.txt "agency_id","agency_name","agency_url","agency_timezone","agency_lang","agency_phone"
-# routes.txt "route_id","agency_id","route_short_name","route_long_name","route_desc","route_type","route_url","route_color","route_text_color"
-# shapes.txt "shape_id","shape_pt_lat","shape_pt_lon","shape_pt_sequence","shape_dist_traveled"
-# stops.txt "stop_id","stop_code","stop_name","stop_desc","stop_lat","stop_lon","zone_id","stop_url","location_type","parent_station","stop_timezone","wheelchair_boarding"
-# vehicle_categories.txt "vehicle_category_id","vehicle_category_name"
-# vehicle_boardings.txt "vehicle_category_id","child_sequence","grandchild_sequence","boarding_area_id"
-# vehicle_couplings.txt "parent_id","child_id","child_sequence","child_label"
-# calendar.txt "service_id","monday","tuesday","wednesday","thursday","friday","saturday","sunday","start_date","end_date"
-# trips.txt "route_id","service_id","trip_id","trip_headsign","trip_short_name","direction_id","block_id","shape_id","wheelchair_accessible","vehicle_category_id"
-# stop_times.txt "trip_id","arrival_time","departure_time","stop_id","stop_sequence","stop_headsign","pickup_type","drop_off_type","shape_dist_traveled"
-# occupancies.txt "trip_id","stop_sequence","occupancy_status","monday","tuesday","wednesday","thursday","friday","saturday","sunday","start_date","end_date","exception"
+    # "buses/SBSC006",
+    # "buses/GSBC001",
+    # "buses/GSBC002",
+    # "buses/GSBC003",
+    # "buses/GSBC004",
+    # "buses/GSBC007",
+    # "buses/GSBC008",
+    # "buses/GSBC009",
+    # "buses/GSBC010",
+    # "buses/GSBC014",
+}
 
 MAPPINGS = {
     "agency.txt": ("agencies", {
@@ -100,7 +86,7 @@ MAPPINGS = {
         "shape_geom": "shape_geom",
         "shape_pt_sequence": "shape_pt_sequence",
         "shape_dist_travelled": "shape_dist_travelled",
-        "mode": "mode"
+        "route_type": "route_type",
     }),
     "stops.txt": ("stops", {
         "stop_id": "stop_id",
@@ -116,7 +102,7 @@ MAPPINGS = {
         "parent_station": "stop_parent_station",
         "stop_timezone": "stop_timezone",
         "wheelchair_boarding": "stop_wheelchair_boarding",
-        "mode": "mode"
+        "route_type": "route_type",
     }),
     "vehicle_categories.txt": ("vehicle_categories", {
         "vehicle_category_id": "vehicle_category_id",
@@ -128,10 +114,10 @@ MAPPINGS = {
         "trip_id": "trip_id",
         "trip_headsign": "trip_headsign",
         "trip_short_name": "trip_short_name",
-        "direction_id": "direction_id",
-        "block_id": "block_id",
+        "direction_id": "trip_direction_id",
+        "block_id": "trip_block_id",
         "shape_id": "shape_id",
-        "wheelchair_accessible": "wheelchair_accessible",
+        "wheelchair_accessible": "trip_wheelchair_accessible",
         "vehicle_category_id": "vehicle_category_id"
     }),
     "stop_times.txt": ("stop_times", {
@@ -144,7 +130,7 @@ MAPPINGS = {
         "pickup_type": "pickup_type",
         "drop_off_type": "drop_off_type",
         "shape_dist_travelled": "shape_dist_travelled",
-        "mode": "mode"
+        "route_type": "route_type",
     }),
         "vehicle_boardings.txt": ("vehicle_boardings", {
         "vehicle_category_id": "vehicle_category_id",
@@ -158,21 +144,6 @@ MAPPINGS = {
         "child_sequence": "child_sequence",
         "child_label": "child_label"
     }),
-    "occupancies.txt": ("occupancies", {
-        "trip_id": "trip_id",
-        "stop_sequence": "stop_sequence",
-        "occupancy_status": "occupancy_status",
-        "monday": "monday",
-        "tuesday": "tuesday",
-        "wednesday": "wednesday",
-        "thursday": "thursday",
-        "friday": "friday",
-        "saturday": "saturday",
-        "sunday": "sunday",
-        "start_date": "start_date",
-        "end_date": "end_date",
-        "exception": "exception"
-    })
 }
 
 TYPE_CASTS = {
@@ -208,7 +179,7 @@ def time_to_seconds(s):
     h, m, sec = map(int, s.split(":"))
     return h * 3600 + m * 60 + sec
 
-def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=10000):
+def load(conn, file, table_name, column_map, conflict_key, mode_string='', batch_size=10000):
     reader = csv.DictReader(io.TextIOWrapper(file, "utf-8-sig"))
     
     colnames = list(column_map.values())
@@ -243,8 +214,8 @@ def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=1000
                 if db_col == "stop_name":
                     val = val.replace("Station Platform", "Station, Platform")
 
-                if db_col == "mode":
-                    val = mode
+                if file.name != "routes.txt" and db_col == "route_type" and mode_string in MODES:
+                    val = MODES[mode_string]
 
                 if "geom" in db_col:
                     val = f"SRID=4326;POINT({lon} {lat})"
@@ -266,19 +237,19 @@ def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=1000
             conn.commit()
 
 def main():
-    print("Fetching Sydney transport static data...")
+    print("Fetching Sydney transport V1 static data...")
 
     headers = {
         "Authorization": f"apikey {API_KEY}"
     }
     conn = connect_db()
 
-    for mode in MODES:
-        r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
+    for mode_string in MODES:
+        r = requests.get(f"{GTFS_URL}{mode_string}", headers=headers)
         r.raise_for_status()
         zip_file = zipfile.ZipFile(io.BytesIO(r.content))
 
-        print(f"Fetching {mode} static data...")
+        print(f"Fetching {mode_string} static data...")
 
         for filename, (table, columns) in MAPPINGS.items():
             if filename not in zip_file.namelist():
@@ -295,29 +266,59 @@ def main():
                     "calendar.txt": ["service_id"],
                     "routes.txt": ["route_id"],
                     "stop_times.txt": ["trip_id", "stop_sequence"],
-                    "stops.txt": ["stop_id", "mode"],
+                    "stops.txt": ["stop_id"],
                     "trips.txt": ["trip_id"],
                     "vehicle_categories.txt": ["vehicle_category_id"],
                     "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
                     "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
-                    "occupancies.txt": ["trip_id", "stop_sequence", "start_date"]
                 }
                 conflict_key = conflict_key_map.get(filename, [])
 
                 print(file.readline().decode('utf-8-sig').strip())
                 file.seek(0)
 
-                load(conn, file, table, columns, conflict_key, mode)
+                load(conn, file, table, columns, conflict_key)
+
+    with conn.cursor() as cur:
+        cur.execute("""
+            UPDATE stop_times st
+            SET route_type = sub.route_type
+            FROM (
+                SELECT DISTINCT ON (st.trip_id, st.stop_sequence) st.trip_id, st.stop_sequence, r.route_type
+                FROM stop_times st
+                JOIN trips t ON st.trip_id = t.trip_id
+                JOIN routes r ON t.route_id = r.route_id
+            ) sub
+            WHERE st.trip_id = sub.trip_id AND st.stop_sequence = sub.stop_sequence;
+        """)
+        conn.commit()
+
+        cur.execute("""
+            UPDATE stops s
+            SET route_type = sub.route_type
+            FROM (
+                SELECT DISTINCT ON (s.stop_id) s.stop_id, st.route_type
+                FROM stops s
+                JOIN stop_times st ON s.stop_id = st.stop_id
+                UNION
+                SELECT DISTINCT ON (s.stop_id) s.stop_id, st.route_type
+                FROM stops s
+                JOIN stops child ON child.stop_parent_station = s.stop_id
+                JOIN stop_times st ON child.stop_id = st.stop_id
+            ) sub
+            WHERE s.stop_id = sub.stop_id;
+        """)
+        conn.commit()
 
     shapes_folder = f"{os.getcwd()}/._shapes"
     conflict_key = ["shape_id", "shape_pt_sequence"]
 
-    for mode in MODES:
-        os.makedirs(f"{shapes_folder}/{mode}", exist_ok=True)
-        for filename in os.listdir(f"{shapes_folder}/{mode}"):
+    for mode_string in MODES:
+        os.makedirs(f"{shapes_folder}/{mode_string}", exist_ok=True)
+        for filename in os.listdir(f"{shapes_folder}/{mode_string}"):
             print(f"Loading {filename}...")
-            with open(f"{shapes_folder}/{mode}/{filename}", "rb") as file:
-                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode)
+            with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
+                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_string)
 
     conn.close()
     print("Loaded Sydney transport static data")

@@ -4,6 +4,7 @@ import (
 	models "TransportRealtime/models/static"
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,7 +19,7 @@ func NewStopTimeRepository(db *pgxpool.Pool) *StopTimeRepository {
 }
 
 func (r *StopTimeRepository) GetStaticStopTimes(stopId string, tripId string) ([]models.StaticStopTime, error) {
-	baseQuery := "SELECT st.trip_id, st.arrival_time, st.departure_time, st.stop_id, st.stop_sequence, st.pickup_type, st.drop_off_type, st.shape_dist_travelled, st.timepoint, st.stop_note, st.mode, t.trip_headsign AS stop_headsign FROM stop_times st JOIN trips t ON st.trip_id = t.trip_id"
+	baseQuery := "SELECT st.trip_id, st.arrival_time, st.departure_time, st.stop_id, st.stop_sequence, st.pickup_type, st.drop_off_type, st.shape_dist_travelled, st.timepoint, st.stop_note, st.route_type, t.trip_headsign AS stop_headsign FROM stop_times st JOIN trips t ON st.trip_id = t.trip_id"
 	args := []any{}
 	conditions := []string{}
 
@@ -56,7 +57,7 @@ func (r *StopTimeRepository) GetStaticStopTimes(stopId string, tripId string) ([
 			&stopTime.ShapeDistTravelled,
 			&stopTime.Timepoint,
 			&stopTime.StopNote,
-			&stopTime.Mode,
+			&stopTime.RouteType,
 			&stopTime.StopHeadsign,
 		)
 
@@ -98,7 +99,7 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 			AND st.trip_id = stu.trip_id
 		JOIN stops s
 			ON st.stop_id = s.stop_id
-			AND st.mode = s.mode
+			AND st.route_type = s.route_type
 		JOIN trips t
 			ON st.trip_id = t.trip_id
 		LEFT JOIN LATERAL (
@@ -108,8 +109,8 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 				AND EXTRACT(EPOCH FROM timestamp AT TIME ZONE 'Australia/Sydney')::integer %% 86400 <= (st.departure_time + COALESCE(stu.stop_departure_delay, 0))
 			ORDER BY position_in_consist, timestamp DESC
 			LIMIT CASE 
-				WHEN st.mode = 'metro' THEN 6
-				WHEN st.mode = 'lightrail/innerwest' THEN 2
+				WHEN st.route_type = 401 THEN 6
+				WHEN st.route_type = 900 THEN 2
 				ELSE 8
 			END
 		) c ON true
@@ -168,6 +169,8 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 			&st.Consist,
 		)
 
+		log.Println(err)
+
 		if err != nil {
 			return nil, err
 		}
@@ -176,6 +179,145 @@ func (r *StopTimeRepository) GetRealtimeStopTimes(stopId string, tripId string) 
 			st.Status = "skipped"
 		} else {
 			st.Status = "stop"
+		}
+
+		sts = append(sts, st)
+	}
+
+	return sts, nil
+}
+
+func (r *StopTimeRepository) GetStopStaticStopTimes(stopId string) ([]models.StaticStopTime, error) {
+	rows, err := r.DB.Query(context.Background(), "SELECT * FROM static_stop_times WHERE stop_id = $1", stopId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return []models.StaticStopTime{}, nil
+}
+
+func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, time int) ([]models.StopRealtimeStopTime, error) {
+	baseQuery := `
+        WITH now_sydney AS (
+            SELECT
+                NOW() AT TIME ZONE 'Australia/Sydney' AS now_time,
+                (NOW() AT TIME ZONE 'Australia/Sydney')::date AS now_date,
+                EXTRACT(DOW FROM NOW() AT TIME ZONE 'Australia/Sydney')::int AS now_dow,
+                EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time)::int AS now_sec
+        )
+        SELECT 
+            t.trip_id,
+            t.trip_headsign,
+            t.service_id,
+            s.stop_id,
+            s.stop_name,
+            st.arrival_time,
+            stu.stop_arrival_delay,
+            st.departure_time,
+            stu.stop_departure_delay,
+            st.arrival_time   + COALESCE(stu.stop_arrival_delay,   0) AS effective_arrival_time,
+            st.departure_time + COALESCE(stu.stop_departure_delay, 0) AS effective_departure_time,
+            st.pickup_type,
+            st.drop_off_type,
+            CASE
+                WHEN st.pickup_type = 1 AND st.drop_off_type = 1 THEN 'passes here'
+                WHEN st.pickup_type = 1 THEN 'terminates here'
+                WHEN st.drop_off_type = 1 THEN 'departs here'
+                ELSE 'stops here'
+            END AS stop_type,
+            (stu.stop_departure_delay IS NOT NULL) AS is_realtime
+        FROM now_sydney ns
+        JOIN calendars c
+            ON  c.start_date <= ns.now_date
+            AND c.end_date   >= ns.now_date
+            AND CASE ns.now_dow
+                    WHEN 0 THEN c.sunday
+                    WHEN 1 THEN c.monday
+                    WHEN 2 THEN c.tuesday
+                    WHEN 3 THEN c.wednesday
+                    WHEN 4 THEN c.thursday
+                    WHEN 5 THEN c.friday
+                    WHEN 6 THEN c.saturday
+                END
+        JOIN trips t
+            ON t.service_id = c.service_id
+        JOIN stop_times st
+            ON st.trip_id = t.trip_id
+        JOIN stops s
+            ON  s.stop_id = st.stop_id
+            AND (s.stop_id = $1 OR s.stop_parent_station = $1)
+        LEFT JOIN LATERAL (
+            SELECT stop_arrival_delay, stop_departure_delay
+            FROM stop_time_updates
+            WHERE trip_id = st.trip_id
+                AND stop_id = st.stop_id
+            ORDER BY timestamp DESC
+            LIMIT 1
+        ) stu ON true
+    `
+
+	args := []any{stopId}
+
+	var query string
+
+	switch direction {
+	case "next":
+		query = baseQuery +
+			` WHERE st.departure_time + COALESCE(stu.stop_departure_delay, 0) > $2
+              ORDER BY effective_departure_time ASC, t.trip_id ASC
+              LIMIT 20`
+		args = append(args, time)
+
+	case "prev":
+		// Fetch the 20 rows before the cursor in reverse, then re-reverse below
+		query = `SELECT * FROM (` + baseQuery +
+			` WHERE st.departure_time + COALESCE(stu.stop_departure_delay, 0) < $2
+              ORDER BY effective_departure_time DESC, t.trip_id DESC
+              LIMIT 20) sub
+             ORDER BY effective_departure_time ASC, trip_id ASC`
+		args = append(args, time)
+
+	default: // initial
+		query = baseQuery +
+			` WHERE st.departure_time + COALESCE(stu.stop_departure_delay, 0) >= ns.now_sec
+              ORDER BY effective_departure_time ASC, t.trip_id ASC
+              LIMIT 20`
+	}
+
+	log.Println(query, args)
+
+	rows, err := r.DB.Query(context.Background(), query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("GetStopRealtimeStopTimes querying failed: %w", err)
+	}
+	defer rows.Close()
+
+	var sts = []models.StopRealtimeStopTime{}
+	for rows.Next() {
+		var st models.StopRealtimeStopTime
+		err := rows.Scan(
+			&st.TripId,
+			&st.TripHeadsign,
+			&st.ServiceId,
+			&st.StopId,
+			&st.StopName,
+			&st.ArrivalTime,
+			&st.ArrivalDelay,
+			&st.DepartureTime,
+			&st.DepartureDelay,
+			&st.EffectiveArrivalTime,
+			&st.EffectiveDepartureTime,
+			&st.PickupType,
+			&st.DropOffType,
+			&st.StopType,
+			&st.IsRealtime,
+		)
+
+		log.Println(err)
+
+		if err != nil {
+			return nil, fmt.Errorf("GetStopRealtimeStopTimes scanning failed: %w", err)
 		}
 
 		sts = append(sts, st)

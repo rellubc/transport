@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"TransportRealtime/constants"
 	pb "TransportRealtime/proto"
 
 	"github.com/jackc/pgx/v5"
@@ -13,7 +14,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func InsertVehiclePositionsV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode string) error {
+func InsertVehiclePositionsV2(feed *pb.FeedMessage, db *pgxpool.Pool) error {
 	ctx := context.Background()
 
 	batch := &pgx.Batch{}
@@ -34,12 +35,15 @@ func InsertVehiclePositionsV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode strin
 		ext := proto.GetExtension(vehicle.GetVehicle(), pb.E_TfnswVehicleDescriptor)
 		tfnsw := ext.(*pb.TfnswVehicleDescriptor)
 
+		var routeType int
+		db.QueryRow(ctx, `SELECT route_type FROM routes WHERE route_id = $1`, vehicle.GetTrip().GetRouteId()).Scan(&routeType)
+
 		batch.Queue(`
 			INSERT INTO vehicle_positions (
 				trip_id, trip_route_id, trip_schedule_relationship,
 				vehicle_id, vehicle_label, vehicle_model,
 				position_latitude, position_longitude, position_geom,
-				stop_id, timestamp, congestion_level, occupancy_status, mode
+				stop_id, timestamp, congestion_level, occupancy_status, route_type
 			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,ST_SetSRID(ST_MakePoint($9,$10),4326),$11,$12,$13,$14,$15)
 			ON CONFLICT (vehicle_id) DO UPDATE SET
 				trip_id=EXCLUDED.trip_id,
@@ -54,7 +58,7 @@ func InsertVehiclePositionsV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode strin
 				timestamp=EXCLUDED.timestamp,
 				congestion_level=EXCLUDED.congestion_level,
 				occupancy_status=EXCLUDED.occupancy_status,
-				mode=EXCLUDED.mode
+				route_type=EXCLUDED.route_type
 		`,
 			vehicle.GetTrip().GetTripId(),
 			vehicle.GetTrip().GetRouteId(),
@@ -70,7 +74,7 @@ func InsertVehiclePositionsV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode strin
 			time,
 			vehicle.GetCongestionLevel().String(),
 			vehicle.GetOccupancyStatus().String(),
-			mode,
+			routeType,
 		)
 
 		ext = proto.GetExtension(vehicle, pb.E_Consist)
@@ -80,7 +84,7 @@ func InsertVehiclePositionsV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode strin
 		index := int32(1)
 		for _, c := range consist {
 			positionInConsist := c.GetPositionInConsist()
-			if mode == "metro" {
+			if routeType == int(constants.Metro) {
 				positionInConsist = index
 			}
 			batch.Queue(`
@@ -109,7 +113,7 @@ func InsertVehiclePositionsV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode strin
 	return nil
 }
 
-func InsertTripUpdatesV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode string) error {
+func InsertTripUpdatesV2(feed *pb.FeedMessage, db *pgxpool.Pool) error {
 	ctx := context.Background()
 
 	batch := &pgx.Batch{}
@@ -123,11 +127,14 @@ func InsertTripUpdatesV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode string) er
 		ext := proto.GetExtension(tripUpdate.GetVehicle(), pb.E_TfnswVehicleDescriptor)
 		tfnsw := ext.(*pb.TfnswVehicleDescriptor)
 
+		var routeType int
+		db.QueryRow(ctx, `SELECT route_type FROM routes WHERE route_id = $1`, tripUpdate.GetTrip().GetRouteId()).Scan(&routeType)
+
 		batch.Queue(`
 			INSERT INTO trip_updates (
 				trip_id, trip_route_id, trip_schedule_relationship,
 				vehicle_id, vehicle_label, vehicle_model,
-				timestamp, mode
+				timestamp, route_type
 			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 			ON CONFLICT (trip_id) DO UPDATE SET
 				trip_id=EXCLUDED.trip_id,
@@ -136,7 +143,7 @@ func InsertTripUpdatesV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode string) er
 				vehicle_label=EXCLUDED.vehicle_label,
 				vehicle_model=EXCLUDED.vehicle_model,
 				timestamp=EXCLUDED.timestamp,
-				mode=EXCLUDED.mode
+				route_type=EXCLUDED.route_type
 		`,
 			tripUpdate.GetTrip().GetTripId(),
 			tripUpdate.GetTrip().GetRouteId(),
@@ -145,7 +152,7 @@ func InsertTripUpdatesV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode string) er
 			tripUpdate.GetVehicle().GetLabel(),
 			tfnsw.GetVehicleModel(),
 			time.Unix(int64(tripUpdate.GetTimestamp()), 0).UTC(),
-			mode,
+			routeType,
 		)
 
 		for _, stu := range tripUpdate.StopTimeUpdate {
@@ -171,22 +178,6 @@ func InsertTripUpdatesV2(feed *pb.FeedMessage, db *pgxpool.Pool, mode string) er
 					stop_departure_delay=EXCLUDED.stop_departure_delay,
 					timestamp=EXCLUDED.timestamp
 			`, tripUpdate.GetTrip().GetTripId(), stu.GetStopId(), arrivalTime, stu.GetArrival().GetDelay(), departureTime, stu.GetDeparture().GetDelay(), time.Unix(int64(tripUpdate.GetTimestamp()), 0).UTC())
-
-			// could be used later on?
-			// ext := proto.GetExtension(stu, pb.E_CarriageSeqPredictiveOccupancy)
-			// if ext != nil {
-			// 	carriageOccupancies, ok := ext.([]*pb.CarriageDescriptor)
-			// 	if ok {
-			// 		for _, co := range carriageOccupancies {
-			// 			batch.Queue(`
-			// 				INSERT INTO carriage_occupancies (trip_id, stop_id, position_in_consist, departure_occupancy_status)
-			// 				VALUES ($1,$2,$3,$4)
-			// 				ON CONFLICT (trip_id, stop_id, position_in_consist) DO UPDATE SET
-			// 					departure_occupancy_status=EXCLUDED.departure_occupancy_status
-			// 			`, tripUpdate.GetTrip().GetTripId(), stu.GetStopId(), co.GetPositionInConsist(), co.GetOccupancyStatus().String())
-			// 		}
-			// 	}
-			// }
 		}
 	}
 

@@ -1,5 +1,16 @@
 package constants
 
+type ModeType int
+
+const (
+	LightrailNewcastle ModeType = 0
+	Metro              ModeType = 401
+	SydneyTrains       ModeType = 2
+	Buses              ModeType = 3
+	Ferry              ModeType = 4
+	LightrailSydney    ModeType = 900
+)
+
 var M1ShapeIds = []int{
 	3722,
 	16714,

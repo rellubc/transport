@@ -29,9 +29,6 @@ func RegisterRoutes(repos *repositories.Repositories) http.Handler {
 	r.Get("/api/sydney/notes", GetNotesHandler(repos.Note))
 	r.Get("/api/sydney/note/{note_id}", GetNoteHandler(repos.Note))
 
-	// Occupancy
-	r.Get("/api/sydney/occupancies", GetOccupanciesHandler(repos.Occupancy))
-
 	// Route
 	r.Get("/api/sydney/routes", GetRoutesHandler(repos.Route))
 	r.Get("/api/sydney/route/{route_id}", GetRouteHandler(repos.Route))
@@ -42,6 +39,7 @@ func RegisterRoutes(repos *repositories.Repositories) http.Handler {
 	// Stop
 	r.Get("/api/sydney/stops", GetStopsHandler(repos.Stop))
 	r.Get("/api/sydney/stop/{stop_id}", GetStopHandler(repos.Stop))
+	r.Get("/api/sydney/stop/{stop_id}/stop_times", GetStopStopTimesHandler(repos.StopTime))
 
 	// StopTime
 	r.Get("/api/sydney/stop_times/static", GetStaticStopTimesHandler(repos.StopTime))

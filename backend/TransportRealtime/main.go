@@ -27,6 +27,8 @@ func main() {
 	repos := repositories.NewRepositories(database)
 	router := handlers.RegisterRoutes(repos)
 
+	tasks.StartMaterialisedViewRefresh(database)
+
 	tasks.StartTasks(apiKey, database, 30*time.Second)
 	log.Println("Starting realtime data fetcher...")
 

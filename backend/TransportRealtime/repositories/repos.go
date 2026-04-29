@@ -6,7 +6,6 @@ type Repositories struct {
 	Agency          *AgencyRepository
 	Calendar        *CalendarRepository
 	Note            *NoteRepository
-	Occupancy       *OccupancyRepository
 	Route           *RouteRepository
 	Shape           *ShapeRepository
 	Stop            *StopRepository
@@ -26,7 +25,6 @@ func NewRepositories(db *pgxpool.Pool) *Repositories {
 		Agency:          NewAgencyRepository(db),
 		Calendar:        NewCalendarRepository(db),
 		Note:            NewNoteRepository(db),
-		Occupancy:       NewOccupancyRepository(db),
 		Route:           NewRouteRepository(db),
 		Shape:           NewShapeRepository(db),
 		Stop:            NewStopRepository(db),

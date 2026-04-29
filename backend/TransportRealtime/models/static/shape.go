@@ -9,7 +9,7 @@ type Shape struct {
 	ShapeGeom          *geom.Point `json:"shapeGeom"`
 	ShapePtSequence    int         `json:"shapePtSequence"`
 	ShapeDistTravelled *float64    `json:"shapeDistTravelled"`
-	Mode               string      `json:"mode"`
+	RouteType          *int        `json:"routeType"`
 }
 
 type ShapeDetails struct {
@@ -18,5 +18,5 @@ type ShapeDetails struct {
 	ShapeGeom          *geom.Point `json:"shapeGeom"`
 	ShapePtSequence    int         `json:"shapePtSequence"`
 	ShapeDistTravelled *float64    `json:"shapeDistTravelled"`
-	Mode               string      `json:"mode"`
+	RouteType          *int        `json:"routeType"`
 }

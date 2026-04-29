@@ -23,7 +23,9 @@ DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
 GTFS_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/"
 
-MODES = ["metro"]
+MODES = {
+    "metro": 401,
+}
 
 MAPPINGS = {
     "agency.txt": ("agencies", { 
@@ -70,7 +72,7 @@ MAPPINGS = {
         "shape_geom": "shape_geom",
         "shape_pt_sequence": "shape_pt_sequence",
         "shape_dist_travelled": "shape_dist_travelled",
-        "mode": "mode"
+        "route_type": "route_type",
     }),
     "stops.txt": ("stops", {
         "stop_id": "stop_id",
@@ -82,7 +84,6 @@ MAPPINGS = {
         "parent_station": "stop_parent_station",
         "wheelchair_boarding": "stop_wheelchair_boarding",
         "platform_code": "stop_platform_code",
-        "mode": "mode"
     }),
     "trips.txt": ("trips", {
         "route_id": "route_id",
@@ -90,13 +91,13 @@ MAPPINGS = {
         "trip_id": "trip_id",
         "shape_id": "shape_id",
         "trip_headsign": "trip_headsign",
-        "direction_id": "direction_id",
+        "direction_id": "trip_direction_id",
         "trip_short_name": "trip_short_name",
-        "block_id": "block_id",
-        "wheelchair_accessible": "wheelchair_accessible",
+        "block_id": "trip_block_id",
+        "wheelchair_accessible": "trip_wheelchair_accessible",
         "trip_note": "trip_note",
-        "route_direction": "route_direction",
-        "bikes_allowed": "bikes_allowed"
+        "route_direction": "trip_route_direction",
+        "bikes_allowed": "trip_bikes_allowed"
     }),
     "stop_times.txt": ("stop_times", {
         "trip_id": "trip_id",
@@ -110,7 +111,6 @@ MAPPINGS = {
         "shape_dist_travelled": "shape_dist_travelled",
         "timepoint": "timepoint",
         "stop_note": "stop_note",
-        "mode": "mode"
     }),
 }
 
@@ -147,7 +147,7 @@ def time_to_seconds(s):
     h, m, sec = map(int, s.split(":"))
     return h * 3600 + m * 60 + sec
 
-def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=10000):
+def load(conn, file, table_name, column_map, conflict_key, mode_string='', batch_size=10000):
     reader = csv.DictReader(io.TextIOWrapper(file, "utf-8-sig"))
     
     colnames = list(column_map.values())
@@ -179,8 +179,8 @@ def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=1000
                     except:
                         val = None
 
-                if db_col == "mode":
-                    val = mode
+                if file.name != "routes.txt" and db_col == "route_type" and mode_string in MODES:
+                    val = MODES[mode_string]
 
                 if "geom" in db_col:
                     val = f"SRID=4326;POINT({lon} {lat})"
@@ -202,7 +202,7 @@ def load(conn, file, table_name, column_map, conflict_key, mode, batch_size=1000
             conn.commit()
 
 def main():
-    print("Fetching Sydney Metro static data...")
+    print("Fetching Sydney transport V2 static data...")
 
     headers = {
         "Authorization": f"apikey {API_KEY}"
@@ -210,10 +210,12 @@ def main():
     
     conn = connect_db()
 
-    for mode in MODES:
-        r = requests.get(f"{GTFS_URL}{mode}", headers=headers)
+    for mode_string in MODES:
+        r = requests.get(f"{GTFS_URL}{mode_string}", headers=headers)
         r.raise_for_status()
         zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+        
+        print(f"Fetching {mode_string} static data...")
         
         for filename, (table, columns) in MAPPINGS.items():
             if filename not in zip_file.namelist():
@@ -225,30 +227,62 @@ def main():
 
             print(f"Loading {filename}...")
             with zip_file.open(filename) as file:
-
                 conflict_key_map = {
                     "agency.txt": ["agency_id"],
                     "calendar.txt": ["service_id"],
                     "notes.txt": ["note_id"],
                     "routes.txt": ["route_id"],
                     "stop_times.txt": ["trip_id", "stop_sequence"],
-                    "stops.txt": ["stop_id", "mode"],
+                    "stops.txt": ["stop_id"],
                     "trips.txt": ["trip_id"],
-                    "shapes.txt": ["shape_id", "shape_pt_sequence"]
                 }
                 conflict_key = conflict_key_map.get(filename, [])
+
+                print(file.readline().decode('utf-8-sig').strip())
+                file.seek(0)
                 
-                load(conn, file, table, columns, conflict_key, mode)
+                load(conn, file, table, columns, conflict_key)
+
+    with conn.cursor() as cur:
+        cur.execute("""
+            UPDATE stop_times st
+            SET route_type = sub.route_type
+            FROM (
+                SELECT DISTINCT ON (st.trip_id, st.stop_sequence) st.trip_id, st.stop_sequence, r.route_type
+                FROM stop_times st
+                JOIN trips t ON st.trip_id = t.trip_id
+                JOIN routes r ON t.route_id = r.route_id
+            ) sub
+            WHERE st.trip_id = sub.trip_id AND st.stop_sequence = sub.stop_sequence;
+        """)
+        conn.commit()
+
+        cur.execute("""
+            UPDATE stops s
+            SET route_type = sub.route_type
+            FROM (
+                SELECT DISTINCT ON (s.stop_id) s.stop_id, st.route_type
+                FROM stops s
+                JOIN stop_times st ON s.stop_id = st.stop_id
+                UNION
+                SELECT DISTINCT ON (s.stop_id) s.stop_id, st.route_type
+                FROM stops s
+                JOIN stops child ON child.stop_parent_station = s.stop_id
+                JOIN stop_times st ON child.stop_id = st.stop_id
+            ) sub
+            WHERE s.stop_id = sub.stop_id;
+        """)
+        conn.commit()
 
     shapes_folder = f"{os.getcwd()}/._shapes"
     conflict_key = ["shape_id", "shape_pt_sequence"]
 
-    for mode in MODES:
-        os.makedirs(f"{shapes_folder}/{mode}", exist_ok=True)
-        for filename in os.listdir(f"{shapes_folder}/{mode}"):
+    for mode_string in MODES:
+        os.makedirs(f"{shapes_folder}/{mode_string}", exist_ok=True)
+        for filename in os.listdir(f"{shapes_folder}/{mode_string}"):
             print(f"Loading {filename}...")
-            with open(f"{shapes_folder}/{mode}/{filename}", "rb") as file:
-                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode)
+            with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
+                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_string)
 
     conn.close()
     print("Loaded Sydney Metro static data")

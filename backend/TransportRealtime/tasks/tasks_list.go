@@ -15,7 +15,7 @@ type FeedTask struct {
 	Version  string
 	Feed     config.FeedType
 	FetchFn  func(config.TransportMode, string) (*pb.FeedMessage, error)
-	InsertFn func(*pb.FeedMessage, *pgxpool.Pool, string) error
+	InsertFn func(*pb.FeedMessage, *pgxpool.Pool) error
 	DB       *pgxpool.Pool
 }
 
