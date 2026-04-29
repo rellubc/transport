@@ -36,6 +36,7 @@ type StopRealtimeStopTime struct {
 	TripId                 string  `json:"tripId"`
 	TripHeadsign           *string `json:"tripHeadsign"`
 	ServiceId              string  `json:"serviceId"`
+	RouteId                string  `json:"routeId"`
 	StopId                 string  `json:"stopId"`
 	StopName               string  `json:"stopName"`
 	ArrivalTime            *int    `json:"arrivalTime"`

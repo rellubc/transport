@@ -18,6 +18,7 @@ export interface StopStopTime {
   tripId: string
   tripHeadsign: string
   serviceId: string
+  routeId: string
   stopId: string
   stopName: string
   arrivalTime: number

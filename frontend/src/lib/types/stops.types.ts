@@ -12,7 +12,7 @@ export interface Stop {
   stopTimezone: string | null;
   stopWheelchairBoarding: number;
   stopPlatformCode: string | null;
-  mode: string;
+  routeType: string;
 }
 
 interface GeoJSONPoint {

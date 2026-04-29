@@ -239,7 +239,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 				END
 		),
 		active_trips AS MATERIALIZED (
-			SELECT t.trip_id, t.trip_headsign, t.service_id
+			SELECT t.trip_id, t.trip_headsign, t.service_id, t.route_id
 			FROM trips t
 			JOIN active_services ac ON ac.service_id = t.service_id
 		),
@@ -251,8 +251,9 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 		candidates AS (
 			SELECT
 				t.trip_id,
-				COALESCE(t.trip_headsign, 'No headsign') AS trip_headsign,
+				COALESCE(NULLIF(st.stop_headsign, ''), t.trip_headsign, 'No headsign') AS trip_headsign,
 				t.service_id,
+				t.route_id,
 				st.stop_id,
 				s.stop_name,
 				st.arrival_time,
@@ -329,6 +330,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			&st.TripId,
 			&st.TripHeadsign,
 			&st.ServiceId,
+			&st.RouteId,
 			&st.StopId,
 			&st.StopName,
 			&st.ArrivalTime,
