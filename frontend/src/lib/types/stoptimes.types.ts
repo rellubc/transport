@@ -19,6 +19,8 @@ export interface StopStopTime {
   tripHeadsign: string
   serviceId: string
   routeId: string
+  routeShortName: string
+  routeType: number
   stopId: string
   stopName: string
   arrivalTime: number
@@ -31,4 +33,6 @@ export interface StopStopTime {
   dropOffType: number
   stopType: string
   isRealtime: boolean
+  displayTime: number
+  hasContinuation: boolean
 }

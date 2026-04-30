@@ -3,9 +3,7 @@ package repositories
 import (
 	models "TransportRealtime/models/realtime"
 	"context"
-	"strings"
-
-	"TransportRealtime/constants"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,7 +17,7 @@ func NewVehiclePositionRepository(db *pgxpool.Pool) *VehiclePositionRepository {
 	return &VehiclePositionRepository{DB: db}
 }
 
-func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string][]models.VehiclePosition, error) {
+func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int][]models.VehiclePosition, error) {
 	var (
 		rows pgx.Rows
 		err  error
@@ -39,9 +37,9 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 			vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
 			vp.congestion_level,
 			vp.occupancy_status,
-			vp.mode
+			vp.route_type
 		FROM vehicle_positions vp
-		WHERE ($1 = '' OR vp.mode LIKE $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes'
+		%s
 		GROUP BY
 			vp.trip_id,
 			vp.trip_route_id,
@@ -55,17 +53,23 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 			sydney_time,
 			vp.congestion_level,
 			vp.occupancy_status,
-			vp.mode
+			vp.route_type
 	`
 
-	rows, err = r.DB.Query(context.Background(), query, mode)
+	if routeType != nil {
+		query = fmt.Sprintf(query, "WHERE ($1 IS NULL OR vp.route_type = $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes'")
+	} else {
+		query = fmt.Sprintf(query, "WHERE NOW() - vp.timestamp < INTERVAL '2 minutes'")
+	}
+
+	rows, err = r.DB.Query(context.Background(), query)
 
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	vpMap := make(map[string][]models.VehiclePosition)
+	vpMap := make(map[int][]models.VehiclePosition)
 
 	for rows.Next() {
 		var vp models.VehiclePosition
@@ -83,48 +87,20 @@ func (r *VehiclePositionRepository) GetVehiclePositions(mode string) (map[string
 			&vp.Timestamp,
 			&vp.CongestionLevel,
 			&vp.OccupancyStatus,
-			&vp.Mode,
+			&vp.RouteType,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		key := vp.Mode
-
-		if vp.RouteId != "" {
-			for k, v := range constants.RoutesLookup {
-				if vp.Mode == "metro" && strings.Split(vp.RouteId, "_")[1] == k {
-					key = v
-					break
-				} else if vp.Mode == "sydneytrains" && strings.Split(vp.RouteId, "_")[0] == k {
-					key = v
-					break
-				} else if vp.Mode == "nswtrains" && strings.Split(vp.RouteId, ".")[2] == k {
-					key = v
-					break
-				} else if vp.Mode == "buses" && strings.Split(vp.RouteId, "_")[1] == k {
-					key = v
-					break
-				} else if vp.Mode == "lightrail/cbdandsoutheast" && strings.Split(vp.RouteId, "_")[1] == k {
-					key = v
-					break
-				} else if vp.Mode == "lightrail/innerwest" && strings.Split(vp.RouteId, "-")[0] == k {
-					key = v
-					break
-				} else if vp.Mode == "lightrail/parramatta" && strings.Split(vp.RouteId, "_")[1] == k {
-					key = v
-					break
-				} else if vp.Mode == "ferries/sydneyferries" && strings.Split(vp.RouteId, "-")[1] == k {
-					key = v
-					break
-				} else if vp.Mode == "ferries/MFF" && strings.Split(vp.RouteId, "-")[0] == k {
-					key = v
-					break
-				}
-			}
+		var routeType int
+		if vp.RouteType == nil {
+			routeType = 9999
+		} else {
+			routeType = *vp.RouteType
 		}
 
-		vpMap[key] = append(vpMap[key], vp)
+		vpMap[routeType] = append(vpMap[routeType], vp)
 	}
 
 	return vpMap, nil
@@ -181,7 +157,7 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 		&vp.Timestamp,
 		&vp.CongestionLevel,
 		&vp.OccupancyStatus,
-		&vp.Mode,
+		&vp.RouteType,
 	)
 	if err != nil {
 		return models.VehiclePosition{}, err

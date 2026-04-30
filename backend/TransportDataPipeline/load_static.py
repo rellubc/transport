@@ -21,9 +21,16 @@ DB_NAME = os.getenv("POSTGRES_DB", "transport_db")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
-GTFS_URL = "https://api.transport.nsw.gov.au/v1/gtfs/schedule/"
+GTFS_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/"
+
+URLS = [
+    "https://api.transport.nsw.gov.au/v1/gtfs/schedule/",
+    "https://api.transport.nsw.gov.au/v2/gtfs/schedule/",
+]
 
 MODES = {
+    "metro": 401,
+
     "sydneytrains": 2,
     "nswtrains": 100,
 
@@ -48,13 +55,15 @@ MODES = {
 }
 
 MAPPINGS = {
-    "agency.txt": ("agencies", {
-        "agency_id": "agency_id",
+    "agency.txt": ("agencies", { 
+        "agency_id": "agency_id", 
         "agency_name": "agency_name",
         "agency_url": "agency_url",
         "agency_timezone": "agency_timezone",
         "agency_lang": "agency_language",
-        "agency_phone": "agency_phone"
+        "agency_phone": "agency_phone",
+        "agency_fare_url": "agency_fare_url",
+        "agency_email": "agency_email" 
     }),
     "calendar.txt": ("calendars", {
         "service_id": "service_id",
@@ -68,6 +77,10 @@ MAPPINGS = {
         "start_date": "start_date",
         "end_date": "end_date"
     }),
+    "notes.txt": ("notes", {
+        "note_id": "note_id",
+        "note_text": "note_text"
+    }),
     "routes.txt": ("routes", {
         "route_id": "route_id",
         "agency_id": "agency_id",
@@ -75,9 +88,9 @@ MAPPINGS = {
         "route_long_name": "route_long_name",
         "route_desc": "route_desc",
         "route_type": "route_type",
-        "route_url": "route_url",
         "route_color": "route_colour",
-        "route_text_color": "route_text_colour"
+        "route_text_color": "route_text_colour",
+        "route_url": "route_url"
     }),
     "shapes.txt": ("shapes", {
         "shape_id": "shape_id",
@@ -102,6 +115,7 @@ MAPPINGS = {
         "parent_station": "stop_parent_station",
         "stop_timezone": "stop_timezone",
         "wheelchair_boarding": "stop_wheelchair_boarding",
+        "platform_code": "stop_platform_code",
         "route_type": "route_type",
     }),
     "vehicle_categories.txt": ("vehicle_categories", {
@@ -112,13 +126,15 @@ MAPPINGS = {
         "route_id": "route_id",
         "service_id": "service_id",
         "trip_id": "trip_id",
-        "trip_headsign": "trip_headsign",
-        "trip_short_name": "trip_short_name",
-        "direction_id": "trip_direction_id",
-        "block_id": "trip_block_id",
         "shape_id": "shape_id",
+        "trip_headsign": "trip_headsign",
+        "direction_id": "trip_direction_id",
+        "trip_short_name": "trip_short_name",
+        "block_id": "trip_block_id",
         "wheelchair_accessible": "trip_wheelchair_accessible",
-        "vehicle_category_id": "vehicle_category_id"
+        "trip_note": "trip_note",
+        "route_direction": "trip_route_direction",
+        "bikes_allowed": "trip_bikes_allowed"
     }),
     "stop_times.txt": ("stop_times", {
         "trip_id": "trip_id",
@@ -130,9 +146,11 @@ MAPPINGS = {
         "pickup_type": "pickup_type",
         "drop_off_type": "drop_off_type",
         "shape_dist_travelled": "shape_dist_travelled",
+        "timepoint": "timepoint",
+        "stop_note": "stop_note",
         "route_type": "route_type",
     }),
-        "vehicle_boardings.txt": ("vehicle_boardings", {
+    "vehicle_boardings.txt": ("vehicle_boardings", {
         "vehicle_category_id": "vehicle_category_id",
         "child_sequence": "child_sequence",
         "grandchild_sequence": "grandchild_sequence",
@@ -160,7 +178,7 @@ TYPE_CASTS = {
     "wheelchair_boarding": int,
     "wheelchair_accessible": int,
     "bikes_allowed": int,
-    "timepoint": lambda v: bool(int(v)) if v != "" else None
+    "timepoint": int
 }
 
 def connect_db():
@@ -214,7 +232,7 @@ def load(conn, file, table_name, column_map, conflict_key, mode_string='', batch
                 if db_col == "stop_name":
                     val = val.replace("Station Platform", "Station, Platform")
 
-                if file.name != "routes.txt" and db_col == "route_type" and mode_string in MODES:
+                if file.name != "routes.txt" and db_col == "route_type":
                     val = MODES[mode_string]
 
                 if "geom" in db_col:
@@ -231,74 +249,93 @@ def load(conn, file, table_name, column_map, conflict_key, mode_string='', batch
                 cur.executemany(query, batch)
                 conn.commit()
                 batch.clear()
-    
+
         if batch:
             cur.executemany(query, batch)
             conn.commit()
 
 def main():
-    print("Fetching Sydney transport V1 static data...")
-
     headers = {
         "Authorization": f"apikey {API_KEY}"
     }
+    
     conn = connect_db()
 
-    # for mode_string in MODES:
-    #     r = requests.get(f"{GTFS_URL}{mode_string}", headers=headers)
-    #     r.raise_for_status()
-    #     zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+    for url in URLS:
+        feed_version = url.split("/")[3].upper()
+        print(f"Fetching Sydney Transport {feed_version} static data...")
+        for mode_string in MODES:
+            if feed_version == "V1" and mode_string == "metro":
+                continue
 
-    #     print(f"Fetching {mode_string} static data...")
+            try:
+                r = requests.get(f"{url}{mode_string}", headers=headers)
+                if r.status_code == 404:
+                    print(f"Skipping {url}{mode_string} (404)...")
+                    continue
+                r.raise_for_status()
+            except requests.HTTPError as e:
+                print(f"Skipping {url}{mode_string} ({e})...")
+                continue
 
-    #     for filename, (table, columns) in MAPPINGS.items():
-    #         if filename not in zip_file.namelist():
-    #             print(f"Skipping {filename}...")
-    #             continue
+            zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+            
+            print(f"Fetching {mode_string} static data...")
+            
+            for filename, (table, columns) in MAPPINGS.items():
+                if filename not in zip_file.namelist():
+                    print(f"Skipping {filename}...")
+                    continue
 
-    #         if filename == "shapes.txt":
-    #             continue
+                if filename == "shapes.txt":
+                    continue
 
-    #         print(f"Loading {filename}...")
-    #         with zip_file.open(filename) as file:
-    #             conflict_key_map = {
-    #                 "agency.txt": ["agency_id"],
-    #                 "calendar.txt": ["service_id"],
-    #                 "routes.txt": ["route_id"],
-    #                 "stop_times.txt": ["trip_id", "stop_sequence"],
-    #                 "stops.txt": ["stop_id"],
-    #                 "trips.txt": ["trip_id"],
-    #                 "vehicle_categories.txt": ["vehicle_category_id"],
-    #                 "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
-    #                 "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
-    #             }
-    #             conflict_key = conflict_key_map.get(filename, [])
+                print(f"Loading {filename}...")
+                with zip_file.open(filename) as file:
+                    conflict_key_map = {
+                        "agency.txt": ["agency_id"],
+                        "calendar.txt": ["service_id"],
+                        "notes.txt": ["note_id"],
+                        "routes.txt": ["route_id"],
+                        "stop_times.txt": ["trip_id", "stop_sequence"],
+                        "stops.txt": ["stop_id", "route_type"],
+                        "trips.txt": ["trip_id"],
+                        "vehicle_categories.txt": ["vehicle_category_id"],
+                        "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
+                        "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
+                    }
+                    conflict_key = conflict_key_map.get(filename, [])
 
-    #             load(conn, file, table, columns, conflict_key)
+                    print(file.readline().decode('utf-8-sig').strip())
+                    file.seek(0)
+                    
+                    load(conn, file, table, columns, conflict_key, mode_string)
 
-    with conn.cursor() as cur:
-        print("Updating route types for stop_times...")
-        cur.execute("""
-            UPDATE stop_times st
-            SET route_type = r.route_type
-            FROM trips t
-            JOIN routes r ON t.route_id = r.route_id
-            WHERE st.trip_id = t.trip_id;
-        """)
-        conn.commit()
+        print(f"Loaded Sydney Transport {url.split("/")[4]} static data")
 
-        print("Updating route types for stops...")
-        cur.execute("""
-            UPDATE stops s
-            SET route_type = sub.route_type
-            FROM (
-                SELECT DISTINCT ON (st.stop_id) st.stop_id, st.route_type
-                FROM stop_times st
-                ORDER BY st.stop_id
-            ) sub
-            WHERE s.stop_id = sub.stop_id;
-        """)
-        conn.commit()
+    # with conn.cursor() as cur:
+    #     print("Updating route types for stop_times...")
+    #     cur.execute("""
+    #         UPDATE stop_times st
+    #         SET route_type = r.route_type
+    #         FROM trips t
+    #         JOIN routes r ON t.route_id = r.route_id
+    #         WHERE st.trip_id = t.trip_id;
+    #     """)
+    #     conn.commit()
+
+    #     print("Updating route types for stops...")
+    #     cur.execute("""
+    #         UPDATE stops s
+    #         SET route_type = sub.route_type
+    #         FROM (
+    #             SELECT DISTINCT ON (st.stop_id) st.stop_id, st.route_type
+    #             FROM stop_times st
+    #             ORDER BY st.stop_id
+    #         ) sub
+    #         WHERE s.stop_id = sub.stop_id;
+    #     """)
+    #     conn.commit()
 
     shapes_folder = f"{os.getcwd()}/._shapes"
     conflict_key = ["shape_id", "shape_pt_sequence"]
@@ -310,8 +347,40 @@ def main():
             with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
                 load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_string)
 
+    with conn.cursor() as cur:
+        print("Creating indexes...")
+        cur.execute("""
+            CREATE INDEX idx_asd_parent_stop_time ON public.active_stop_departures USING btree (stop_parent_station, departure_time, start_date, end_date) INCLUDE (stop_id, trip_id, trip_headsign, service_id, stop_name, arrival_time, pickup_type, drop_off_type, monday, tuesday, wednesday, thursday, friday, saturday, sunday);
+            CREATE UNIQUE INDEX idx_asd_unique ON public.active_stop_departures USING btree (trip_id, stop_sequence);
+
+            CREATE INDEX idx_stop_times_stop_departure ON public.stop_times USING btree (stop_id, departure_time) INCLUDE (trip_id, arrival_time, pickup_type, drop_off_type, stop_headsign, stop_sequence);
+            CREATE INDEX idx_stop_times_stop_id ON public.stop_times USING btree (stop_id);
+            CREATE INDEX idx_stop_times_trip_id ON public.stop_times USING btree (trip_id);
+            CREATE INDEX idx_stop_times_trip_stop ON public.stop_times USING btree (trip_id, stop_id) INCLUDE (arrival_time, departure_time, pickup_type, drop_off_type);
+
+            CREATE INDEX idx_trips_route_id ON public.trips USING btree (route_id);
+            CREATE INDEX idx_trips_service_id ON public.trips USING btree (service_id) INCLUDE (trip_id, trip_headsign, route_id);
+
+            CREATE INDEX stops_stop_parent_station_idx ON public.stops USING btree (stop_parent_station);
+        """)
+        conn.commit()
+        print("Refreshing...")
+        cur.execute("""
+            DELETE FROM calendars WHERE start_date < (NOW() AT TIME ZONE 'Australia/Sydney')::date;
+            DELETE FROM trip_updates WHERE timestamp < (NOW() AT TIME ZONE 'Australia/Sydney')::date;
+            DELETE FROM vehicle_positions WHERE timestamp < (NOW() AT TIME ZONE 'Australia/Sydney')::date;
+            REFRESH MATERIALIZED VIEW active_stop_departures;
+        """)
+        conn.commit()
+
+    old_autocommit = conn.autocommit
+    conn.autocommit = True
+    with conn.cursor() as cur:
+        cur.execute("VACUUM ANALYZE active_stop_departures;")
+    conn.autocommit = old_autocommit
+
+    print("Static data loaded")
     conn.close()
-    print("Loaded Sydney transport static data")
 
 if __name__ == "__main__":
     main()

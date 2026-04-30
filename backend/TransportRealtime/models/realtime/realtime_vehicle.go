@@ -20,7 +20,7 @@ type VehiclePosition struct {
 	Timestamp            time.Time   `json:"timestamp"`
 	CongestionLevel      string      `json:"congestionLevel"`
 	OccupancyStatus      *string     `json:"occupancyStatus"`
-	Mode                 string      `json:"mode"`
+	RouteType            *int        `json:"routeType"`
 }
 
 type Consist struct {

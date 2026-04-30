@@ -1,10 +1,12 @@
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 export const ModeType = {
-    LIGHT_RAIL: 0,
-    METRO: 401,
-    RAIL: 2,
-    BUS: 3,
-    FERRY: 4,
-    REGIONAL_RAIL: 105,
+  LIGHT_RAIL: 0,
+  METRO: 401,
+  RAIL: 2,
+  BUS: 3,
+  FERRY: 4,
+  REGIONAL_RAIL: 105,
 } as const
 
 export const ModeLabels: Record<number, string> = {
@@ -43,8 +45,14 @@ export const LineRoutes: Record<string, string> = {
   "APS": "T8",
   "NTH": "T9",
 
+  "BMT": "BMT",
   "CCN": "CCN",
   'SCO': 'SCO',
+  "SHL": "SHL",
+
+  "RTTA": "NR",
+
+  "M1": "M1",
 }
 
 export const LineColours: Record<string, string> = {
@@ -63,7 +71,7 @@ export const LineColours: Record<string, string> = {
   'CTY': '#F6891F',
   'HUN': '#833134',
   
-  'RTTA': '#000000',
+  'RTTA': '#888888',
 
   'M1': '#168388',
 

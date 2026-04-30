@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 
 CREATE TABLE IF NOT EXISTS agencies (
     agency_id TEXT NOT NULL,
@@ -89,7 +90,7 @@ CREATE TABLE IF NOT EXISTS stops (
     stop_platform_code TEXT,
     route_type INT,
 
-    PRIMARY KEY (stop_id)
+    PRIMARY KEY (stop_id, route_type)
 );
 
 CREATE TABLE IF NOT EXISTS trips (
@@ -109,7 +110,7 @@ CREATE TABLE IF NOT EXISTS trips (
 
     PRIMARY KEY (trip_id),
 
-    FOREIGN KEY (route_id) REFERENCES routes(route_id) ON DELETE CASCADE,
+    FOREIGN KEY (route_id) REFERENCES routes(route_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS stop_times (
@@ -124,12 +125,12 @@ CREATE TABLE IF NOT EXISTS stop_times (
     shape_dist_travelled NUMERIC(9,2),
     timepoint INT,
     stop_note TEXT,
-    route_type INT,
+    route_type INT NOT NULL,
 
     PRIMARY KEY (trip_id, stop_sequence),
 
     FOREIGN KEY (trip_id) REFERENCES trips(trip_id) ON DELETE CASCADE,
-    FOREIGN KEY (stop_id) REFERENCES stops(stop_id)
+    FOREIGN KEY (stop_id, route_type) REFERENCES stops(stop_id, route_type) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS vehicle_boardings (
@@ -154,7 +155,3 @@ CREATE TABLE IF NOT EXISTS vehicle_couplings (
     FOREIGN KEY (parent_id) REFERENCES vehicle_categories(vehicle_category_id),
     FOREIGN KEY (child_id) REFERENCES vehicle_categories(vehicle_category_id)
 );
-
-CREATE INDEX ON stops (stop_parent_station);
-
-CREATE INDEX ON trips (service_id);

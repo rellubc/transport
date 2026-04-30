@@ -1,18 +1,32 @@
 package handlers
 
 import (
+	models "TransportRealtime/models/realtime"
 	"TransportRealtime/repositories"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func GetVehiclePositionsHandler(repo *repositories.VehiclePositionRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mode := r.URL.Query().Get("mode")
+		routeTypeStr := r.URL.Query().Get("route_type")
 
-		vps, err := repo.GetVehiclePositions(mode)
+		var vps map[int][]models.VehiclePosition
+		var err error
+
+		if routeTypeStr == "" {
+			vps, err = repo.GetVehiclePositions(nil)
+		} else {
+			routeType, err := strconv.Atoi(routeTypeStr)
+			if err != nil {
+				http.Error(w, "route_type must be an integer", http.StatusBadRequest)
+				return
+			}
+			vps, err = repo.GetVehiclePositions(&routeType)
+		}
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

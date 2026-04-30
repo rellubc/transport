@@ -215,6 +215,16 @@ func (r *StopTimeRepository) GetStopStaticStopTimes(stopId string) ([]models.Sta
 }
 
 func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, time int) ([]models.StopRealtimeStopTime, error) {
+	var candidatesFilter string
+	switch direction {
+	case "prev":
+		candidatesFilter = ""
+	case "next":
+		candidatesFilter = ""
+	default:
+		candidatesFilter = "AND st.departure_time >= (SELECT now_sec FROM now_sydney) - 3600"
+	}
+
 	baseQuery := `
 		WITH now_sydney AS MATERIALIZED (
 			SELECT
@@ -239,41 +249,44 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 				END
 		),
 		active_trips AS MATERIALIZED (
-			SELECT t.trip_id, t.trip_headsign, t.service_id, t.route_id
+			SELECT t.trip_id, t.trip_headsign, t.service_id, t.route_id, r.route_short_name, r.route_type
 			FROM trips t
 			JOIN active_services ac ON ac.service_id = t.service_id
+			JOIN routes r ON t.route_id = r.route_id
 		),
 		target_stops AS MATERIALIZED (
 			SELECT stop_id, stop_name
 			FROM stops
 			WHERE stop_id = $1 OR stop_parent_station = $1
 		),
-		candidates AS (
-			SELECT
+		candidates AS MATERIALIZED (
+			SELECT DISTINCT ON (t.trip_id, st.stop_id, st.arrival_time)
 				t.trip_id,
 				COALESCE(NULLIF(st.stop_headsign, ''), t.trip_headsign, 'No headsign') AS trip_headsign,
 				t.service_id,
 				t.route_id,
+				t.route_short_name,
+        		t.route_type,
 				st.stop_id,
 				s.stop_name,
 				st.arrival_time,
 				stu.stop_arrival_delay,
 				st.departure_time,
 				stu.stop_departure_delay,
-				st.arrival_time  + COALESCE(stu.stop_arrival_delay,   0) AS effective_arrival_time,
+				st.arrival_time + COALESCE(stu.stop_arrival_delay, 0) AS effective_arrival_time,
 				st.departure_time + COALESCE(stu.stop_departure_delay, 0) AS effective_departure_time,
 				st.pickup_type,
 				st.drop_off_type,
 				CASE
-						WHEN st.pickup_type = 1 AND st.drop_off_type = 1 THEN 'pass'
-						WHEN st.pickup_type = 1 THEN 'terminate'
-						WHEN st.drop_off_type = 1 THEN 'depart'
-						ELSE 'stop'
+					WHEN st.pickup_type = 1 AND st.drop_off_type = 1 THEN 'pass'
+					WHEN st.pickup_type = 1 THEN 'terminate'
+					WHEN st.drop_off_type = 1 THEN 'depart'
+					ELSE 'stop'
 				END AS stop_type,
 				(stu.stop_departure_delay IS NOT NULL) AS is_realtime
 			FROM target_stops s
 			JOIN stop_times st
-				ON  st.stop_id = s.stop_id
+				ON st.stop_id = s.stop_id ` + candidatesFilter + `
 			JOIN active_trips t ON t.trip_id = st.trip_id
 			LEFT JOIN LATERAL (
 				SELECT stop_arrival_delay, stop_departure_delay
@@ -282,40 +295,59 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 				ORDER BY timestamp DESC
 				LIMIT 1
 			) stu ON true
+		),
+		depart_keys AS MATERIALIZED (
+			SELECT DISTINCT stop_id, departure_time
+			FROM candidates
+			WHERE stop_type = 'depart'
+		),
+		paired AS (
+			SELECT
+				c.*,
+				CASE
+					WHEN (c.stop_type = 'terminate' OR c.stop_type = 'pass') THEN c.effective_arrival_time
+					ELSE c.effective_departure_time
+				END AS display_time,
+				(dk.stop_id IS NOT NULL AND (dk.departure_time - c.arrival_time) <= 300) AS has_continuation
+			FROM candidates c
+			LEFT JOIN depart_keys dk
+				ON dk.stop_id = c.stop_id
+				AND dk.departure_time = c.departure_time + 1
 		)
-    `
+	`
 
 	args := []any{stopId}
-
 	var query string
 
 	switch direction {
 	case "next":
 		query = baseQuery +
-			`SELECT * FROM candidates
-			 WHERE effective_departure_time > $2
-			 ORDER BY effective_departure_time ASC, trip_id ASC
+			`SELECT * FROM paired
+			 WHERE display_time > $2
+			 ORDER BY display_time ASC, trip_id ASC
 			 LIMIT 20`
 		args = append(args, time)
 
 	case "prev":
 		query = baseQuery +
 			`SELECT * FROM (
-				SELECT * FROM candidates
-				WHERE effective_departure_time < $2
-				ORDER BY effective_departure_time DESC, trip_id DESC
+				SELECT * FROM paired
+				WHERE display_time < $2
+				ORDER BY display_time DESC, trip_id DESC
 				LIMIT 20
-			 ) sub
-			 ORDER BY effective_departure_time ASC, trip_id ASC`
+			) sub
+			ORDER BY effective_departure_time ASC, trip_id ASC`
 		args = append(args, time)
 
 	default:
 		query = baseQuery +
-			`SELECT * FROM candidates
-			WHERE effective_departure_time >= (SELECT now_sec FROM now_sydney)
-			ORDER BY effective_departure_time ASC, trip_id ASC
-			LIMIT 20`
+			`SELECT * FROM paired
+			 WHERE display_time >= (SELECT now_sec FROM now_sydney)
+			 ORDER BY display_time ASC, trip_id ASC
+			 LIMIT 20`
 	}
+
+	log.Println(query, args)
 
 	rows, err := r.DB.Query(context.Background(), query, args...)
 	if err != nil {
@@ -331,6 +363,8 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			&st.TripHeadsign,
 			&st.ServiceId,
 			&st.RouteId,
+			&st.RouteShortName,
+			&st.RouteType,
 			&st.StopId,
 			&st.StopName,
 			&st.ArrivalTime,
@@ -343,6 +377,8 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			&st.DropOffType,
 			&st.StopType,
 			&st.IsRealtime,
+			&st.DisplayTime,
+			&st.HasContinuation,
 		)
 
 		if err != nil {

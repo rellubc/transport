@@ -1,12 +1,18 @@
-import type { Stops } from "$lib/types/stops.types";
 import type { PageLoad } from "./$types";
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL
+import { BASE_URL } from "$lib/constants";
 
 export const load: PageLoad = async ({ fetch }) => {
-  const stops = await fetch(`${BASE_URL}/api/sydney/stops`)
+  const [stopsRes, vehiclesRes] = await Promise.all([
+    fetch(`${BASE_URL}/api/sydney/stops`),
+    fetch(`${BASE_URL}/api/sydney/vehicles`)
+  ])
 
-  return {
-    stops: await stops.json() as Stops
-  }
+  const [stops, vehicles] = await Promise.all([
+    stopsRes.json(),
+    vehiclesRes.json()
+  ])
+
+  console.log(stops, vehicles)
+
+  return { stops, vehicles }
 }

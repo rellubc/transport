@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS postgis;
-
 CREATE TABLE IF NOT EXISTS trip_updates (
     trip_id TEXT NOT NULL,
     trip_route_id TEXT NOT NULL,
@@ -46,6 +44,7 @@ CREATE TABLE IF NOT EXISTS vehicle_positions (
     timestamp TIMESTAMPTZ NOT NULL,
     congestion_level TEXT NOT NULL,
     occupancy_status TEXT,
+    route_type INT,
 
     PRIMARY KEY (vehicle_id)
 );

@@ -4,7 +4,6 @@ export interface Stop {
   stopName: string;
   stopLat: number;
   stopLon: number;
-  stopGeom: GeoJSONPoint | null;
   stopZoneId: string | null;
   stopUrl: string | null;
   stopLocationType: number | null;
@@ -13,11 +12,6 @@ export interface Stop {
   stopWheelchairBoarding: number;
   stopPlatformCode: string | null;
   routeType: string;
-}
-
-interface GeoJSONPoint {
-  type: 'Point';
-  coordinates: [number, number];
 }
 
 export type Stops = Record<string, Stop[]>

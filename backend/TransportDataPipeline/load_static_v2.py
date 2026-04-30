@@ -244,31 +244,24 @@ def main():
                 load(conn, file, table, columns, conflict_key)
 
     with conn.cursor() as cur:
+        print("Updating route types for stop_times...")
         cur.execute("""
             UPDATE stop_times st
-            SET route_type = sub.route_type
-            FROM (
-                SELECT DISTINCT ON (st.trip_id, st.stop_sequence) st.trip_id, st.stop_sequence, r.route_type
-                FROM stop_times st
-                JOIN trips t ON st.trip_id = t.trip_id
-                JOIN routes r ON t.route_id = r.route_id
-            ) sub
-            WHERE st.trip_id = sub.trip_id AND st.stop_sequence = sub.stop_sequence;
+            SET route_type = r.route_type
+            FROM trips t
+            JOIN routes r ON t.route_id = r.route_id
+            WHERE st.trip_id = t.trip_id;
         """)
         conn.commit()
 
+        print("Updating route types for stops...")
         cur.execute("""
             UPDATE stops s
             SET route_type = sub.route_type
             FROM (
-                SELECT DISTINCT ON (s.stop_id) s.stop_id, st.route_type
-                FROM stops s
-                JOIN stop_times st ON s.stop_id = st.stop_id
-                UNION
-                SELECT DISTINCT ON (s.stop_id) s.stop_id, st.route_type
-                FROM stops s
-                JOIN stops child ON child.stop_parent_station = s.stop_id
-                JOIN stop_times st ON child.stop_id = st.stop_id
+                SELECT DISTINCT ON (st.stop_id) st.stop_id, st.route_type
+                FROM stop_times st
+                ORDER BY st.stop_id
             ) sub
             WHERE s.stop_id = sub.stop_id;
         """)

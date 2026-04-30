@@ -37,6 +37,8 @@ type StopRealtimeStopTime struct {
 	TripHeadsign           *string `json:"tripHeadsign"`
 	ServiceId              string  `json:"serviceId"`
 	RouteId                string  `json:"routeId"`
+	RouteShortName         *string `json:"routeShortName"`
+	RouteType              *int    `json:"routeType"`
 	StopId                 string  `json:"stopId"`
 	StopName               string  `json:"stopName"`
 	ArrivalTime            *int    `json:"arrivalTime"`
@@ -49,4 +51,6 @@ type StopRealtimeStopTime struct {
 	DropOffType            int     `json:"dropOffType"`
 	StopType               string  `json:"stopType"`
 	IsRealtime             bool    `json:"isRealtime"`
+	DisplayTime            int     `json:"displayTime"`
+	HasContinuation        bool    `json:"hasContinuation"`
 }

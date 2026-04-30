@@ -38,8 +38,8 @@ func RegisterRoutes(repos *repositories.Repositories) http.Handler {
 
 	// Stop
 	r.Get("/api/sydney/stops", GetStopsHandler(repos.Stop))
-	r.Get("/api/sydney/stop/{stop_id}", GetStopHandler(repos.Stop))
-	r.Get("/api/sydney/stop/{stop_id}/stop_times", GetStopStopTimesHandler(repos.StopTime))
+	r.Get("/api/sydney/stops/{stop_id}", GetStopHandler(repos.Stop))
+	r.Get("/api/sydney/stops/{stop_id}/stop_times", GetStopStopTimesHandler(repos.StopTime))
 
 	// StopTime
 	r.Get("/api/sydney/stop_times/static", GetStaticStopTimesHandler(repos.StopTime))
@@ -64,8 +64,8 @@ func RegisterRoutes(repos *repositories.Repositories) http.Handler {
 	r.Get("/api/sydney/trip_update/{trip_id}/stop_time_updates", GetTripStopTimeUpdatesHandler(repos.TripUpdate))
 
 	// Vehicle Position
-	r.Get("/api/sydney/vehicle_positions", GetVehiclePositionsHandler(repos.VehiclePosition))
-	r.Get("/api/sydney/vehicle_position/{vehicle_id}", GetVehiclePositionHandler(repos.VehiclePosition))
+	r.Get("/api/sydney/vehicles", GetVehiclePositionsHandler(repos.VehiclePosition))
+	r.Get("/api/sydney/vehicles/{vehicle_id}", GetVehiclePositionHandler(repos.VehiclePosition))
 
 	return r
 }
