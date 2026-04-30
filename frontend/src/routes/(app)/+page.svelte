@@ -54,11 +54,12 @@
 
   $effect(() => {
     if (!listElement) return
+    if (listElement.scrollTop === 0) listElement.scrollTop = BUFFER_PX
     const list = listElement
-    list.scrollTop = BUFFER_PX
 
     // surely can do something more cleaner when there are less than 20 stop times
     const onScroll = async () => {
+      console.log(list.scrollTop)
       if (fetching || stopTimes.length === 0) return
       if (list.scrollTop === 0) {
         fetching = true
@@ -118,23 +119,7 @@
   }
 
   const vehicleStopTimes = async (vehicle: Vehicle) => {
-    try {
-      stopTimes = await getVehicleStopTimes(vehicle.vehicleId)
-      console.log("Stop times: ", $state.snapshot(stopTimes))
-      activeVehicle = vehicle
-      await tick()
-
-      if (refreshInterval) clearInterval(refreshInterval)
-
-      refreshInterval = setInterval(async () => {
-        if (!listElement || disableRefresh) return
-
-        stopTimes = await getVehicleStopTimes(vehicle.vehicleId)
-        console.log("Refreshed stop times: ", $state.snapshot(stopTimes))
-      }, 10000)
-    } catch (err) {
-      console.error(err)
-    }
+    console.log(vehicle)
   }
 </script>
 
