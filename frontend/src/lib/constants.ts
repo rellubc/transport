@@ -34,25 +34,23 @@ export const VehicleLabels: Record<string, string> = {
 }
 
 export const LineRoutes: Record<string, string> = {
-  "NSN": "T1",
-  "WST": "T1",
-  "IWL": "T2",
-  "T3": "T3",
-  "ESI": "T4",
-  "CMB": "T5",
-  "T6": "T6",
-  "OLY": "T7",
-  "APS": "T8",
-  "NTH": "T9",
+  'T1': 'T1',
+  'T2': 'T2',
+  'T3': 'T3',
+  'T4': 'T4',
+  'T5': 'T5',
+  'T6': 'T6',
+  'T7': 'T7',
+  'T8': 'T8',
+  'T9': 'T9',
 
-  "BMT": "BMT",
-  "CCN": "CCN",
-  'SCO': 'SCO',
-  "SHL": "SHL",
+  'M1': 'M1',
 
-  "RTTA": "NR",
-
-  "M1": "M1",
+  'L1': 'L1',
+  'L2': 'L2',
+  'L3': 'L3',
+  'L4': 'L4',
+  'LX': 'LX',
 }
 
 export const LineColours: Record<string, string> = {
@@ -81,15 +79,15 @@ export const LineColours: Record<string, string> = {
   'T4': '#005AA3',
   'T5': '#C4258F',
   'T6': '#7C3E21',
+  'T7': '#6F818E',
   'T8': '#00954C',
   'T9': '#D11F2F',
-
-  'TCC': '#000000',
 
   'L1': '#BE1622',
   'L2': '#DD1E25',
   'L3': '#781140',
   'L4': '#BB2043',
+  'LX': '#EE343F',
   'NLR': '#EE343F',
 }
 

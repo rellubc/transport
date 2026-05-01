@@ -20,9 +20,9 @@ CREATE MATERIALIZED VIEW active_stop_departures AS
         st.drop_off_type,
         st.stop_sequence
     FROM trips t
-        JOIN calendars c ON c.service_id = t.service_id
+        LEFT JOIN calendars c ON c.service_id = t.service_id
         JOIN stop_times st ON st.trip_id = t.trip_id
-        JOIN stops s ON s.stop_id = st.stop_id
+        JOIN stops s ON s.stop_id = st.stop_id;
     WITH NO DATA;
 
 CREATE VIEW stop_time_updates_with_progress AS

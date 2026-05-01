@@ -98,6 +98,8 @@
     return () => list.removeEventListener('scroll', onScroll)
   })
 
+  // todo: add refreshing when scrolled
+  // todo: for regional trains, remove duplicated entries on sydney trains
   const stopStopTimes = async (stop: Stop) => {
     try {
       stopTimes = await getStopStopTimes(stop.stopId, "initial", getSydneyNow())
@@ -124,7 +126,7 @@
 </script>
 
 <svelte:window onclick={(e: MouseEvent) => {
-  if (!activeStop || !activeVehicle) return
+  if (!activeStop && !activeVehicle) return
   if (sidebarElement && !sidebarElement.contains(e.target as Node)) {
     activeStop = null
     activeVehicle = null
@@ -132,38 +134,40 @@
   }
 }}/>
 
-<div class="pl-150 pt-50">
-  <p>Stops</p>
-  <input
-    bind:value={stopQuery}
-    placeholder="Search stops..."
-  />
-  {#each Object.entries(getStops()) as [mode, modeStops]}
-    <p class="font-bold">{mode} - {ModeLabels[Number(mode)]}</p>
-    <div class="flex flex-col items-start">
-      {#each modeStops.filter((stop) => stop.stopName.toLowerCase().includes(stopQuery.toLowerCase())).slice(0, 20) as stop}
-        <button class="cursor-pointer" onclick={() => stopStopTimes(stop)}>{stop.stopName} - {stop.stopId}</button>
-      {/each}
-    </div>
-  {/each}
-</div>
+<div class="absolute top-4 h-[calc(100vh-1rem)] overflow-y-scroll">
+  <div class="pl-150">
+    <p>Stops</p>
+    <input
+      bind:value={stopQuery}
+      placeholder="Search stops..."
+    />
+    {#each Object.entries(getStops()) as [mode, modeStops]}
+      <p class="font-bold">{mode} - {ModeLabels[Number(mode)]}</p>
+      <div class="flex flex-col items-start">
+        {#each modeStops.filter((stop) => stop.stopName.toLowerCase().includes(stopQuery.toLowerCase())).slice(0, 20) as stop}
+          <button class="cursor-pointer" onclick={() => stopStopTimes(stop)}>{stop.stopName} - {stop.stopId}</button>
+        {/each}
+      </div>
+    {/each}
+  </div>
 
-<div class="pl-150 pt-50">
-  <p>Vehicles</p>
-  {#each Object.entries(getVehicles()) as [mode, modeVehicles]}
-    <p class="font-bold">{mode} - {ModeLabels[Number(mode)]}</p>
-    <div class="flex flex-col items-start">
-      {#each modeVehicles as vehicle}
-        <button class="cursor-pointer" onclick={() => vehicleStopTimes(vehicle)}>{vehicle.vehicleModel} - {vehicle.vehicleId}</button>
-      {/each}
-    </div>
-  {/each}
+  <div class="pl-150 pt-50">
+    <p>Vehicles</p>
+    {#each Object.entries(getVehicles()) as [mode, modeVehicles]}
+      <p class="font-bold">{mode} - {ModeLabels[Number(mode)]}</p>
+      <div class="flex flex-col items-start">
+        {#each modeVehicles as vehicle}
+          <button class="cursor-pointer" onclick={() => vehicleStopTimes(vehicle)}>{vehicle.vehicleModel} - {vehicle.vehicleId}</button>
+        {/each}
+      </div>
+    {/each}
+  </div>
 </div>
 
 {#if activeStop}
   <div bind:this={sidebarElement} class="absolute top-4 left-4 bg-white w-md h-[calc(100vh-2rem)] flex flex-col p-8 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)]">
     <div class="sticky top-0 z-10 bg-white">
-      <p class="text-2xl font-bold">{activeStop.stopName}</p>
+      <p class="text-xl font-bold">{activeStop.stopName}</p>
       <p class="text-xs font-light">{activeStop.stopId}</p>
     </div>
 
@@ -173,11 +177,15 @@
           {#each stopTimes as stopTime, index}
             <div style:opacity={stopTime.stopType === 'pass' ? 0.5 : 1} class="flex flex-row justify-between items-center py-2">
               <div class="flex flex-row items-center gap-4">
-                <div style:background-color={stopTime.routeType === 401 ? LineColours[stopTime.routeId.split('_')[1]] : LineColours[stopTime.routeId.split('_')[0]]} class="w-12 h-6 flex flex-row justify-center items-center rounded-md">
-                  <p class="text-white font-bold">
-                    {stopTime.routeType === 401 ? LineRoutes[stopTime.routeId.split('_')[1]] : LineRoutes[stopTime.routeId.split('_')[0]]}
-                  </p>
-                </div>
+                {#if stopTime.routeShortName}
+                  <div style:background-color={`#${stopTime.routeColour}`} class="w-12 h-6 flex flex-row justify-center items-center rounded-md">
+                    <p class="text-white font-bold">{stopTime.routeShortName}</p>
+                  </div>
+                {:else}
+                  <div class="w-12 h-6 bg-[#888] flex flex-row justify-center items-center rounded-md">
+                    <p class="text-white font-bold">NR</p>
+                  </div>
+                {/if}
                 <div>
                   <p class="font-bold">{stopTime.tripHeadsign.split('via')[0]}</p>
                   {#if stopTime.tripHeadsign.split('via').length > 1}

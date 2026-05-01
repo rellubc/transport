@@ -21,6 +21,7 @@ export interface StopStopTime {
   routeId: string
   routeShortName: string
   routeType: number
+  routeColour: string
   stopId: string
   stopName: string
   arrivalTime: number

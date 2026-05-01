@@ -249,7 +249,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 				END
 		),
 		active_trips AS MATERIALIZED (
-			SELECT t.trip_id, t.trip_headsign, t.service_id, t.route_id, r.route_short_name, r.route_type
+			SELECT t.trip_id, t.trip_headsign, t.service_id, t.route_id, r.route_short_name, r.route_type, r.route_colour
 			FROM trips t
 			JOIN active_services ac ON ac.service_id = t.service_id
 			JOIN routes r ON t.route_id = r.route_id
@@ -267,6 +267,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 				t.route_id,
 				t.route_short_name,
         		t.route_type,
+        		t.route_colour,
 				st.stop_id,
 				s.stop_name,
 				st.arrival_time,
@@ -365,6 +366,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			&st.RouteId,
 			&st.RouteShortName,
 			&st.RouteType,
+			&st.RouteColour,
 			&st.StopId,
 			&st.StopName,
 			&st.ArrivalTime,
