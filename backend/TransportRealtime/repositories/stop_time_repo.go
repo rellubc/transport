@@ -306,7 +306,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			SELECT
 				c.*,
 				CASE
-					WHEN (c.stop_type = 'terminate' OR c.stop_type = 'pass') THEN c.effective_arrival_time
+					WHEN (c.stop_type = 'terminate') THEN c.effective_arrival_time
 					ELSE c.effective_departure_time
 				END AS display_time,
 				(dk.stop_id IS NOT NULL AND (dk.departure_time - c.arrival_time) <= 300) AS has_continuation
@@ -348,7 +348,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			 LIMIT 20`
 	}
 
-	log.Println(query, args)
+	// log.Println(query, args)
 
 	rows, err := r.DB.Query(context.Background(), query, args...)
 	if err != nil {

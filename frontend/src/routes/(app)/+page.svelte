@@ -172,7 +172,7 @@
     </div>
 
     <div bind:this={listElement} style:scrollbar-width="none" class="flex flex-col overflow-y-scroll">
-      <div class="min-h-[1283px]">
+      <div class="min-h-screen">
         <div style:height={`${BUFFER_PX}px`} class="w-full shrink-0"></div>
           {#each stopTimes as stopTime, index}
             <div style:opacity={stopTime.stopType === 'pass' ? 0.5 : 1} class="flex flex-row justify-between items-center py-2">
@@ -227,7 +227,7 @@
     </div>
 
     <div bind:this={listElement} style:scrollbar-width="none" class="flex flex-col overflow-y-scroll">
-      <div class="min-h-[1283px]">
+      <div class="min-h-screen">
         <div style:height={`${BUFFER_PX}px`} class="w-full shrink-0"></div>
           {#each stopTimes as stopTime, index}
             <div style:opacity={stopTime.stopType === 'pass' ? 0.5 : 1} class="flex flex-row justify-between items-center py-2">

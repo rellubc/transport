@@ -32,15 +32,15 @@ MODES = {
     # "metro": 401,
 
     # "sydneytrains": 2,
-    "nswtrains": 100,
+    # "nswtrains": 100,
 
-    # "lightrail/newcastle": 0,
-    # "lightrail/innerwest": 900,
-    # "lightrail/parramatta": 900,
-    # "lightrail/cbdandsoutheast": 900,
+    "lightrail/newcastle": 0,
+    "lightrail/innerwest": 900,
+    "lightrail/parramatta": 900,
+    "lightrail/cbdandsoutheast": 900,
 
-    # "ferries/sydneyferries": 4,
-    # "ferries/MFF": 4,
+    "ferries/sydneyferries": 4,
+    "ferries/MFF": 4,
 
     # "buses/SBSC006",
     # "buses/GSBC001",
