@@ -5,6 +5,7 @@ import io
 import csv
 
 import psycopg2
+from psycopg2.extras import execute_values
 
 from pathlib import Path
 from dotenv import load_dotenv
@@ -15,24 +16,22 @@ load_dotenv(ENV_PATH)
 
 API_KEY = os.getenv("API_KEY", "")
 
-DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
-DB_PORT = os.getenv("POSTGRES_PORT", "5432")
-DB_NAME = os.getenv("POSTGRES_DB", "transport_db")
-DB_USER = os.getenv("POSTGRES_USER", "postgres")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "transport_db")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 
-GTFS_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/"
+V2_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/"
+V1_URL = "https://api.transport.nsw.gov.au/v1/gtfs/schedule/"
 
-URLS = [
-    "https://api.transport.nsw.gov.au/v1/gtfs/schedule/",
-    "https://api.transport.nsw.gov.au/v2/gtfs/schedule/",
-]
+V2_MODES = {
+    "metro": 401,
+}
 
-MODES = {
-    # "metro": 401,
-
-    # "sydneytrains": 2,
-    # "nswtrains": 100,
+V1_MODES = {
+    "sydneytrains": 2,
+    "nswtrains": 100,
 
     "lightrail/newcastle": 0,
     "lightrail/innerwest": 900,
@@ -178,17 +177,18 @@ TYPE_CASTS = {
     "wheelchair_boarding": int,
     "wheelchair_accessible": int,
     "bikes_allowed": int,
-    "timepoint": int
+    "timepoint": int,
+    "service_id": str,
 }
 
 def connect_db():
     print("Connect to db...")
     conn = psycopg2.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        dbname=POSTGRES_DB,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD
     )
 
     return conn
@@ -198,7 +198,7 @@ def truncate_tables(conn):
     with conn.cursor() as cur:
         cur.execute("""
             TRUNCATE TABLE
-                agency,
+                agencies,
                 calendars,
                 notes,
                 routes,
@@ -229,20 +229,22 @@ def drop_indexes(conn):
             DROP INDEX IF EXISTS idx_trips_service_id;
 
             DROP INDEX IF EXISTS stops_stop_parent_station_idx;
+
+            DROP INDEX IF EXISTS idx_calendars_date_range;
         """)
+    
+    print("Indexes dropped.")
 
 def insert_static_data(conn):
     headers = {
         "Authorization": f"apikey {API_KEY}"
     }
 
-    for url in URLS:
+    for url, modes in [(V2_URL, V2_MODES), (V1_URL, V1_MODES)]:
         feed_version = url.split("/")[3].upper()
         print(f"Fetching Sydney Transport {feed_version} static data...")
-        for mode_string in MODES:
-            if feed_version == "V1" and mode_string == "metro":
-                continue
 
+        for mode_string in modes:
             try:
                 r = requests.get(f"{url}{mode_string}", headers=headers)
                 if r.status_code == 404:
@@ -256,6 +258,10 @@ def insert_static_data(conn):
             zip_file = zipfile.ZipFile(io.BytesIO(r.content))
             
             print(f"Fetching {mode_string} static data...")
+
+            for filename in zip_file.namelist():
+                if filename not in MAPPINGS.keys():
+                    print(f"Unused {filename}...")
             
             for filename, (table, columns) in MAPPINGS.items():
                 if filename not in zip_file.namelist():
@@ -284,7 +290,9 @@ def insert_static_data(conn):
                     print(file.readline().decode('utf-8-sig').strip())
                     file.seek(0)
                     
-                    load(conn, file, table, columns, conflict_key, mode_string)
+                    mode_num = V2_MODES.get(mode_string) or V1_MODES.get(mode_string)
+        
+                    load(conn, file, table, columns, conflict_key, mode_num)
 
     print(f"Loaded Sydney Transport {url.split("/")[4]} static data")
 
@@ -292,12 +300,20 @@ def insert_shapes(conn):
     shapes_folder = f"{os.getcwd()}/._shapes"
     conflict_key = ["shape_id", "shape_pt_sequence"]
 
-    for mode_string in MODES:
+    for [mode_string, mode_num] in V1_MODES.items():
+        print(mode_string, mode_num)
         os.makedirs(f"{shapes_folder}/{mode_string}", exist_ok=True)
         for filename in os.listdir(f"{shapes_folder}/{mode_string}"):
             print(f"Loading {filename}...")
             with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
-                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_string)
+                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_num)
+
+    for [mode_string, mode_num] in V2_MODES.items():
+        os.makedirs(f"{shapes_folder}/{mode_string}", exist_ok=True)
+        for filename in os.listdir(f"{shapes_folder}/{mode_string}"):
+            print(f"Loading {filename}...")
+            with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
+                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_num)
 
 def refresh_materialised_views(conn):
     print("Refreshing...")
@@ -328,7 +344,7 @@ def create_indexes(conn):
         cur.execute("""
             CREATE INDEX IF NOT EXISTS idx_asd_parent_stop_time ON active_stop_departures (stop_parent_station, departure_time, start_date, end_date) INCLUDE (stop_id, trip_id, trip_headsign, service_id, stop_name, arrival_time, pickup_type, drop_off_type, monday, tuesday, wednesday, thursday, friday, saturday, sunday);
             CREATE UNIQUE INDEX IF NOT EXISTS idx_asd_unique ON active_stop_departures (trip_id, stop_sequence);
-                    
+
             CREATE INDEX IF NOT EXISTS idx_stop_times_stop_departure ON stop_times (stop_id, departure_time) INCLUDE (trip_id, arrival_time, pickup_type, drop_off_type, stop_headsign, stop_sequence);
             CREATE INDEX IF NOT EXISTS idx_stop_times_stop_id ON stop_times (stop_id);
             CREATE INDEX IF NOT EXISTS idx_stop_times_trip_id ON stop_times (trip_id);
@@ -338,8 +354,10 @@ def create_indexes(conn):
             CREATE INDEX IF NOT EXISTS idx_trips_service_id ON trips (service_id) INCLUDE (trip_id, trip_headsign, route_id);
 
             CREATE INDEX IF NOT EXISTS stops_stop_parent_station_idx ON stops (stop_parent_station);
+
+            CREATE INDEX IF NOT EXISTS idx_calendars_date_range ON calendars (start_date, end_date);
         """)
-        conn.commit()
+    conn.commit()
 
 def time_to_seconds(s):
     if not s:
@@ -347,18 +365,16 @@ def time_to_seconds(s):
     h, m, sec = map(int, s.split(":"))
     return h * 3600 + m * 60 + sec
 
-def load(conn, file, table_name, column_map, conflict_key, mode_string='', batch_size=10000):
+def load(conn, file, table_name, column_map, conflict_key, mode_num, batch_size=10000):
     reader = csv.DictReader(io.TextIOWrapper(file, "utf-8-sig"))
     
     colnames = list(column_map.values())
-    placeholders = ", ".join(["%s"] * len(colnames))
     updates = ", ".join([f"{col}=EXCLUDED.{col}" for col in colnames if col not in conflict_key])
-
     query = f"""
         INSERT INTO {table_name} ({', '.join(colnames)})
-        VALUES ({placeholders})
+        VALUES %s
         ON CONFLICT ({', '.join(conflict_key)})
-        DO UPDATE SET {updates};
+        DO NOTHING
     """
 
     batch = []
@@ -383,7 +399,7 @@ def load(conn, file, table_name, column_map, conflict_key, mode_string='', batch
                     val = val.replace("Station Platform", "Station, Platform")
 
                 if file.name != "routes.txt" and db_col == "route_type":
-                    val = MODES[mode_string]
+                    val = mode_num
 
                 if "geom" in db_col:
                     val = f"SRID=4326;POINT({lon} {lat})"
@@ -396,24 +412,29 @@ def load(conn, file, table_name, column_map, conflict_key, mode_string='', batch
             batch.append(values)
 
             if len(batch) >= batch_size:
-                cur.executemany(query, batch)
+                execute_values(cur, query, batch, page_size=1000)
                 conn.commit()
                 batch.clear()
 
         if batch:
-            cur.executemany(query, batch)
+            execute_values(cur, query, batch, page_size=1000)
             conn.commit()
 
 def main():
     conn = connect_db()
 
+    # full delete
     # drop_indexes(conn)
+    # truncate_tables(conn)
+    # conn.commit()
 
+    # full ingestion
     insert_static_data(conn)
-    # insert_shapes(conn)
+    insert_shapes(conn)
 
-    # refresh_materialised_views(conn)
-    # create_indexes(conn)
+    # refresh
+    refresh_materialised_views(conn)
+    create_indexes(conn)
 
     print("Static data loaded")
     conn.close()

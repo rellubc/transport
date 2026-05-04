@@ -9,7 +9,7 @@ import (
 )
 
 func Connect() *pgxpool.Pool {
-	dbURL := os.Getenv("DATABASE_URL")
+	dbURL := os.Getenv("DB_URL")
 
 	config, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {

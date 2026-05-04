@@ -254,11 +254,6 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			JOIN active_services ac ON ac.service_id = t.service_id
 			JOIN routes r ON t.route_id = r.route_id
 		),
-		target_stops AS MATERIALIZED (
-			SELECT stop_id, stop_name
-			FROM stops
-			WHERE stop_id = $1 OR stop_parent_station = $1
-		),
 		candidates AS MATERIALIZED (
 			SELECT DISTINCT ON (t.trip_id, st.stop_id, st.arrival_time)
 				t.trip_id,
@@ -280,12 +275,12 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 				st.drop_off_type,
 				CASE
 					WHEN st.pickup_type = 1 AND st.drop_off_type = 1 THEN 'pass'
-					WHEN st.pickup_type = 1 THEN 'terminate'
+                    WHEN (st.pickup_type = 1 OR (st.departure_time - st.arrival_time >= 300 AND s.stop_name ILIKE '%' || t.trip_headsign || '%')) THEN 'terminate'
 					WHEN st.drop_off_type = 1 THEN 'depart'
 					ELSE 'stop'
 				END AS stop_type,
 				(stu.stop_departure_delay IS NOT NULL) AS is_realtime
-			FROM target_stops s
+			FROM stops s
 			JOIN stop_times st
 				ON st.stop_id = s.stop_id ` + candidatesFilter + `
 			JOIN active_trips t ON t.trip_id = st.trip_id
@@ -296,6 +291,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 				ORDER BY timestamp DESC
 				LIMIT 1
 			) stu ON true
+			WHERE s.stop_id = $1 OR s.stop_parent_station = $1
 		),
 		depart_keys AS MATERIALIZED (
 			SELECT DISTINCT stop_id, departure_time
@@ -306,7 +302,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			SELECT
 				c.*,
 				CASE
-					WHEN (c.stop_type = 'terminate') THEN c.effective_arrival_time
+					WHEN (c.stop_type = 'terminate' OR c.stop_name ILIKE '%' || c.trip_headsign || '%') THEN c.effective_arrival_time
 					ELSE c.effective_departure_time
 				END AS display_time,
 				(dk.stop_id IS NOT NULL AND (dk.departure_time - c.arrival_time) <= 300) AS has_continuation
@@ -324,7 +320,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 	case "next":
 		query = baseQuery +
 			`SELECT * FROM paired
-			 WHERE display_time > $2
+			 WHERE display_time > $2 AND NOT has_continuation AND stop_type != 'pass' AND route_id NOT LIKE 'RTTA%'
 			 ORDER BY display_time ASC, trip_id ASC
 			 LIMIT 20`
 		args = append(args, time)
@@ -333,7 +329,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 		query = baseQuery +
 			`SELECT * FROM (
 				SELECT * FROM paired
-				WHERE display_time < $2
+				WHERE display_time < $2 AND NOT has_continuation AND stop_type != 'pass' AND route_id NOT LIKE 'RTTA%'
 				ORDER BY display_time DESC, trip_id DESC
 				LIMIT 20
 			) sub
@@ -343,12 +339,12 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 	default:
 		query = baseQuery +
 			`SELECT * FROM paired
-			 WHERE display_time >= (SELECT now_sec FROM now_sydney)
+			 WHERE display_time >= (SELECT now_sec FROM now_sydney) AND NOT has_continuation AND stop_type != 'pass' AND route_id NOT LIKE 'RTTA%'
 			 ORDER BY display_time ASC, trip_id ASC
 			 LIMIT 20`
 	}
 
-	// log.Println(query, args)
+	log.Println(query, args)
 
 	rows, err := r.DB.Query(context.Background(), query, args...)
 	if err != nil {

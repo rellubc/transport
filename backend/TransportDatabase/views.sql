@@ -1,5 +1,6 @@
 CREATE MATERIALIZED VIEW active_stop_departures AS
-    SELECT t.trip_id,
+    SELECT DISTINCT ON (t.trip_id, st.stop_sequence)
+        t.trip_id,
         t.trip_headsign,
         t.service_id,
         c.monday,
@@ -22,8 +23,8 @@ CREATE MATERIALIZED VIEW active_stop_departures AS
     FROM trips t
         LEFT JOIN calendars c ON c.service_id = t.service_id
         JOIN stop_times st ON st.trip_id = t.trip_id
-        JOIN stops s ON s.stop_id = st.stop_id;
-    WITH NO DATA;
+        JOIN stops s ON s.stop_id = st.stop_id
+    ORDER BY t.trip_id, st.stop_sequence;
 
 CREATE VIEW stop_time_updates_with_progress AS
     SELECT stu.trip_id,
