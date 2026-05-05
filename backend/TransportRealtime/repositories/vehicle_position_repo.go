@@ -109,35 +109,21 @@ func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int
 func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models.VehiclePosition, error) {
 	query := `
 		SELECT
-			vp.trip_id,
-			vp.trip_route_id,
-			vp.trip_schedule_relationship,
-			vp.vehicle_id,
-			vp.vehicle_label,
-			vp.vehicle_model,
-			vp.position_latitude,
-			vp.position_longitude,
-			vp.stop_id,
-			vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
-			vp.congestion_level,
-			vp.occupancy_status,
-			vp.mode
-		FROM vehicle_positions vp
-		WHERE ($1 = '' OR vp.mode LIKE $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes'
-		GROUP BY
-			vp.trip_id,
-			vp.trip_route_id,
-			vp.trip_schedule_relationship,
-			vp.vehicle_id,
-			vp.vehicle_label,
-			vp.vehicle_model,
-			vp.position_latitude,
-			vp.position_longitude,
-			vp.stop_id,
-			sydney_time,
-			vp.congestion_level,
-			vp.occupancy_status,
-			vp.mode
+			trip_id,
+			trip_route_id,
+			trip_schedule_relationship,
+			vehicle_id,
+			vehicle_label,
+			vehicle_model,
+			position_latitude,
+			position_longitude,
+			stop_id,
+			timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
+			congestion_level,
+			occupancy_status,
+			route_type
+		FROM vehicle_positions
+		WHERE vehicle_id = $1 AND NOW() - timestamp < INTERVAL '2 minutes'
 	`
 
 	row := r.DB.QueryRow(context.Background(), query, vehicleId)

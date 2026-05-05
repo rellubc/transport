@@ -4,14 +4,20 @@ export interface VehicleStopTime {
   stopId: string
   stopName: string
   stopSequence: number
-  stopHeadsign: string
+  tripHeadsign: string
+  routeShortName: string
+  routeType: number
+  routeColour: string
   arrivalTime: number
   departureTime: number
   arrivalDelay: number
   departureDelay: number
-  status: string
+  stopType: string
   progress: string
+  isRealtime: boolean
   consist: Consist[]
+  displayTime: number
+  stopProgress: number
 }
 
 export interface StopStopTime {

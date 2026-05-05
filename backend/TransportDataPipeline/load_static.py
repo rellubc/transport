@@ -356,6 +356,20 @@ def create_indexes(conn):
             CREATE INDEX IF NOT EXISTS stops_stop_parent_station_idx ON stops (stop_parent_station);
 
             CREATE INDEX IF NOT EXISTS idx_calendars_date_range ON calendars (start_date, end_date);
+
+            CREATE INDEX IF NOT EXISTS idx_consist_trip_timestamp ON consist (trip_id, timestamp DESC);
+        """)
+    conn.commit()
+
+def clean_data(conn):
+    print("Cleaning data...")
+    with conn.cursor() as cur:
+        cur.execute("""
+            DELETE FROM trips WHERE route_id LIKE 'CTY%';
+            DELETE FROM trips WHERE route_id LIKE 'SHL%';
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.2%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.2%' AND r.route_type = 2;
         """)
     conn.commit()
 
@@ -396,7 +410,7 @@ def load(conn, file, table_name, column_map, conflict_key, mode_num, batch_size=
                         val = None
 
                 if db_col == "stop_name":
-                    val = val.replace("Station Platform", "Station, Platform")
+                    val = re.sub(r'([A-Z]\w+) Platform (\d+)$', r'\1, Platform \2', val)
 
                 if file.name != "routes.txt" and db_col == "route_type":
                     val = mode_num
@@ -435,6 +449,9 @@ def main():
     # refresh
     refresh_materialised_views(conn)
     create_indexes(conn)
+
+    # clean
+    clean_data(conn)
 
     print("Static data loaded")
     conn.close()

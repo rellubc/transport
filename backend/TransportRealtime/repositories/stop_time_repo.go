@@ -344,7 +344,7 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 			 LIMIT 20`
 	}
 
-	log.Println(query, args)
+	// log.Println(query, args)
 
 	rows, err := r.DB.Query(context.Background(), query, args...)
 	if err != nil {
@@ -388,3 +388,307 @@ func (r *StopTimeRepository) GetStopStopTimes(stopId string, direction string, t
 
 	return sts, nil
 }
+
+func (r *StopTimeRepository) GetTripStopTimes(tripId string, vehicleLon float64, vehicleLat float64) ([]models.TripRealtimeStopTime, error) {
+	query := `
+		WITH stop_data AS (
+			SELECT 
+				COALESCE(NULLIF(st.stop_headsign, ''), t.trip_headsign, 'No headsign') AS trip_headsign,
+				t.shape_id,
+				t.trip_direction_id,
+				r.route_short_name,
+				r.route_type,
+				r.route_colour,
+				st.stop_sequence,
+				s.stop_id,
+				s.stop_lat,
+				s.stop_lon,
+				s.stop_name,
+				stu.stop_arrival_delay,
+				stu.stop_departure_delay,
+				st.arrival_time + COALESCE(stu.stop_arrival_delay, 0) AS effective_arrival_time,
+				st.departure_time + COALESCE(stu.stop_departure_delay, 0) AS effective_departure_time,
+				CASE
+					WHEN st.pickup_type = 1 AND st.drop_off_type = 1 THEN 'pass'
+					WHEN (st.pickup_type = 1 OR (st.departure_time - st.arrival_time >= 300 AND s.stop_name ILIKE '%' || t.trip_headsign || '%')) THEN 'terminate'
+					WHEN st.drop_off_type = 1 THEN 'depart'
+					ELSE 'stop'
+				END AS stop_type,
+				CASE
+					WHEN st.pickup_type = 1 AND st.drop_off_type = 1 THEN 'skipped'::text
+					WHEN EXTRACT(epoch FROM (now() AT TIME ZONE 'Australia/Sydney'::text))::integer % 86400 > st.departure_time + COALESCE(stu.stop_departure_delay, (0)::bigint) THEN 'passed'::text
+					ELSE 'not_passed'::text
+				END AS progress,
+				(stu.stop_departure_delay IS NOT NULL OR stu.stop_arrival_delay IS NOT NULL) AS is_realtime,
+				COALESCE(
+					json_agg(
+						json_build_object(
+							'positionInConsist', c.position_in_consist,
+							'occupancyStatus', c.occupancy_status
+						)
+						ORDER BY c.position_in_consist ASC
+					) FILTER (WHERE c.trip_id IS NOT NULL),
+					'[]'
+				) AS consist
+			FROM trips t
+			JOIN stop_times st ON t.trip_id = st.trip_id
+			LEFT JOIN stop_time_updates stu ON st.stop_id = stu.stop_id AND st.trip_id = stu.trip_id
+			JOIN stops s ON st.stop_id = s.stop_id
+			JOIN routes r ON t.route_id = r.route_id
+			LEFT JOIN LATERAL (
+				SELECT DISTINCT ON (position_in_consist) position_in_consist, occupancy_status, trip_id
+				FROM consist
+				WHERE trip_id = st.trip_id 
+					AND EXTRACT(EPOCH FROM timestamp AT TIME ZONE 'Australia/Sydney')::integer % 86400 <= (st.departure_time + COALESCE(stu.stop_departure_delay, 0))
+				ORDER BY position_in_consist, timestamp DESC
+				LIMIT CASE 
+					WHEN st.route_type = 401 THEN 6
+					WHEN st.route_type = 900 THEN 2
+					ELSE 8
+				END
+			) c ON true
+			WHERE t.trip_id = $1
+				AND (st.pickup_type = 0 OR st.drop_off_type = 0)
+			GROUP BY
+				st.stop_headsign,
+				t.trip_headsign,
+				t.shape_id,
+				t.trip_direction_id,
+				r.route_short_name,
+				r.route_type,
+				r.route_colour,
+				st.stop_sequence,
+				s.stop_id,
+				s.stop_lat,
+				s.stop_lon,
+				s.stop_name,
+				st.arrival_time,
+				st.departure_time,
+				stu.stop_arrival_delay,
+				stu.stop_departure_delay,
+				st.arrival_time + COALESCE(stu.stop_arrival_delay, 0),
+				st.departure_time + COALESCE(stu.stop_departure_delay, 0),
+				st.pickup_type,
+				st.drop_off_type,
+				is_realtime
+			ORDER BY st.stop_sequence
+		),
+		stop_window AS (
+			SELECT
+				*,
+				CASE
+					WHEN stop_data.stop_type = 'terminate' OR stop_data.stop_name ILIKE '%' || stop_data.trip_headsign || '%'
+					THEN stop_data.effective_arrival_time
+					ELSE stop_data.effective_departure_time
+				END AS display_time
+			FROM stop_data
+		),
+		prev_stop AS (
+			SELECT * FROM stop_window
+			WHERE progress = 'passed'
+			ORDER BY stop_sequence DESC
+			LIMIT 1
+		),
+		next_stop AS (
+			SELECT * FROM stop_window
+			WHERE progress = 'not_passed'
+			ORDER BY stop_sequence ASC
+			LIMIT 1
+		),
+		prev_shape_point AS (
+			SELECT sh.*
+			FROM prev_stop ps
+			JOIN shapes sh ON sh.shape_id = (
+				SELECT sh2.shape_id
+				FROM shapes sh2
+				WHERE sh2.shape_id LIKE 'ROUTE_' || ps.route_short_name || '%'
+				ORDER BY point(sh2.shape_pt_lon, sh2.shape_pt_lat) <-> point(ps.stop_lon, ps.stop_lat)
+				LIMIT 1
+			)
+			ORDER BY point(sh.shape_pt_lon, sh.shape_pt_lat) <-> point(ps.stop_lon, ps.stop_lat)
+			LIMIT 1
+		),
+		next_shape_point AS (
+			SELECT sh.*
+			FROM next_stop ns
+			JOIN shapes sh ON sh.shape_id = (
+				SELECT sh2.shape_id
+				FROM shapes sh2
+				WHERE sh2.shape_id LIKE 'ROUTE_' || ns.route_short_name || '%'
+				ORDER BY point(sh2.shape_pt_lon, sh2.shape_pt_lat) <-> point(ns.stop_lon, ns.stop_lat)
+				LIMIT 1
+			)
+			ORDER BY point(sh.shape_pt_lon, sh.shape_pt_lat) <-> point(ns.stop_lon, ns.stop_lat)
+			LIMIT 1
+		),
+		current_shape_point AS (
+			SELECT sh.*
+			FROM next_stop ns
+			JOIN shapes sh ON sh.shape_id = (
+				SELECT sh2.shape_id
+				FROM shapes sh2
+				WHERE sh2.shape_id LIKE 'ROUTE_' || ns.route_short_name || '%'
+				ORDER BY point(sh2.shape_pt_lon, sh2.shape_pt_lat) <-> point($2, $3)
+				LIMIT 1
+			)
+			ORDER BY point(sh.shape_pt_lon, sh.shape_pt_lat) <-> point($2, $3)
+			LIMIT 1
+		),
+		progress AS (
+			SELECT
+				ROUND(
+					ABS(csp.shape_pt_sequence - psp.shape_pt_sequence)::numeric
+					/ NULLIF(ABS(nsp.shape_pt_sequence - psp.shape_pt_sequence), 0)
+					* 100
+				, 2) AS progress
+			FROM prev_shape_point psp, current_shape_point csp, next_shape_point nsp
+		)
+		SELECT 
+			sw.trip_headsign,
+			sw.route_short_name,
+			sw.route_type,
+			sw.route_colour,
+			sw.stop_id,
+			sw.stop_name,
+			sw.stop_arrival_delay,
+			sw.stop_departure_delay,
+			sw.effective_arrival_time,
+			sw.effective_departure_time,
+			sw.stop_type,
+			sw.progress,
+			sw.is_realtime,
+			sw.consist,
+			sw.display_time,
+			CASE 
+				WHEN sw.progress = 'passed' THEN 100
+				WHEN ns.stop_id != sw.stop_id THEN 0
+				ELSE p.progress
+			END as stop_progress
+		FROM stop_window sw, next_stop ns, progress p
+		;
+	`
+
+	args := []any{tripId, vehicleLon, vehicleLat}
+
+	log.Println(query, args)
+
+	rows, err := r.DB.Query(context.Background(), query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("GetTripRealtimeStopTimes querying failed: %w", err)
+	}
+	defer rows.Close()
+
+	var sts = []models.TripRealtimeStopTime{}
+	for rows.Next() {
+		var st models.TripRealtimeStopTime
+		err := rows.Scan(
+			&st.TripHeadsign,
+			&st.RouteShortName,
+			&st.RouteType,
+			&st.RouteColour,
+			&st.StopId,
+			&st.StopName,
+			&st.ArrivalDelay,
+			&st.DepartureDelay,
+			&st.EffectiveArrivalTime,
+			&st.EffectiveDepartureTime,
+			&st.StopType,
+			&st.Progress,
+			&st.IsRealtime,
+			&st.Consist,
+			&st.DisplayTime,
+			&st.StopProgress,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("GetTripRealtimeStopTimes scanning failed: %w", err)
+		}
+
+		sts = append(sts, st)
+	}
+
+	return sts, nil
+}
+
+// WITH stop_data AS (
+// 	SELECT
+// 		COALESCE(NULLIF(st.stop_headsign, ''), t.trip_headsign, 'No headsign') AS trip_headsign,
+// 		r.route_short_name,
+// 		r.route_type,
+// 		r.route_colour,
+// 		s.stop_id,
+// 		s.stop_name,
+// 		stu.stop_arrival_delay,
+// 		stu.stop_departure_delay,
+// 		st.arrival_time + COALESCE(stu.stop_arrival_delay, 0) AS effective_arrival_time,
+// 		st.departure_time + COALESCE(stu.stop_departure_delay, 0) AS effective_departure_time,
+// 		CASE
+// 			WHEN st.pickup_type = 1 AND st.drop_off_type = 1 THEN 'pass'
+// 			WHEN (st.pickup_type = 1 OR (st.departure_time - st.arrival_time >= 300 AND s.stop_name ILIKE '%' || t.trip_headsign || '%')) THEN 'terminate'
+// 			WHEN st.drop_off_type = 1 THEN 'depart'
+// 			ELSE 'stop'
+// 		END AS stop_type,
+// 		CASE
+// 			WHEN st.pickup_type = 1 AND st.drop_off_type = 1 THEN 'skipped'::text
+// 			WHEN EXTRACT(epoch FROM (now() AT TIME ZONE 'Australia/Sydney'::text))::integer % 86400 > st.departure_time + COALESCE(stu.stop_departure_delay, (0)::bigint) THEN 'passed'::text
+// 			ELSE 'not_passed'::text
+// 		END AS progress,
+// 		(stu.stop_departure_delay IS NOT NULL OR stu.stop_arrival_delay IS NOT NULL) AS is_realtime,
+// 		COALESCE(
+// 			json_agg(
+// 				json_build_object(
+// 					'positionInConsist', c.position_in_consist,
+// 					'occupancyStatus', c.occupancy_status
+// 				)
+// 				ORDER BY c.position_in_consist ASC
+// 			) FILTER (WHERE c.trip_id IS NOT NULL),
+// 			'[]'
+// 		) AS consist
+// 	FROM trips t
+// 	JOIN stop_times st ON t.trip_id = st.trip_id
+// 	LEFT JOIN stop_time_updates stu ON st.stop_id = stu.stop_id AND st.trip_id = stu.trip_id
+// 	JOIN stops s ON st.stop_id = s.stop_id
+//     JOIN routes r ON t.route_id = r.route_id
+// 	LEFT JOIN LATERAL (
+// 		SELECT DISTINCT ON (position_in_consist) position_in_consist, occupancy_status, trip_id
+// 		FROM consist
+// 		WHERE trip_id = st.trip_id
+// 			AND EXTRACT(EPOCH FROM timestamp AT TIME ZONE 'Australia/Sydney')::integer % 86400 <= (st.departure_time + COALESCE(stu.stop_departure_delay, 0))
+// 		ORDER BY position_in_consist, timestamp DESC
+// 		LIMIT CASE
+// 			WHEN st.route_type = 401 THEN 6
+// 			WHEN st.route_type = 900 THEN 2
+// 			ELSE 8
+// 		END
+// 	) c ON true
+// 	WHERE t.trip_id = $1
+// 		AND (st.pickup_type = 0 OR st.drop_off_type = 0)
+// 	GROUP BY
+// 		st.stop_headsign,
+// 		t.trip_headsign,
+//         r.route_short_name,
+//         r.route_type,
+//         r.route_colour,
+// 		st.stop_sequence,
+// 		s.stop_id,
+// 		s.stop_name,
+// 		st.arrival_time,
+// 		st.departure_time,
+// 		stu.stop_arrival_delay,
+// 		stu.stop_departure_delay,
+// 		st.arrival_time + COALESCE(stu.stop_arrival_delay, 0),
+// 		st.departure_time + COALESCE(stu.stop_departure_delay, 0),
+// 		st.pickup_type,
+// 		st.drop_off_type,
+// 		is_realtime
+// 	ORDER BY st.stop_sequence
+// )
+// SELECT
+// 	*,
+// 	CASE
+// 		WHEN stop_data.stop_type = 'terminate' OR stop_data.stop_name ILIKE '%' || stop_data.trip_headsign || '%'
+// 		THEN stop_data.effective_arrival_time
+// 		ELSE stop_data.effective_departure_time
+// 	END AS display_time
+// FROM stop_data
+// ;

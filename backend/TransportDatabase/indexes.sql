@@ -12,3 +12,5 @@ CREATE INDEX IF NOT EXISTS idx_trips_service_id ON trips (service_id) INCLUDE (t
 CREATE INDEX IF NOT EXISTS stops_stop_parent_station_idx ON stops (stop_parent_station);
 
 CREATE INDEX IF NOT EXISTS idx_calendars_date_range ON calendars (start_date, end_date);
+
+CREATE INDEX IF NOT EXISTS idx_consist_trip_timestamp ON consist (trip_id, timestamp DESC);

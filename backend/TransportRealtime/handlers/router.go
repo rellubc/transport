@@ -39,9 +39,8 @@ func RegisterRoutes(repos *repositories.Repositories) http.Handler {
 	// Stop
 	r.Get("/api/sydney/stops", GetStopsHandler(repos.Stop))
 	r.Get("/api/sydney/stops/{stop_id}", GetStopHandler(repos.Stop))
-	r.Get("/api/sydney/stops/{stop_id}/stop_times", GetStopStopTimesHandler(repos.StopTime))
 
-	// StopTime
+	// Static StopTime
 	r.Get("/api/sydney/stop_times/static", GetStaticStopTimesHandler(repos.StopTime))
 	r.Get("/api/sydney/stop_times/realtime", GetRealtimeStopTimesHandler(repos.StopTime))
 
@@ -66,6 +65,10 @@ func RegisterRoutes(repos *repositories.Repositories) http.Handler {
 	// Vehicle Position
 	r.Get("/api/sydney/vehicles", GetVehiclePositionsHandler(repos.VehiclePosition))
 	r.Get("/api/sydney/vehicles/{vehicle_id}", GetVehiclePositionHandler(repos.VehiclePosition))
+
+	// Realtime stop times
+	r.Get("/api/sydney/stops/{stop_id}/stop_times", GetStopStopTimesHandler(repos.StopTime))
+	r.Get("/api/sydney/trips/{trip_id}/stop_times", GetTripStopTimesHandler(repos.StopTime))
 
 	return r
 }
