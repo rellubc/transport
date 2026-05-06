@@ -3,6 +3,7 @@ import requests
 import zipfile
 import io
 import csv
+import re
 
 import psycopg2
 from psycopg2.extras import execute_values
@@ -21,6 +22,8 @@ POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "transport_db")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
+
+MAX_RETRIES = 3
 
 V2_URL = "https://api.transport.nsw.gov.au/v2/gtfs/schedule/"
 V1_URL = "https://api.transport.nsw.gov.au/v1/gtfs/schedule/"
@@ -194,7 +197,7 @@ def connect_db():
     return conn
 
 def truncate_tables(conn):
-    print("Truncating tables...")
+    print("[PROCESS] Truncating tables...")
     with conn.cursor() as cur:
         cur.execute("""
             TRUNCATE TABLE
@@ -211,10 +214,10 @@ def truncate_tables(conn):
             RESTART IDENTITY CASCADE;
         """)
 
-    print("Tables truncated.")
+    print("[OK] Tables truncated.")
 
 def drop_indexes(conn):
-    print("Dropping indexes...")
+    print("[PROCESS] Dropping indexes...")
     with conn.cursor() as cur:
         cur.execute("""
             DROP INDEX IF EXISTS idx_asd_parent_stop_time;
@@ -233,7 +236,7 @@ def drop_indexes(conn):
             DROP INDEX IF EXISTS idx_calendars_date_range;
         """)
     
-    print("Indexes dropped.")
+    print("[OK] Indexes dropped.")
 
 def insert_static_data(conn):
     headers = {
@@ -242,36 +245,56 @@ def insert_static_data(conn):
 
     for url, modes in [(V2_URL, V2_MODES), (V1_URL, V1_MODES)]:
         feed_version = url.split("/")[3].upper()
-        print(f"Fetching Sydney Transport {feed_version} static data...")
+        print(f"[PROCESS] Fetching Sydney Transport {feed_version} static data...")
 
         for mode_string in modes:
-            try:
-                r = requests.get(f"{url}{mode_string}", headers=headers)
-                if r.status_code == 404:
-                    print(f"Skipping {url}{mode_string} (404)...")
-                    continue
-                r.raise_for_status()
-            except requests.HTTPError as e:
-                print(f"Skipping {url}{mode_string} ({e})...")
+            success = False
+            last_error = None
+            for attempt in range(MAX_RETRIES):
+                try:
+                    r = requests.get(
+                        f"{url}{mode_string}",
+                        headers=headers,
+                        timeout=30
+                    )
+
+                    if r.status_code == 200:
+                        success = True
+                        break
+
+                    last_error = f"HTTP {r.status_code}: {r.text[:200]}"
+                    print(f"[WARN] Attempt {attempt+1}/{MAX_RETRIES} failed for {mode_string}: {last_error}")
+
+                except requests.RequestException as e:
+                    last_error = str(e)
+                    print(f"[WARN] Attempt {attempt+1}/{MAX_RETRIES} exception for {mode_string}: {e}")
+
+                time.sleep(2 ** attempt)
+
+            if not success:
+                print(f"[SKIP] {mode_string} failed after retries: {last_error}")
                 continue
+
+            print(f"[OK] Loaded feed: {mode_string}")
 
             zip_file = zipfile.ZipFile(io.BytesIO(r.content))
             
-            print(f"Fetching {mode_string} static data...")
+            print(f"[PROCESS] Fetching {mode_string} static data...")
 
             for filename in zip_file.namelist():
                 if filename not in MAPPINGS.keys():
-                    print(f"Unused {filename}...")
+                    print(f"[WARN] Unused {filename}...")
             
             for filename, (table, columns) in MAPPINGS.items():
                 if filename not in zip_file.namelist():
-                    print(f"Skipping {filename}...")
+                    print(f"[SKIP] Skipping {filename}...")
                     continue
 
                 if filename == "shapes.txt":
+                    print(f"[SKIP] Skipping shapes.txt from dataset...")
                     continue
 
-                print(f"Loading {filename}...")
+                print(f"[PROCESS] Loading {filename}...")
                 with zip_file.open(filename) as file:
                     conflict_key_map = {
                         "agency.txt": ["agency_id"],
@@ -281,45 +304,50 @@ def insert_static_data(conn):
                         "stop_times.txt": ["trip_id", "stop_sequence"],
                         "stops.txt": ["stop_id", "route_type"],
                         "trips.txt": ["trip_id"],
-                        "vehicle_categories.txt": ["vehicle_category_id"],
-                        "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "boarding_area_id"],
+                        "vehicle_categories.txt": ["vehicle_category_id", "vehicle_category_name"],
+                        "vehicle_boardings.txt": ["vehicle_category_id", "child_sequence", "grandchild_sequence", "boarding_area_id"],
                         "vehicle_couplings.txt": ["parent_id", "child_id", "child_sequence"],
                     }
                     conflict_key = conflict_key_map.get(filename, [])
 
-                    print(file.readline().decode('utf-8-sig').strip())
-                    file.seek(0)
+                    # print(file.readline().decode('utf-8-sig').strip())
+                    # file.seek(0)
                     
                     mode_num = V2_MODES.get(mode_string) or V1_MODES.get(mode_string)
         
                     load(conn, file, table, columns, conflict_key, mode_num)
 
-    print(f"Loaded Sydney Transport {url.split("/")[4]} static data")
+                print(f"[OK] Finished loading {filename}")
+
+            print(f"[OK] Finished loading feed: {mode_string}")
+
+        print(f"[OK] Loaded Sydney Transport {feed_version} static data")
+
+    print(f"[OK] Loaded Sydney Transport {url.split("/")[4]} static data")
 
 def insert_shapes(conn):
     shapes_folder = f"{os.getcwd()}/._shapes"
     conflict_key = ["shape_id", "shape_pt_sequence"]
 
     for [mode_string, mode_num] in V1_MODES.items():
-        print(mode_string, mode_num)
         os.makedirs(f"{shapes_folder}/{mode_string}", exist_ok=True)
         for filename in os.listdir(f"{shapes_folder}/{mode_string}"):
-            print(f"Loading {filename}...")
+            print(f"[PROCESS] Loading {filename}...")
             with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
                 load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_num)
 
     for [mode_string, mode_num] in V2_MODES.items():
         os.makedirs(f"{shapes_folder}/{mode_string}", exist_ok=True)
         for filename in os.listdir(f"{shapes_folder}/{mode_string}"):
-            print(f"Loading {filename}...")
+            print(f"[PROCESS] Loading {filename}...")
             with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
                 load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_num)
 
 def refresh_materialised_views(conn):
-    print("Refreshing...")
+    print("[PROCESS] Refreshing...")
     with conn.cursor() as cur:
         cur.execute("""
-            DELETE FROM calendars WHERE start_date < (NOW() AT TIME ZONE 'Australia/Sydney')::date;
+            DELETE FROM calendars WHERE end_date < (NOW() AT TIME ZONE 'Australia/Sydney')::date;
             DELETE FROM trip_updates WHERE timestamp < (NOW() AT TIME ZONE 'Australia/Sydney')::date;
             DELETE FROM vehicle_positions WHERE timestamp < (NOW() AT TIME ZONE 'Australia/Sydney')::date;
             REFRESH MATERIALIZED VIEW active_stop_departures;
@@ -333,7 +361,7 @@ def refresh_materialised_views(conn):
     conn.commit()
 
 def create_indexes(conn):
-    print("Creating indexes...")
+    print("[PROCESS] Creating indexes...")
 
     conn.autocommit = True
     with conn.cursor() as cur:
@@ -362,7 +390,7 @@ def create_indexes(conn):
     conn.commit()
 
 def clean_data(conn):
-    print("Cleaning data...")
+    print("[PROCESS] Cleaning data...")
     with conn.cursor() as cur:
         cur.execute("""
             DELETE FROM trips WHERE route_id LIKE 'CTY%';
@@ -388,7 +416,7 @@ def load(conn, file, table_name, column_map, conflict_key, mode_num, batch_size=
         INSERT INTO {table_name} ({', '.join(colnames)})
         VALUES %s
         ON CONFLICT ({', '.join(conflict_key)})
-        DO NOTHING
+        {f'DO UPDATE SET {updates}' if updates else 'DO NOTHING'};
     """
 
     batch = []
@@ -438,9 +466,9 @@ def main():
     conn = connect_db()
 
     # full delete
-    # drop_indexes(conn)
-    # truncate_tables(conn)
-    # conn.commit()
+    drop_indexes(conn)
+    truncate_tables(conn)
+    conn.commit()
 
     # full ingestion
     insert_static_data(conn)
@@ -453,7 +481,7 @@ def main():
     # clean
     clean_data(conn)
 
-    print("Static data loaded")
+    print("[OK] Static data loaded")
     conn.close()
 
 if __name__ == "__main__":

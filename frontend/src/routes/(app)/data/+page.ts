@@ -1,4 +1,4 @@
-import type { PageLoad } from "./$types";
+import type { PageLoad } from "../$types";
 import { BASE_URL } from "$lib/constants";
 
 export const load: PageLoad = async ({ fetch }) => {

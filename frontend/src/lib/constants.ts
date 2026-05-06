@@ -3,10 +3,10 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL
 export const ModeType = {
   LIGHT_RAIL: 0,
   METRO: 401,
-  RAIL: 2,
+  SYDNEY_TRAINS: 2,
   BUS: 3,
   FERRY: 4,
-  REGIONAL_RAIL: 105,
+  NSW_TRAINS: 100,
 } as const
 
 export const ModeLabels: Record<number, string> = {
@@ -15,6 +15,7 @@ export const ModeLabels: Record<number, string> = {
   2: 'sydneytrains',
   3: 'bus',
   4: 'ferry',
+  100: 'nswtrains',
   900: 'lightrail/sydney',
   9999: 'inactive'
 }

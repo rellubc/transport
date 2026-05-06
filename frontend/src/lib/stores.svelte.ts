@@ -1,11 +1,11 @@
 import type { Stops } from "$lib/types/stops.types"
-import type { Vehicles } from "./types/vehicles.types"
+import type { Shapes } from "$lib/types/shapes.types"
+import type { Vehicles } from "$lib/types/vehicles.types"
 
-let stops = $state<Stops>({})
-let vehicles = $state<Vehicles>({})
-
-export const getStops = () => stops
-export const setStops = (data: Stops) => stops = data
-
-export const getVehicles = () => vehicles
-export const setVehicles = (data: Vehicles) => vehicles = data
+export const transportDataStore = $state<{ routeShapes: Shapes, displayShapes: Shapes, stops: Stops, vehicles: Vehicles, modes: Set<string> }>({
+  routeShapes: {},
+  displayShapes: {},
+  stops: {},
+  vehicles: {},
+  modes: new Set()
+})

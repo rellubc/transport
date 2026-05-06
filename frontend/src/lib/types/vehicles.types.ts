@@ -1,6 +1,7 @@
 export interface Vehicle {
   tripId: string
   tripRouteId: string
+  tripRouteShortName: string
   tripScheduleRelationship: string
   vehicleId: string
   vehicleLabel: string

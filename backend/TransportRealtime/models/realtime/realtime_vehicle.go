@@ -9,6 +9,7 @@ import (
 type VehiclePosition struct {
 	TripId               string      `json:"tripId"`
 	RouteId              string      `json:"tripRouteId"`
+	RouteShortName       *string     `json:"tripRouteShortName"`
 	ScheduleRelationship string      `json:"tripScheduleRelationship"`
 	VehicleId            *string     `json:"vehicleId"`
 	VehicleLabel         *string     `json:"vehicleLabel"`

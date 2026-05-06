@@ -399,6 +399,7 @@ func (r *StopTimeRepository) GetTripStopTimes(tripId string, vehicleLon float64,
 				r.route_short_name,
 				r.route_type,
 				r.route_colour,
+				r.route_id,
 				st.stop_sequence,
 				s.stop_id,
 				s.stop_lat,
@@ -436,11 +437,11 @@ func (r *StopTimeRepository) GetTripStopTimes(tripId string, vehicleLon float64,
 			JOIN stops s ON st.stop_id = s.stop_id
 			JOIN routes r ON t.route_id = r.route_id
 			LEFT JOIN LATERAL (
-				SELECT DISTINCT ON (position_in_consist) position_in_consist, occupancy_status, trip_id
+				SELECT DISTINCT ON (timestamp, position_in_consist) timestamp, position_in_consist, occupancy_status, trip_id
 				FROM consist
 				WHERE trip_id = st.trip_id 
 					AND EXTRACT(EPOCH FROM timestamp AT TIME ZONE 'Australia/Sydney')::integer % 86400 <= (st.departure_time + COALESCE(stu.stop_departure_delay, 0))
-				ORDER BY position_in_consist, timestamp DESC
+				ORDER BY timestamp DESC, position_in_consist
 				LIMIT CASE 
 					WHEN st.route_type = 401 THEN 6
 					WHEN st.route_type = 900 THEN 2
@@ -457,6 +458,7 @@ func (r *StopTimeRepository) GetTripStopTimes(tripId string, vehicleLon float64,
 				r.route_short_name,
 				r.route_type,
 				r.route_colour,
+				r.route_id,
 				st.stop_sequence,
 				s.stop_id,
 				s.stop_lat,
@@ -560,7 +562,9 @@ func (r *StopTimeRepository) GetTripStopTimes(tripId string, vehicleLon float64,
 			sw.consist,
 			sw.display_time,
 			CASE 
+				WHEN sw.route_id LIKE 'RTTA%' THEN 0
 				WHEN sw.progress = 'passed' THEN 100
+				WHEN NOT EXISTS (SELECT 1 FROM prev_stop) THEN 0
 				WHEN ns.stop_id != sw.stop_id THEN 0
 				ELSE p.progress
 			END as stop_progress

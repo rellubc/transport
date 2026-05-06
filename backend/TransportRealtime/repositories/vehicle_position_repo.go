@@ -4,6 +4,7 @@ import (
 	models "TransportRealtime/models/realtime"
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,6 +28,7 @@ func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int
 		SELECT
 			vp.trip_id,
 			vp.trip_route_id,
+			r.route_short_name,
 			vp.trip_schedule_relationship,
 			vp.vehicle_id,
 			vp.vehicle_label,
@@ -39,28 +41,17 @@ func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int
 			vp.occupancy_status,
 			vp.route_type
 		FROM vehicle_positions vp
+		JOIN routes r ON vp.trip_route_id = r.route_id
 		%s
-		GROUP BY
-			vp.trip_id,
-			vp.trip_route_id,
-			vp.trip_schedule_relationship,
-			vp.vehicle_id,
-			vp.vehicle_label,
-			vp.vehicle_model,
-			vp.position_latitude,
-			vp.position_longitude,
-			vp.stop_id,
-			sydney_time,
-			vp.congestion_level,
-			vp.occupancy_status,
-			vp.route_type
 	`
 
 	if routeType != nil {
-		query = fmt.Sprintf(query, "WHERE ($1 IS NULL OR vp.route_type = $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes'")
+		query = fmt.Sprintf(query, "WHERE ($1 IS NULL OR vp.route_type = $1) AND NOW() - vp.timestamp < INTERVAL '2 minutes' AND vp.trip_route_id NOT LIKE 'RTTA%'")
 	} else {
-		query = fmt.Sprintf(query, "WHERE NOW() - vp.timestamp < INTERVAL '2 minutes'")
+		query = fmt.Sprintf(query, "WHERE NOW() - vp.timestamp < INTERVAL '2 minutes' AND vp.trip_route_id NOT LIKE 'RTTA%'")
 	}
+
+	log.Println(query)
 
 	rows, err = r.DB.Query(context.Background(), query)
 
@@ -77,6 +68,7 @@ func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int
 		err := rows.Scan(
 			&vp.TripId,
 			&vp.RouteId,
+			&vp.RouteShortName,
 			&vp.ScheduleRelationship,
 			&vp.VehicleId,
 			&vp.VehicleLabel,

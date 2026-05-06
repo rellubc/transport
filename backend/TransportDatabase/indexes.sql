@@ -14,3 +14,5 @@ CREATE INDEX IF NOT EXISTS stops_stop_parent_station_idx ON stops (stop_parent_s
 CREATE INDEX IF NOT EXISTS idx_calendars_date_range ON calendars (start_date, end_date);
 
 CREATE INDEX IF NOT EXISTS idx_consist_trip_timestamp ON consist (trip_id, timestamp DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS vehicle_boardings_unique ON vehicle_boardings (vehicle_category_id, child_sequence, grandchild_sequence, boarding_area_id);

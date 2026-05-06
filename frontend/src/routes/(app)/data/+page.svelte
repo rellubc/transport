@@ -3,7 +3,6 @@
   import type { PageData } from "./$types";
   import type { Stop } from "$lib/types/stops.types";
   import { setStops, setVehicles } from "$lib/stores.svelte";
-  import { getStopStopTimes, getTripStopTimes, getVehicle } from "$lib/api/stoptimes.api";
   import { BASE_URL } from "$lib/constants";
   import type { StopStopTime, VehicleStopTime } from "$lib/types/stoptimes.types";
   import { getSydneyNow } from "$lib/helpers";
@@ -13,6 +12,9 @@
   import VehicleSidebarBody from "$lib/components/Sidebar/VehicleSidebarBody.svelte";
   import StopSidebarHeader from "$lib/components/Sidebar/StopSidebarHeader.svelte";
   import VehicleSidebarHeader from "$lib/components/Sidebar/VehicleSidebarHeader.svelte";
+  import Map from '$lib/components/Map/Map.svelte';
+  import { stopTimesApi } from "$lib/api/stoptimes";
+  import { vehiclesApi } from "$lib/api/vehicles";
 
   let { data }: { data: PageData } = $props()
 
@@ -30,6 +32,7 @@
   let sidebarElement = $state<HTMLElement | null>(null)
   let fetching = $state<boolean>(false)
   let disableRefresh = $state<boolean>(false)
+  let loaded = $state<boolean>(false)
 
   onMount(() => {
     setStops(data.stops)
@@ -37,6 +40,8 @@
 
     console.log("Initial stops: ", $state.snapshot(data.stops))
     console.log("Initial vehicles: ", $state.snapshot(data.vehicles))
+
+    loaded = true
 
     const interval = setInterval(async () => {
       const vehicleRes = await fetch(`${BASE_URL}/api/sydney/vehicles`)
@@ -47,11 +52,11 @@
       if (!listElement || disableRefresh) return
 
       if (activeStop) {
-        stopTimes = await getStopStopTimes(activeStop.stopId, "initial", getSydneyNow())
+        stopTimes = await stopTimesApi.getForStop(activeStop.stopId, "initial", getSydneyNow())
         console.log("Refreshed stop stop times: ", $state.snapshot(stopTimes))
       } else if (activeVehicle) {
-        activeVehicle = await getVehicle(activeVehicle.vehicleId)
-        stopTimes = await getTripStopTimes(activeVehicle.tripId, activeVehicle.positionLongitude, activeVehicle.positionLatitude)
+        activeVehicle = await vehiclesApi.getById(activeVehicle.vehicleId)
+        stopTimes = await stopTimesApi.getForTrip(activeVehicle.tripId, activeVehicle.positionLongitude, activeVehicle.positionLatitude)
         console.log("Refreshed vehicle info: ", $state.snapshot(activeVehicle))
         console.log("Refreshed vehicle stop times: ", $state.snapshot(stopTimes))
       }
@@ -71,7 +76,7 @@
       const atTop = list.scrollTop === 0
       const atBottom = Math.abs(list.scrollTop + list.clientHeight - list.scrollHeight) <= 1 / window.devicePixelRatio
 
-      let currentStopTimes = $state.snapshot(stopTimes) as StopStopTime[]
+      stopTimes = stopTimes as StopStopTime[]
 
       if (fetching || stopTimes.length === 0) return
 
@@ -79,9 +84,9 @@
       if (atTop) {
         fetching = true
         try {
-          const newTimes = await getStopStopTimes(activeStop!.stopId, "prev", currentStopTimes[0].displayTime)
+          const newTimes = await stopTimesApi.getForStop(activeStop!.stopId, "prev", stopTimes[0].displayTime)
           if (newTimes.length === 0) return
-          currentStopTimes = [...newTimes, ...currentStopTimes]
+          stopTimes = [...newTimes, ...stopTimes]
 
           await tick()
           let additions = newTimes.filter((stopTime) => stopTime.stopType === 'pass' || stopTime.stopType === 'terminate').length * 24
@@ -95,9 +100,9 @@
       } else if (atBottom) {
         fetching = true
         try {
-          const newTimes = await getStopStopTimes(activeStop!.stopId, "next", currentStopTimes[currentStopTimes.length - 1].displayTime)
+          const newTimes = await stopTimesApi.getForStop(activeStop!.stopId, "next", stopTimes[stopTimes.length - 1].displayTime)
           if (newTimes.length === 0) return
-          currentStopTimes = [...currentStopTimes, ...newTimes]
+          stopTimes = [...stopTimes, ...newTimes]
         } catch (error) {
           console.error(error)
         } finally {
@@ -115,7 +120,7 @@
   // todo: for regional trains, remove duplicated entries on sydney trains
   const stopStopTimes = async (stop: Stop) => {
     try {
-      stopTimes = await getStopStopTimes(stop.stopId, "initial", getSydneyNow())
+      stopTimes = await stopTimesApi.getForStop(stop.stopId, "initial", getSydneyNow())
       activeStop = stop
       
       console.log("Stop times: ", $state.snapshot(stopTimes))
@@ -127,7 +132,7 @@
 
   const vehicleStopTimes = async (vehicle: Vehicle) => {
     try {
-      stopTimes = await getTripStopTimes(vehicle.tripId, vehicle.positionLongitude, vehicle.positionLatitude)
+      stopTimes = await stopTimesApi.getForTrip(vehicle.tripId, vehicle.positionLongitude, vehicle.positionLatitude)
       activeVehicle = vehicle
 
       console.log("Vehicle info: ", $state.snapshot(activeVehicle))
@@ -168,4 +173,8 @@
     <VehicleSidebarHeader stopTime={stopTimes[0] as VehicleStopTime} activeVehicle={activeVehicle} />
     <VehicleSidebarBody bind:listElement stopTimes={stopTimes as VehicleStopTime[]} />
   </div>
+{/if}
+
+{#if loaded}
+  <Map />
 {/if}
