@@ -2,7 +2,6 @@
   import { onMount, tick } from "svelte";
   import type { PageData } from "./$types";
   import type { Stop } from "$lib/types/stops.types";
-  import { setStops, setVehicles } from "$lib/stores.svelte";
   import { BASE_URL } from "$lib/constants";
   import type { StopStopTime, VehicleStopTime } from "$lib/types/stoptimes.types";
   import { getSydneyNow } from "$lib/helpers";
@@ -15,6 +14,7 @@
   import Map from '$lib/components/Map/Map.svelte';
   import { stopTimesApi } from "$lib/api/stoptimes";
   import { vehiclesApi } from "$lib/api/vehicles";
+  import { transportDataStore } from "$lib/stores.svelte";
 
   let { data }: { data: PageData } = $props()
 
@@ -35,85 +35,26 @@
   let loaded = $state<boolean>(false)
 
   onMount(() => {
-    setStops(data.stops)
-    setVehicles(data.vehicles)
-
-    console.log("Initial stops: ", $state.snapshot(data.stops))
-    console.log("Initial vehicles: ", $state.snapshot(data.vehicles))
-
+    transportDataStore.routeShapes = data.routeShapes
+    transportDataStore.displayShapes = data.displayShapes
+    transportDataStore.stops = data.stops
+    transportDataStore.vehicles = data.vehicles
+    Object.keys(transportDataStore.routeShapes).forEach((shapeId) => {
+      transportDataStore.modes.add(shapeId.split('_')[1])
+    })
     loaded = true
 
+    console.log("Route shapes: ", $state.snapshot(transportDataStore.routeShapes))
+    console.log("Display shapes: ", $state.snapshot(transportDataStore.displayShapes))
+    console.log("Stops: ", $state.snapshot(transportDataStore.stops))
+    console.log("Initial vehicles: ", $state.snapshot(transportDataStore.vehicles))
+
     const interval = setInterval(async () => {
-      const vehicleRes = await fetch(`${BASE_URL}/api/sydney/vehicles`)
-      const vehicles = await vehicleRes.json()
-      setVehicles(vehicles)
-      console.log("Refreshed vehicles: ", $state.snapshot(vehicles))
-
-      if (!listElement || disableRefresh) return
-
-      if (activeStop) {
-        stopTimes = await stopTimesApi.getForStop(activeStop.stopId, "initial", getSydneyNow())
-        console.log("Refreshed stop stop times: ", $state.snapshot(stopTimes))
-      } else if (activeVehicle) {
-        activeVehicle = await vehiclesApi.getById(activeVehicle.vehicleId)
-        stopTimes = await stopTimesApi.getForTrip(activeVehicle.tripId, activeVehicle.positionLongitude, activeVehicle.positionLatitude)
-        console.log("Refreshed vehicle info: ", $state.snapshot(activeVehicle))
-        console.log("Refreshed vehicle stop times: ", $state.snapshot(stopTimes))
-      }
+      transportDataStore.vehicles = await vehiclesApi.getAll()
+      console.log("Refreshed vehicles: ", $state.snapshot(transportDataStore.vehicles))
     }, 10000)
 
     return () => clearInterval(interval)
-  })
-
-  $effect(() => {
-    if (!activeStop) return
-    if (!listElement) return
-    if (listElement.scrollTop === 0) listElement.scrollTop = BUFFER_PX
-    const list = listElement
-
-    // surely can do something more cleaner when there are less than 20 stop times
-    const onScroll = async () => {
-      const atTop = list.scrollTop === 0
-      const atBottom = Math.abs(list.scrollTop + list.clientHeight - list.scrollHeight) <= 1 / window.devicePixelRatio
-
-      stopTimes = stopTimes as StopStopTime[]
-
-      if (fetching || stopTimes.length === 0) return
-
-
-      if (atTop) {
-        fetching = true
-        try {
-          const newTimes = await stopTimesApi.getForStop(activeStop!.stopId, "prev", stopTimes[0].displayTime)
-          if (newTimes.length === 0) return
-          stopTimes = [...newTimes, ...stopTimes]
-
-          await tick()
-          let additions = newTimes.filter((stopTime) => stopTime.stopType === 'pass' || stopTime.stopType === 'terminate').length * 24
-          list.scrollTop = newTimes.length * 60 + newTimes.length + additions
-        } catch (error) {
-          console.error(error)
-        } finally {
-          fetching = false
-          disableRefresh = true
-        }
-      } else if (atBottom) {
-        fetching = true
-        try {
-          const newTimes = await stopTimesApi.getForStop(activeStop!.stopId, "next", stopTimes[stopTimes.length - 1].displayTime)
-          if (newTimes.length === 0) return
-          stopTimes = [...stopTimes, ...newTimes]
-        } catch (error) {
-          console.error(error)
-        } finally {
-          fetching = false
-          disableRefresh = true
-        }
-      }
-    }
-
-    list.addEventListener('scroll', onScroll)
-    return () => list.removeEventListener('scroll', onScroll)
   })
 
   // todo: add refreshing when scrolled
@@ -173,8 +114,4 @@
     <VehicleSidebarHeader stopTime={stopTimes[0] as VehicleStopTime} activeVehicle={activeVehicle} />
     <VehicleSidebarBody bind:listElement stopTimes={stopTimes as VehicleStopTime[]} />
   </div>
-{/if}
-
-{#if loaded}
-  <Map />
 {/if}

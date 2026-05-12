@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ModeLabels } from "$lib/constants";
-  import { getStops, getVehicles } from "$lib/stores.svelte";
+  import { transportDataStore } from "$lib/stores.svelte";
   import { onMount } from "svelte";
 
   const { type, setStopTimes } = $props()
@@ -34,7 +34,7 @@
       bind:value={stopQuery}
       placeholder={`Search ${type}...`}
     />
-    {#each Object.entries(getStops()) as [mode, modeStops]}
+    {#each Object.entries($state.snapshot(transportDataStore.stops)) as [mode, modeStops]}
       <p class="font-bold">{mode} - {ModeLabels[Number(mode)]}</p>
       <div class="flex flex-col items-start">
         {#each modeStops.filter((stop) => stop.stopName.toLowerCase().includes(stopQuery.toLowerCase())).slice(0, 20) as stop}
@@ -48,7 +48,7 @@
       bind:value={vehicleQuery}
       placeholder={`Search ${type}...`}
     />
-    {#each Object.entries(getVehicles()) as [mode, modeVehicles]}
+    {#each Object.entries($state.snapshot(transportDataStore.vehicles)) as [mode, modeVehicles]}
       <p class="font-bold">{mode} - {ModeLabels[Number(mode)]}</p>
       <div class="flex flex-col items-start">
         {#each modeVehicles.filter((vehicle) => vehicle.vehicleId.toLowerCase().includes(stopQuery.toLowerCase())).slice(0, 20) as vehicle}

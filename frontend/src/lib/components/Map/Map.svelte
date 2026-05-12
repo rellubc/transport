@@ -137,7 +137,6 @@
   const addStops = () => {
     const stops = $state.snapshot(transportDataStore.stops)
     for (const [mode, modeStops] of Object.entries(stops)) {
-      console.log(mode, modeStops)
       const modeText = ModeLabels[Number(mode)]
       const imageSource = modeText.split('/')[0]
 
@@ -250,10 +249,7 @@
   }
 
   const addVehicles = (vehicles: Vehicles) => {
-    console.log(vehicles)
-    for (const [mode, modeVehicles] of Object.entries(vehicles)) {
-      console.log(mode, modeVehicles)
-
+    for (const [_mode, modeVehicles] of Object.entries(vehicles)) {
       for (const line of transportDataStore.modes) {
         const vehicleFeatures: Feature<Point>[] = []
         Object.values(modeVehicles)
@@ -265,6 +261,7 @@
                 type: 'vehicle',
                 tripId: vehicle.tripId,
                 tripRouteId: vehicle.tripRouteId,
+                tripRouteShortName: vehicle.tripRouteShortName,
                 tripScheduleRelationship: vehicle.tripScheduleRelationship,
                 vehicleId: vehicle.vehicleId,
                 vehicleLabel: vehicle.vehicleLabel,
@@ -378,6 +375,15 @@
           stopStopTimes(features[0].properties as Stop)
         } else if (features[0].properties.type === 'vehicle') {
           vehicleStopTimes(features[0].properties as Vehicle)
+          // move to another block - if not vehicle then reset
+          for (const line of transportDataStore.modes) {
+            map.setPaintProperty(`${line}-vehicle-layer`, 'circle-radius', [
+              'case',
+              ['==', ['get', 'vehicleId'], features[0].properties.vehicleId],
+              10,
+              6
+            ]);
+          }
         }
       }
     })
@@ -388,12 +394,13 @@
   })
   
   $effect(() => {
-    if (!map || !map.isStyleLoaded()) return;
+    const vehicles = transportDataStore.vehicles;
+    const vehicleModes = Object.keys(vehicles)
+    
+    if (!map || !map.isStyleLoaded()) return
+    if (vehicleModes.length === 0) return
 
-    const vehicles = $state.snapshot(transportDataStore.vehicles);
-    if (!vehicles) return;
-
-    addVehicles(vehicles);
+    addVehicles(vehicles)
   });
 
   $effect(() => {
