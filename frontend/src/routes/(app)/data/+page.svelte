@@ -167,12 +167,12 @@
     return "vehicleId" in item
   }
 
-  const isStopStopTime = (stopTime: StopStopTime[] | VehicleStopTime[]): stopTime is StopStopTime[] => {
-    return stopTime.length > 0 && !("progress" in stopTime[0]);
+  const isStopStopTime = (stopTimes: StopStopTime[] | VehicleStopTime[]): stopTimes is StopStopTime[] => {
+    return stopTimes.length === 0 || stopTimes.length > 0 && !("progress" in stopTimes[0]);
   }
 
-  const isVehicleStopTime = (stopTime: StopStopTime[] | VehicleStopTime[]): stopTime is VehicleStopTime[] => {
-    return stopTime.length > 0 && "progress" in stopTime[0];
+  const isVehicleStopTime = (stopTimes: StopStopTime[] | VehicleStopTime[]): stopTimes is VehicleStopTime[] => {
+    return stopTimes.length === 0 || stopTimes.length > 0 && "progress" in stopTimes[0];
   }
 
 </script>
@@ -232,7 +232,7 @@
     </div>
   {:else if activeItem && isVehicle(activeItem) && isVehicleStopTime(activeStopTimes)}
     <div bind:this={sidebarElement} class="absolute top-4 left-4 bg-white w-md h-[calc(100vh-2rem)] flex flex-col p-8 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)]">
-      <VehicleSidebarHeaderV2 title={activeStopTimes.slice().reverse().find((stopTime) => stopTime.progress === "passed")?.tripHeadsign} id={activeItem.vehicleId} />
+      <VehicleSidebarHeaderV2 title={activeStopTimes.slice().reverse().find((stopTime) => stopTime.progress === "passed")?.tripHeadsign} id={activeItem.vehicleId} routeShortName={activeStopTimes.slice().reverse().find((stopTime) => stopTime.progress === "passed")?.routeShortName} routeColour={activeStopTimes.slice().reverse().find((stopTime) => stopTime.progress === "passed")?.routeColour} />
       <VehicleSidebarBodyV2 stopTimes={activeStopTimes} getStopInfo={getStopInfo} />
     </div>
   {/if}

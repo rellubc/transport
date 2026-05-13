@@ -51,12 +51,12 @@
           <p class="font-bold">{headsign}</p>
           <ul class="flex flex-col gap-2">
             {#each stopTimes.slice(0, 5) as stopTime}
-              <li class="flex flex-row gap-2">
+              <button onclick={() => { getVehicleInfo(stopTime.tripId); page = "vehicle" }} class="flex flex-row gap-2 cursor-pointer">
                 <div style:background-color={`#${stopTime.routeColour}`} class="w-10 h-6 flex flex-row justify-center items-center rounded-md">
                   <p class="text-white text-xs font-bold">{stopTime.routeShortName ? stopTime.routeShortName : "NR"}</p>
                 </div>
                 {secondsToTime(stopTime.displayTime)} ({timeFromNow(stopTime.displayTime)})
-              </li>
+              </button>
             {/each}
           </ul>
         </div>
