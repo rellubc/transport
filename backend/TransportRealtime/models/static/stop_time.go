@@ -74,3 +74,19 @@ type TripRealtimeStopTime struct {
 	DisplayTime            int              `json:"displayTime"`
 	StopProgress           float64          `json:"stopProgress"`
 }
+
+type StopRealtimeStopTimeV2 struct {
+	TripId                 string  `json:"tripId"`
+	TripHeadsign           *string `json:"tripHeadsign"`
+	RouteShortName         *string `json:"routeShortName"`
+	RouteColour            *string `json:"routeColour"`
+	StopId                 string  `json:"stopId"`
+	StopName               string  `json:"stopName"`
+	ArrivalDelay           *int    `json:"arrivalDelay"`
+	DepartureDelay         *int    `json:"departureDelay"`
+	EffectiveArrivalTime   *int    `json:"effectiveArrivalTime"`
+	EffectiveDepartureTime *int    `json:"effectiveDepartureTime"`
+	StopType               string  `json:"stopType"`
+	DisplayTime            int     `json:"displayTime"`
+	IsRealtime             bool    `json:"isRealtime"`
+}

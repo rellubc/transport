@@ -17,10 +17,7 @@ func NewStopRepository(db *pgxpool.Pool) *StopRepository {
 
 func (r *StopRepository) GetStops() (map[int][]models.Stop, error) {
 	query := `
-		SELECT stop_id, stop_code, stop_name, stop_desc, stop_lat, stop_lon,
-		       stop_zone_id, stop_url, stop_location_type,
-		       stop_parent_station, stop_timezone, stop_wheelchair_boarding,
-		       stop_platform_code, route_type
+		SELECT stop_id, stop_name, stop_lat, stop_lon, stop_parent_station, stop_wheelchair_boarding, route_type
 		FROM stops
 		ORDER BY stop_name
 	`
@@ -38,18 +35,11 @@ func (r *StopRepository) GetStops() (map[int][]models.Stop, error) {
 		var stop models.Stop
 		err := rows.Scan(
 			&stop.StopId,
-			&stop.StopCode,
 			&stop.StopName,
-			&stop.StopDescription,
 			&stop.StopLat,
 			&stop.StopLon,
-			&stop.StopZoneId,
-			&stop.StopUrl,
-			&stop.StopLocationType,
 			&stop.StopParentStation,
-			&stop.StopTimezone,
 			&stop.StopWheelchairBoarding,
-			&stop.StopPlatformCode,
 			&stop.RouteType,
 		)
 
@@ -71,22 +61,23 @@ func (r *StopRepository) GetStops() (map[int][]models.Stop, error) {
 }
 
 func (r *StopRepository) GetStop(stopId string) (models.Stop, error) {
-	row := r.DB.QueryRow(context.Background(), "SELECT * FROM stops WHERE stop_id = $1", stopId)
+	query := `
+		SELECT stop_id, stop_name, stop_lat, stop_lon, stop_parent_station, stop_wheelchair_boarding, route_type
+		FROM stops
+		WHERE stop_id = $1
+	`
+	args := []any{stopId}
+
+	row := r.DB.QueryRow(context.Background(), query, args...)
 
 	var stop models.Stop
 	err := row.Scan(
 		&stop.StopId,
-		&stop.StopCode,
 		&stop.StopName,
 		&stop.StopLat,
 		&stop.StopLon,
-		&stop.StopZoneId,
-		&stop.StopUrl,
-		&stop.StopLocationType,
 		&stop.StopParentStation,
-		&stop.StopTimezone,
 		&stop.StopWheelchairBoarding,
-		&stop.StopPlatformCode,
 		&stop.RouteType,
 	)
 

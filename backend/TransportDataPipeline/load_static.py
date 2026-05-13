@@ -330,15 +330,21 @@ def insert_shapes(conn):
     conflict_key = ["shape_id", "shape_pt_sequence"]
 
     for [mode_string, mode_num] in V1_MODES.items():
-        os.makedirs(f"{shapes_folder}/{mode_string}", exist_ok=True)
-        for filename in os.listdir(f"{shapes_folder}/{mode_string}"):
+        mode_path = f"{shapes_folder}/{mode_string}"
+        if not os.path.isdir(mode_path):
+            continue
+
+        for filename in os.listdir(mode_path):
             print(f"[PROCESS] Loading {filename}...")
             with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
                 load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_num)
 
     for [mode_string, mode_num] in V2_MODES.items():
-        os.makedirs(f"{shapes_folder}/{mode_string}", exist_ok=True)
-        for filename in os.listdir(f"{shapes_folder}/{mode_string}"):
+        mode_path = f"{shapes_folder}/{mode_string}"
+        if not os.path.isdir(mode_path):
+            continue
+
+        for filename in os.listdir(mode_path):
             print(f"[PROCESS] Loading {filename}...")
             with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
                 load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_num)
@@ -397,7 +403,59 @@ def clean_data(conn):
             DELETE FROM trips WHERE route_id LIKE 'SHL%';
             DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.2%' AND r.route_type = 2;
             DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.6%' AND r.route_type = 2;
             DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.2%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.2%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.3%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.5%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.6%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.7%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.5%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.6%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.7%' AND r.route_type = 2;
+            WITH bounds AS (
+                SELECT
+                    trip_id,
+                    MIN(stop_sequence) AS first_seq,
+                    MAX(stop_sequence) AS last_seq
+                FROM stop_times
+                GROUP BY trip_id
+            )
+            UPDATE stop_times st
+            SET
+                drop_off_type = CASE
+                    WHEN st.stop_sequence = b.first_seq THEN 1
+                    ELSE st.drop_off_type
+                END,
+                pickup_type = CASE
+                    WHEN st.stop_sequence = b.last_seq THEN 1
+                    ELSE st.pickup_type
+                END
+            FROM bounds b
+            WHERE st.trip_id = b.trip_id;
+            UPDATE stops SET stop_parent_station = '200060' WHERE stop_id = '2000257';
+            WITH numbered AS (
+                SELECT
+                    stop_id,
+                    stop_name,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY stop_name
+                        ORDER BY stop_id
+                    ) AS platform_number
+                FROM stops
+                WHERE route_type = 900
+                AND stop_location_type = 0
+            )
+            UPDATE stops s
+            SET stop_name =
+                numbered.stop_name ||
+                ', Platform ' ||
+                numbered.platform_number
+            FROM numbered
+            WHERE s.stop_id = numbered.stop_id;
         """)
     conn.commit()
 

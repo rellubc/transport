@@ -17,7 +17,6 @@ type VehiclePosition struct {
 	Latitude             float32     `json:"positionLatitude"`
 	Longitude            float32     `json:"positionLongitude"`
 	Geom                 *geom.Point `json:"positionGeom"`
-	StopId               string      `json:"stopId"`
 	Timestamp            time.Time   `json:"timestamp"`
 	CongestionLevel      string      `json:"congestionLevel"`
 	OccupancyStatus      *string     `json:"occupancyStatus"`

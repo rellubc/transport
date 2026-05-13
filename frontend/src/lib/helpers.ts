@@ -5,12 +5,44 @@ export const getSydneyNow = (): number => {
   return new Date(sydneyStr).getTime()
 }
 
+export const getSydneyNowSeconds = (): number => {
+  const now = new Date()
+
+  const sydney = new Date(
+    now.toLocaleString("en-US", { timeZone: "Australia/Sydney" })
+  )
+
+  return (
+    sydney.getHours() * 3600 +
+    sydney.getMinutes() * 60 +
+    sydney.getSeconds()
+  )
+}
+
 export const secondsToTime = (seconds: number): string => {
-  seconds %= 86400
+  seconds = ((seconds % 86400) + 86400) % 86400
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   const s = seconds % 60
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  // return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+}
+
+export const timeFromNow = (seconds: number) => {
+  const now = new Date()
+  const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()
+
+  let diff = seconds - nowSec
+  if (diff < -12 * 3600) diff += 24 * 3600
+  if (diff < 0) return "now"
+
+  const mins = Math.floor(diff / 60)
+  const hrs = Math.floor(mins / 60)
+  const remMins = mins % 60
+
+  if (mins < 60) return `${mins} min`
+
+  return remMins === 0 ? `${hrs} hr` : `${hrs} hr ${remMins} min`
 }
 
 export const stopDelayText = (seconds: number): string => {

@@ -35,7 +35,6 @@ func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int
 			vp.vehicle_model,
 			vp.position_latitude,
 			vp.position_longitude,
-			vp.stop_id,
 			vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
 			vp.congestion_level,
 			vp.occupancy_status,
@@ -50,8 +49,6 @@ func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int
 	} else {
 		query = fmt.Sprintf(query, "WHERE NOW() - vp.timestamp < INTERVAL '2 minutes' AND vp.trip_route_id NOT LIKE 'RTTA%'")
 	}
-
-	log.Println(query)
 
 	rows, err = r.DB.Query(context.Background(), query)
 
@@ -75,7 +72,6 @@ func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int
 			&vp.VehicleModel,
 			&vp.Latitude,
 			&vp.Longitude,
-			&vp.StopId,
 			&vp.Timestamp,
 			&vp.CongestionLevel,
 			&vp.OccupancyStatus,
@@ -98,7 +94,7 @@ func (r *VehiclePositionRepository) GetVehiclePositions(routeType *int) (map[int
 	return vpMap, nil
 }
 
-func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models.VehiclePosition, error) {
+func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string, tripId string) (models.VehiclePosition, error) {
 	query := `
 		SELECT
 			vp.trip_id,
@@ -110,17 +106,29 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 			vp.vehicle_model,
 			vp.position_latitude,
 			vp.position_longitude,
-			vp.stop_id,
 			vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
 			vp.congestion_level,
 			vp.occupancy_status,
 			vp.route_type
 		FROM vehicle_positions vp 
 		JOIN routes r ON vp.trip_route_id = r.route_id
-		WHERE vp.vehicle_id = $1 AND NOW() - vp.timestamp < INTERVAL '2 minutes'
+		WHERE NOW() - vp.timestamp < INTERVAL '2 minutes'
 	`
 
-	row := r.DB.QueryRow(context.Background(), query, vehicleId)
+	log.Println(vehicleId, tripId)
+
+	var args []any
+	if vehicleId != "" {
+		query += " AND vp.vehicle_id = $1"
+		args = append(args, vehicleId)
+	} else if tripId != "" {
+		query += " AND vp.trip_id = $1"
+		args = append(args, tripId)
+	}
+
+	log.Println(query, args)
+
+	row := r.DB.QueryRow(context.Background(), query, args...)
 
 	var vp models.VehiclePosition
 
@@ -134,7 +142,6 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string) (models
 		&vp.VehicleModel,
 		&vp.Latitude,
 		&vp.Longitude,
-		&vp.StopId,
 		&vp.Timestamp,
 		&vp.CongestionLevel,
 		&vp.OccupancyStatus,

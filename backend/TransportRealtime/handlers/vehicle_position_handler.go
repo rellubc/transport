@@ -4,10 +4,9 @@ import (
 	models "TransportRealtime/models/realtime"
 	"TransportRealtime/repositories"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/go-chi/chi/v5"
 )
 
 func GetVehiclePositionsHandler(repo *repositories.VehiclePositionRepository) http.HandlerFunc {
@@ -40,9 +39,18 @@ func GetVehiclePositionsHandler(repo *repositories.VehiclePositionRepository) ht
 
 func GetVehiclePositionHandler(repo *repositories.VehiclePositionRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vpId := chi.URLParam(r, "vehicle_id")
+		vpId := r.URL.Query().Get("vehicle_id")
+		tripId := r.URL.Query().Get("trip_id")
 
-		vp, err := repo.GetVehiclePosition(vpId)
+		log.Println(vpId, tripId)
+
+		var vp models.VehiclePosition
+		var err error
+		if vpId == "" && tripId != "" {
+			vp, err = repo.GetVehiclePosition("", tripId)
+		} else if vpId != "" && tripId == "" {
+			vp, err = repo.GetVehiclePosition(vpId, "")
+		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

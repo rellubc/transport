@@ -15,7 +15,7 @@
 
   import { transportDataStore } from '$lib/stores.svelte';
   import type { ShapeCoord } from '$lib/types/shapes.types';
-  import { getRouteColours, getSydneyNow } from '$lib/helpers';
+  import { getRouteColours } from '$lib/helpers';
   import type { ModeIcon } from '$lib/types/general.type';
   import { LineColours, ModeLabels } from '$lib/constants';
   import type { Vehicle, Vehicles } from '$lib/types/vehicles.types';
@@ -356,7 +356,7 @@
           console.log("Refreshed stop stop times: ", $state.snapshot(stopTimes))
         } else if (activeVehicle) {
           activeVehicle = await vehiclesApi.getById(activeVehicle.vehicleId)
-          stopTimes = await stopTimesApi.getForTrip(activeVehicle.tripId, activeVehicle.positionLongitude, activeVehicle.positionLatitude)
+          stopTimes = await stopTimesApi.getForVehicle(activeVehicle.vehicleId, activeVehicle.positionLongitude, activeVehicle.positionLatitude)
           console.log("Refreshed vehicle info: ", $state.snapshot(activeVehicle))
           console.log("Refreshed vehicle stop times: ", $state.snapshot(stopTimes))
         }
@@ -470,7 +470,7 @@
 
   const vehicleStopTimes = async (vehicle: Vehicle) => {
     try {
-      stopTimes = await stopTimesApi.getForTrip(vehicle.tripId, vehicle.positionLongitude, vehicle.positionLatitude)
+      stopTimes = await stopTimesApi.getForVehicle(vehicle.vehicleId, vehicle.positionLongitude, vehicle.positionLatitude)
       activeVehicle = vehicle
 
       console.log("Vehicle info: ", $state.snapshot(activeVehicle))
@@ -479,6 +479,11 @@
       console.error(err)
     }
   }
+
+  const isVehicleStopTime = (stopTime: StopStopTime | VehicleStopTime): stopTime is VehicleStopTime => {
+    return "progress" in stopTime
+  }
+
 </script>
 
 <svelte:window onclick={(e: MouseEvent) => {
@@ -499,7 +504,7 @@
     </div>
   {:else if activeVehicle}
     <div bind:this={sidebarElement} class="absolute top-4 left-4 bg-white w-md h-[calc(100vh-2rem)] flex flex-col p-8 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)]">
-      <VehicleSidebarHeader stopTime={stopTimes[0] as VehicleStopTime} activeVehicle={activeVehicle} />
+      <VehicleSidebarHeader stopTime={stopTimes.filter(isVehicleStopTime).findLast((stopTime) => stopTime.progress === "passed") as VehicleStopTime} activeVehicle={activeVehicle} />
       <VehicleSidebarBody bind:listElement stopTimes={stopTimes as VehicleStopTime[]} />
     </div>
   {/if}

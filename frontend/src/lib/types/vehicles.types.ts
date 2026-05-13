@@ -8,7 +8,6 @@ export interface Vehicle {
   vehicleModel: string
   positionLatitude: number
   positionLongitude: number
-  stopId: string
   timestamp: number
   congestionLevel: string
   occupancyStatus: string
