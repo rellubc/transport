@@ -15,7 +15,7 @@
 </script>
 
 <div style:scrollbar-width="none" class="w-full h-full flex flex-col overflow-y-scroll">
-  <div class="min-h-screen w-full">
+  <div class="w-full">
     {#each stopTimes as stopTime, index}
       <button onclick={() => getStopInfo(stopTime.stopId)} class="w-full flex flex-row gap-2 cursor-pointer">
         <div class="relative w-4 flex flex-col justify-center items-center">

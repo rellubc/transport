@@ -135,6 +135,34 @@ func GetStopRealtimeStopTimesV2Handler(repo *repositories.StopTimeRepository) ht
 	}
 }
 
+func GetTripRealtimeStopTimesV2Handler(repo *repositories.StopTimeRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tripId := chi.URLParam(r, "trip_id")
+		vehicleLon := r.URL.Query().Get("vehicle_lon")
+		vehicleLat := r.URL.Query().Get("vehicle_lat")
+
+		vehicleLonF, err := strconv.ParseFloat(vehicleLon, 32)
+		if err != nil {
+			http.Error(w, "invalid vehicle_lon", http.StatusBadRequest)
+			return
+		}
+		vehicleLatF, err := strconv.ParseFloat(vehicleLat, 32)
+		if err != nil {
+			http.Error(w, "invalid vehicle_lat", http.StatusBadRequest)
+			return
+		}
+
+		stop, err := repo.GetTripRealtimeStopTimesV2(tripId, vehicleLonF, vehicleLatF)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(stop)
+	}
+}
+
 func GetVehicleStopTimesV2Handler(repo *repositories.StopTimeRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vehicleId := chi.URLParam(r, "vehicle_id")

@@ -155,10 +155,12 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string, tripId 
 				FROM runs r
 				WHERE r.run_sequence_a = (
 					SELECT run_sequence_a
-					FROM runs2
+					FROM runs r2
 					WHERE trip_id = $1
 				) AND r.run_sequence_b < (
 					SELECT run_sequence_b
+					FROM runs r2
+					WHERE trip_id = $1
 				)
 				ORDER BY r.run_sequence_b DESC
 				LIMIT 1
@@ -177,8 +179,8 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string, tripId 
 				vp.congestion_level,
 				vp.occupancy_status,
 				vp.route_type
-			FROM next_run
-			JOIN vehicle_positions vp ON vp.trip_id = next_run.trip_id
+			FROM prev_run
+			JOIN vehicle_positions vp ON vp.trip_id = prev_run.trip_id
 			JOIN routes r ON vp.trip_route_id = r.route_id
 		`
 

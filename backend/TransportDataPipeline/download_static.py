@@ -33,6 +33,7 @@ V1_MODES = [
     "ferries/sydneyferries",
     "ferries/MFF",
 
+    "buses",
     "buses/SBSC006",
     "buses/GSBC001",
     "buses/GSBC002",
@@ -44,34 +45,6 @@ V1_MODES = [
     "buses/GSBC010",
     "buses/GSBC014",
 ]
-
-# V2_MODES = {
-#     "metro": 401,
-# }
-
-# V1_MODES = {
-#     "sydneytrains": 2,
-#     "nswtrains": 100,
-
-#     "lightrail/newcastle": 0,
-#     "lightrail/innerwest": 900,
-#     "lightrail/parramatta": 900,
-#     "lightrail/cbdandsoutheast": 900,
-
-#     "ferries/sydneyferries": 4,
-#     "ferries/MFF": 4,
-
-#     "buses/SBSC006",
-#     "buses/GSBC001",
-#     "buses/GSBC002",
-#     "buses/GSBC003",
-#     "buses/GSBC004",
-#     "buses/GSBC007",
-#     "buses/GSBC008",
-#     "buses/GSBC009",
-#     "buses/GSBC010",
-#     "buses/GSBC014",
-# }
 
 headers = {
     "Authorization": f"apikey {API_KEY}"

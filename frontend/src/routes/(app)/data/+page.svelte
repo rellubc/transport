@@ -20,8 +20,10 @@
   let vehicleQuery = $state<string>('')
 
   let activeItem = $state<Stop | Vehicle | null>(null)
+  let activeTrip = $state<string>('')
   let activeStopTimes = $state<StopStopTime[] | VehicleStopTime[]>([])
 
+  let loading = $state<boolean>(false)
   let listElement = $state<HTMLElement | null>(null)
   let sidebarElement = $state<HTMLElement | null>(null)
   let fetching = $state<boolean>(false)
@@ -52,7 +54,7 @@
         console.log("Refreshed stop stop times: ", $state.snapshot(activeStopTimes))
       } else if (activeItem && isVehicle(activeItem)) {
         activeItem = await vehiclesApi.getById(activeItem.vehicleId)
-        activeStopTimes = await stopTimesApi.getForVehicle(activeItem.vehicleId, activeItem.positionLongitude, activeItem.positionLatitude)
+        activeStopTimes = await stopTimesApi.getForTrip(activeTrip, activeItem.positionLongitude, activeItem.positionLatitude)
         console.log("Refreshed vehicle info: ", $state.snapshot(activeItem))
         console.log("Refreshed vehicle stop times: ", $state.snapshot(activeStopTimes))
       }
@@ -95,9 +97,15 @@
 
           await tick()
           let additions = newTimes.filter((stopTime) => stopTime.stopType === 'pass' || stopTime.stopType === 'terminate' || stopTime.stopType === 'continues').length * 24
-          let viaAdditions = newTimes.filter((stopTime) => stopTime.tripHeadsign.includes('via')).length * 80
-          let nonViaAdditions = newTimes.filter((stopTime) => !stopTime.tripHeadsign.includes('via')).length * 60
-          list.scrollTop = viaAdditions + nonViaAdditions + newTimes.length + additions
+          let platformAdditions = 0
+          if (activeItem.stopParentStation) {
+            platformAdditions = newTimes.filter((stopTime) => stopTime.stopType === 'stop' || 'depart').length * 60
+          } else {
+            let viaAdditions = newTimes.filter((stopTime) => stopTime.tripHeadsign.includes('via')).length * 80
+            let nonViaAdditions = newTimes.filter((stopTime) => !stopTime.tripHeadsign.includes('via')).length * 60
+            platformAdditions = viaAdditions + nonViaAdditions
+          }
+          list.scrollTop = platformAdditions + newTimes.length + additions
         } catch (error) {
           console.error(error)
         } finally {
@@ -124,6 +132,7 @@
   })
 
   const getStopInfo = async (stopId: string) => {
+    loading = true
     try {
       activeItem = await stopsApi.getById(stopId)
       activeStopTimes = await stopTimesApi.getForStop(stopId, "initial", getSydneyNow())
@@ -132,30 +141,40 @@
       console.log("Active stop: ", $state.snapshot(activeItem))
     } catch (err) {
       console.error(err)
+    } finally {
+      loading = false
     }
   }
 
   const getVehicleInfoByTrip = async (tripId: string) => {
+    loading = true
     try {
       activeItem = await vehiclesApi.getByTrip(tripId)
-      activeStopTimes = await stopTimesApi.getForVehicle(activeItem.vehicleId, activeItem.positionLongitude, activeItem.positionLatitude)
+      activeTrip = tripId
+      activeStopTimes = await stopTimesApi.getForTrip(tripId, activeItem.positionLongitude, activeItem.positionLatitude)
       
       console.log("Stop times: ", $state.snapshot(activeStopTimes))
       console.log("Active vehicle: ", $state.snapshot(activeItem))
     } catch (err) {
       console.error(err)
+    } finally {
+      loading = false
     }
   }
 
   const getVehicleInfoByVehicle = async (vehicleId: string) => {
+    loading = true
     try {
       activeItem = await vehiclesApi.getById(vehicleId)
+      activeTrip = activeItem.tripId
       activeStopTimes = await stopTimesApi.getForVehicle(activeItem.vehicleId, activeItem.positionLongitude, activeItem.positionLatitude)
       
       console.log("Stop times: ", $state.snapshot(activeStopTimes))
       console.log("Active vehicle: ", $state.snapshot(activeItem))
     } catch (err) {
       console.error(err)
+    } finally {
+      loading = false
     }
   }
 
@@ -168,11 +187,11 @@
   }
 
   const isStopStopTime = (stopTimes: StopStopTime[] | VehicleStopTime[]): stopTimes is StopStopTime[] => {
-    return stopTimes.length === 0 || stopTimes.length > 0 && !("progress" in stopTimes[0]);
+    return stopTimes.length > 0 && !("progress" in stopTimes[0]);
   }
 
   const isVehicleStopTime = (stopTimes: StopStopTime[] | VehicleStopTime[]): stopTimes is VehicleStopTime[] => {
-    return stopTimes.length === 0 || stopTimes.length > 0 && "progress" in stopTimes[0];
+    return stopTimes.length > 0 && "progress" in stopTimes[0];
   }
 
 </script>
@@ -182,7 +201,9 @@
 
   const path = e.composedPath();
   if (sidebarElement && !path.includes(sidebarElement)) {
-    activeItem = null;
+    activeItem = null
+    activeTrip = ''
+    activeStopTimes = []
   }
 }}/>
 
@@ -225,14 +246,14 @@
   </div>
 
   <!-- SIDEBAR -->
-  {#if activeItem && isStop(activeItem) && isStopStopTime(activeStopTimes)}
+  {#if activeItem && isStop(activeItem) && isStopStopTime(activeStopTimes) && !loading}
     <div bind:this={sidebarElement} class="absolute top-4 left-4 bg-white w-md h-[calc(100vh-2rem)] flex flex-col p-8 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)]">
       <StopSidebarHeaderV2 title={activeItem.stopName} id={activeItem.stopId} />
       <StopSidebarBodyV2 bind:listElement activeStop={activeItem} stopTimes={activeStopTimes} getVehicleInfo={getVehicleInfoByTrip}/>
     </div>
-  {:else if activeItem && isVehicle(activeItem) && isVehicleStopTime(activeStopTimes)}
+  {:else if activeItem && isVehicle(activeItem) && isVehicleStopTime(activeStopTimes) && !loading}
     <div bind:this={sidebarElement} class="absolute top-4 left-4 bg-white w-md h-[calc(100vh-2rem)] flex flex-col p-8 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)]">
-      {#if [...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")}
+      {#if [...activeStopTimes].find((stopTime) => stopTime.progress === "passed")}
         <VehicleSidebarHeaderV2 title={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.tripHeadsign} id={activeItem.vehicleId} routeShortName={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.routeShortName} routeColour={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.routeColour} />
       {:else}
         <VehicleSidebarHeaderV2 title={activeStopTimes[0].tripHeadsign} id={activeItem.vehicleId} routeShortName={activeStopTimes[0].routeShortName} routeColour={activeStopTimes[0].routeColour} />

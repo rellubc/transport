@@ -38,6 +38,13 @@ func InsertVehiclePositionsV2(feed *pb.FeedMessage, db *pgxpool.Pool) error {
 		var routeType int
 		db.QueryRow(ctx, `SELECT route_type FROM routes WHERE route_id = $1`, vehicle.GetTrip().GetRouteId()).Scan(&routeType)
 
+		var existingTripId string
+		db.QueryRow(ctx, `SELECT trip_id FROM trips WHERE trip_id = $1`, vehicle.GetTrip().GetTripId()).Scan(&existingTripId)
+
+		if existingTripId == "" {
+			continue
+		}
+
 		batch.Queue(`
 			INSERT INTO vehicle_positions (
 				trip_id, trip_route_id, trip_schedule_relationship,

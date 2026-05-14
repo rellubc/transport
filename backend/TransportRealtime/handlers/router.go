@@ -71,6 +71,7 @@ func RegisterRoutes(repos *repositories.Repositories) http.Handler {
 	// r.Get("/api/sydney/trips/{trip_id}/stop_times", GetTripStopTimesHandler(repos.StopTime))
 	// r.Get("/api/sydney/vehicles/{vehicle_id}/stop_times", GetVehicleStopTimesHandler(repos.StopTime))
 	r.Get("/api/sydney/stops/{stop_id}/stop_times", GetStopRealtimeStopTimesV2Handler(repos.StopTime))
+	r.Get("/api/sydney/trips/{trip_id}/stop_times", GetTripRealtimeStopTimesV2Handler(repos.StopTime))
 	r.Get("/api/sydney/vehicles/{vehicle_id}/stop_times", GetVehicleStopTimesV2Handler(repos.StopTime))
 
 	return r
