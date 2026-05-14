@@ -4,7 +4,6 @@ import (
 	models "TransportRealtime/models/realtime"
 	"TransportRealtime/repositories"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -41,8 +40,6 @@ func GetVehiclePositionHandler(repo *repositories.VehiclePositionRepository) htt
 	return func(w http.ResponseWriter, r *http.Request) {
 		vpId := r.URL.Query().Get("vehicle_id")
 		tripId := r.URL.Query().Get("trip_id")
-
-		log.Println(vpId, tripId)
 
 		var vp models.VehiclePosition
 		var err error

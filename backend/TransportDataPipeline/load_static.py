@@ -416,6 +416,7 @@ def clean_data(conn):
             DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.5%' AND r.route_type = 2;
             DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.6%' AND r.route_type = 2;
             DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.7%' AND r.route_type = 2;
+
             WITH bounds AS (
                 SELECT
                     trip_id,
@@ -436,7 +437,9 @@ def clean_data(conn):
                 END
             FROM bounds b
             WHERE st.trip_id = b.trip_id;
-            UPDATE stops SET stop_parent_station = '200060' WHERE stop_id = '2000257';
+            UPDATE stops SET stop_parent_station = '200060' WHERE stop_id = '2000257'
+            ;
+
             WITH numbered AS (
                 SELECT
                     stop_id,
@@ -455,7 +458,91 @@ def clean_data(conn):
                 ', Platform ' ||
                 numbered.platform_number
             FROM numbered
-            WHERE s.stop_id = numbered.stop_id;
+            WHERE s.stop_id = numbered.stop_id
+            ;
+
+            INSERT INTO runs (
+                run_sequence_a,
+                run_sequence_b,
+                trip_id,
+                vehicle_id,
+                arrival_time
+            )
+            WITH now_sydney AS MATERIALIZED (
+                SELECT
+                    CASE
+                        WHEN EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time) < 14400
+                        THEN ((NOW() AT TIME ZONE 'Australia/Sydney')::date - INTERVAL '1 day')::date
+                        ELSE (NOW() AT TIME ZONE 'Australia/Sydney')::date
+                    END AS now_date,
+
+                    CASE
+                        WHEN EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time) < 14400
+                        THEN EXTRACT(DOW FROM (NOW() AT TIME ZONE 'Australia/Sydney') - INTERVAL '1 day')::int
+                        ELSE EXTRACT(DOW FROM (NOW() AT TIME ZONE 'Australia/Sydney'))::int
+                    END AS now_dow,
+
+                    CASE 
+                        WHEN EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time) < 14400
+                        THEN EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time)::int + 86400
+                        ELSE EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time)::int
+                    END AS now_sec
+            ),
+            active_services AS MATERIALIZED (
+                SELECT c.service_id
+                FROM calendars c
+                CROSS JOIN now_sydney ns
+                WHERE c.start_date <= ns.now_date
+                    AND c.end_date   >= ns.now_date
+                    AND CASE ns.now_dow
+                        WHEN 0 THEN c.sunday
+                        WHEN 1 THEN c.monday
+                        WHEN 2 THEN c.tuesday
+                        WHEN 3 THEN c.wednesday
+                        WHEN 4 THEN c.thursday
+                        WHEN 5 THEN c.friday
+                        WHEN 6 THEN c.saturday
+                    END
+            ),
+            active_trips AS MATERIALIZED (
+                SELECT DISTINCT t.trip_id
+                FROM trips t
+                JOIN active_services ac ON ac.service_id = t.service_id
+            ),
+            last_stops AS MATERIALIZED (
+                SELECT DISTINCT ON (at.trip_id)
+                    at.trip_id,
+                    st.arrival_time + COALESCE(stu.stop_arrival_delay, 0) AS arrival_time
+                FROM active_trips at
+                LEFT JOIN stop_times st ON at.trip_id = st.trip_id
+                LEFT JOIN stop_time_updates stu ON st.stop_id = stu.stop_id AND st.trip_id = stu.trip_id
+                ORDER BY at.trip_id, st.stop_sequence DESC
+            ),
+            parsed AS MATERIALIZED (
+                SELECT
+                CASE
+                    WHEN trip_id ~ '^[0-9-]+[A-Z]+\.' THEN (regexp_match(trip_id, '^([0-9-]+)[A-Z]+\.'))[1]
+                    WHEN trip_id ~ '^[A-Z]+[0-9]+\.' THEN (regexp_match(trip_id, '^([A-Z]+)[0-9]+\.'))[1]
+                    WHEN trip_id ~ '^[A-Z][0-9][A-Z]+\.' THEN (regexp_match(trip_id, '^([A-Z][0-9])[A-Z]+\.'))[1]
+                END AS run_sequence_a,
+                CASE
+                    WHEN trip_id ~ '^[0-9-]+[A-Z]+\.' THEN (regexp_match(trip_id, '^[0-9-]+([A-Z]+)\.'))[1]
+                    WHEN trip_id ~ '^[A-Z]+[0-9]+\.' THEN (regexp_match(trip_id, '^[A-Z]+([0-9]+)\.'))[1]
+                    WHEN trip_id ~ '^[A-Z][0-9][A-Z]+\.' THEN (regexp_match(trip_id, '^[A-Z][0-9]([A-Z]+)\.'))[1]
+                END AS run_sequence_b,
+                trip_id,
+                NULL AS vehicle_id,
+                arrival_time
+                FROM last_stops
+            )
+            SELECT * FROM parsed
+            WHERE run_sequence_a IS NOT NULL
+                AND run_sequence_b IS NOT NULL
+            ON CONFLICT (run_sequence_a, run_sequence_b)
+            DO UPDATE SET
+                trip_id = EXCLUDED.trip_id,
+                arrival_time = EXCLUDED.arrival_time
+            ;
         """)
     conn.commit()
 

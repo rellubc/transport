@@ -3,6 +3,7 @@ package repositories
 import (
 	models "TransportRealtime/models/realtime"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -112,26 +113,22 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string, tripId 
 			vp.route_type
 		FROM vehicle_positions vp 
 		JOIN routes r ON vp.trip_route_id = r.route_id
-		WHERE NOW() - vp.timestamp < INTERVAL '2 minutes'
 	`
 
-	log.Println(vehicleId, tripId)
+	log.Println("things: ", vehicleId, tripId)
 
 	var args []any
-	if vehicleId != "" {
-		query += " AND vp.vehicle_id = $1"
+	if vehicleId != "" && tripId == "" {
+		query += "WHERE vp.vehicle_id = $1"
 		args = append(args, vehicleId)
-	} else if tripId != "" {
-		query += " AND vp.trip_id = $1"
+	} else if vehicleId == "" && tripId != "" {
+		query += "WHERE vp.trip_id = $1"
 		args = append(args, tripId)
 	}
-
-	log.Println(query, args)
 
 	row := r.DB.QueryRow(context.Background(), query, args...)
 
 	var vp models.VehiclePosition
-
 	err := row.Scan(
 		&vp.TripId,
 		&vp.RouteId,
@@ -147,7 +144,67 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string, tripId 
 		&vp.OccupancyStatus,
 		&vp.RouteType,
 	)
-	if err != nil {
+
+	log.Println(err)
+
+	// get previous run
+	if errors.Is(err, pgx.ErrNoRows) {
+		query = `
+			with prev_run AS (
+				SELECT *
+				FROM runs r
+				WHERE r.run_sequence_a = (
+					SELECT run_sequence_a
+					FROM runs2
+					WHERE trip_id = $1
+				) AND r.run_sequence_b < (
+					SELECT run_sequence_b
+				)
+				ORDER BY r.run_sequence_b DESC
+				LIMIT 1
+			)
+			SELECT
+				vp.trip_id,
+				vp.trip_route_id,
+				r.route_short_name,
+				vp.trip_schedule_relationship,
+				vp.vehicle_id,
+				vp.vehicle_label,
+				vp.vehicle_model,
+				vp.position_latitude,
+				vp.position_longitude,
+				vp.timestamp AT TIME ZONE 'Australia/Sydney' AS sydney_time,
+				vp.congestion_level,
+				vp.occupancy_status,
+				vp.route_type
+			FROM next_run
+			JOIN vehicle_positions vp ON vp.trip_id = next_run.trip_id
+			JOIN routes r ON vp.trip_route_id = r.route_id
+		`
+
+		row = r.DB.QueryRow(context.Background(), query, tripId)
+		err = row.Scan(
+			&vp.TripId,
+			&vp.RouteId,
+			&vp.RouteShortName,
+			&vp.ScheduleRelationship,
+			&vp.VehicleId,
+			&vp.VehicleLabel,
+			&vp.VehicleModel,
+			&vp.Latitude,
+			&vp.Longitude,
+			&vp.Timestamp,
+			&vp.CongestionLevel,
+			&vp.OccupancyStatus,
+			&vp.RouteType,
+		)
+
+		log.Println(err)
+
+		if err != nil {
+			return models.VehiclePosition{}, err
+		}
+	} else if err != nil {
 		return models.VehiclePosition{}, err
 	}
 

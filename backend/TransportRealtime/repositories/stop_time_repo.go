@@ -1131,7 +1131,9 @@ func (r *StopTimeRepository) GetVehicleRealtimeStopTimesV2(vehicleId string, veh
 					/ NULLIF(ABS(nsp.shape_pt_sequence - psp.shape_pt_sequence), 0)
 					* 100
 				, 2) AS progress
-			FROM prev_shape_point psp, current_shape_point csp, next_shape_point nsp
+			FROM prev_shape_point psp
+			LEFT JOIN current_shape_point csp ON true
+			LEFT JOIN next_shape_point nsp ON true
 		)
 		SELECT
 			sw.trip_headsign,
@@ -1149,15 +1151,16 @@ func (r *StopTimeRepository) GetVehicleRealtimeStopTimesV2(vehicleId string, veh
 			sw.is_realtime,
 			sw.consist,
 			sw.display_time,
-			CASE
+			COALESCE(CASE
 				WHEN sw.route_id LIKE 'RTTA%' THEN 0
 				WHEN sw.progress = 'passed' THEN 100
 				WHEN NOT EXISTS (SELECT 1 FROM prev_stop) THEN 0
 				WHEN ns.stop_id != sw.stop_id THEN 0
 				ELSE p.progress
-			END as stop_progress
-		FROM stop_window sw, next_stop ns, progress p
-		;
+			END, 0) as stop_progress
+		FROM stop_window sw
+		LEFT JOIN next_stop ns ON true
+		LEFT JOIN progress p ON true
 	`
 
 	args := []any{vehicleId, vehicleLon, vehicleLat}

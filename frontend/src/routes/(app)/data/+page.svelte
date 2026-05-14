@@ -47,7 +47,7 @@
       transportDataStore.vehicles = await vehiclesApi.getAll()
       console.log("Refreshed vehicles: ", $state.snapshot(transportDataStore.vehicles))
 
-      if (activeItem && isStop(activeItem)) {
+      if (activeItem && isStop(activeItem) && !disableRefresh) {
         activeStopTimes = await stopTimesApi.getForStop(activeItem.stopId, "initial", getSydneyNow())
         console.log("Refreshed stop stop times: ", $state.snapshot(activeStopTimes))
       } else if (activeItem && isVehicle(activeItem)) {
@@ -232,7 +232,11 @@
     </div>
   {:else if activeItem && isVehicle(activeItem) && isVehicleStopTime(activeStopTimes)}
     <div bind:this={sidebarElement} class="absolute top-4 left-4 bg-white w-md h-[calc(100vh-2rem)] flex flex-col p-8 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)]">
-      <VehicleSidebarHeaderV2 title={activeStopTimes.slice().reverse().find((stopTime) => stopTime.progress === "passed")?.tripHeadsign} id={activeItem.vehicleId} routeShortName={activeStopTimes.slice().reverse().find((stopTime) => stopTime.progress === "passed")?.routeShortName} routeColour={activeStopTimes.slice().reverse().find((stopTime) => stopTime.progress === "passed")?.routeColour} />
+      {#if [...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")}
+        <VehicleSidebarHeaderV2 title={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.tripHeadsign} id={activeItem.vehicleId} routeShortName={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.routeShortName} routeColour={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.routeColour} />
+      {:else}
+        <VehicleSidebarHeaderV2 title={activeStopTimes[0].tripHeadsign} id={activeItem.vehicleId} routeShortName={activeStopTimes[0].routeShortName} routeColour={activeStopTimes[0].routeColour} />
+      {/if}
       <VehicleSidebarBodyV2 stopTimes={activeStopTimes} getStopInfo={getStopInfo} />
     </div>
   {/if}
