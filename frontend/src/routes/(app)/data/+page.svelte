@@ -209,9 +209,9 @@
 
 <div class="pl-120">
   <h1 class="font-2xl font-bold">Transport Data</h1>
-  <div class="flex flex-row">
+  <div class="flex flex-row gap-4">
     <!-- STOPS -->
-    <div>
+    <div class="max-h-screen overflow-y-scroll">
       <p class="font-bold">Stops</p>
       <input
         bind:value={stopQuery}
@@ -228,7 +228,7 @@
     </div>
 
     <!-- VEHICLES -->
-    <div>
+    <div class="max-h-screen overflow-y-scroll">
       <p class="font-bold">Vehicles</p>
       <input
         bind:value={vehicleQuery}
@@ -237,7 +237,7 @@
       {#each Object.entries($state.snapshot(transportDataStore.vehicles)) as [mode, modeVehicles]}
         <p class="font-bold">{mode} - {ModeLabels[Number(mode)]}</p>
         <div class="flex flex-col items-start">
-          {#each modeVehicles.filter((vehicle) => vehicle.vehicleId.toLowerCase().includes(vehicleQuery.toLowerCase())).slice(0, 20) as vehicle}
+          {#each modeVehicles.filter((vehicle) => vehicle.vehicleId.toLowerCase().includes(vehicleQuery.toLowerCase())).sort((a, b) => a.vehicleModel.localeCompare(b.vehicleModel)) as vehicle}
             <button class="cursor-pointer" onclick={() => getVehicleInfoByVehicle(vehicle.vehicleId)}>{vehicle.vehicleModel} - {vehicle.vehicleId}</button>
           {/each}
         </div>

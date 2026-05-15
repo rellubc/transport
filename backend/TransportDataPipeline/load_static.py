@@ -398,24 +398,25 @@ def create_indexes(conn):
 def clean_data(conn):
     print("[PROCESS] Cleaning data...")
     with conn.cursor() as cur:
+
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.2%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.4%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.6%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.2%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.4%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.2%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.3%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.4%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.5%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.6%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.7%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.4%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.5%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.6%' AND r.route_type = 2;
+        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.7%' AND r.route_type = 2;
         cur.execute("""
             DELETE FROM trips WHERE route_id LIKE 'CTY%';
             DELETE FROM trips WHERE route_id LIKE 'SHL%';
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.2%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.4%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.6%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.2%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.4%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.2%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.3%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.4%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.5%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.6%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.7%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.4%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.5%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.6%' AND r.route_type = 2;
-            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.7%' AND r.route_type = 2;
 
             WITH bounds AS (
                 SELECT
@@ -521,14 +522,14 @@ def clean_data(conn):
             parsed AS MATERIALIZED (
                 SELECT
                 CASE
-                    WHEN trip_id ~ '^[0-9-]+[A-Z]+\.' THEN (regexp_match(trip_id, '^([0-9-]+)[A-Z]+\.'))[1]
-                    WHEN trip_id ~ '^[A-Z]+[0-9]+\.' THEN (regexp_match(trip_id, '^([A-Z]+)[0-9]+\.'))[1]
-                    WHEN trip_id ~ '^[A-Z][0-9][A-Z]+\.' THEN (regexp_match(trip_id, '^([A-Z][0-9])[A-Z]+\.'))[1]
+                    WHEN trip_id ~ '^[0-9-]+[A-Z]+\\.' THEN (regexp_match(trip_id, '^([0-9-]+)[A-Z]+\\.'))[1]
+                    WHEN trip_id ~ '^[A-Z]+[0-9]+\\.' THEN (regexp_match(trip_id, '^([A-Z]+)[0-9]+\\.'))[1]
+                    WHEN trip_id ~ '^[A-Z][0-9][A-Z]+\\.' THEN (regexp_match(trip_id, '^([A-Z][0-9])[A-Z]+\\.'))[1]
                 END AS run_sequence_a,
                 CASE
-                    WHEN trip_id ~ '^[0-9-]+[A-Z]+\.' THEN (regexp_match(trip_id, '^[0-9-]+([A-Z]+)\.'))[1]
-                    WHEN trip_id ~ '^[A-Z]+[0-9]+\.' THEN (regexp_match(trip_id, '^[A-Z]+([0-9]+)\.'))[1]
-                    WHEN trip_id ~ '^[A-Z][0-9][A-Z]+\.' THEN (regexp_match(trip_id, '^[A-Z][0-9]([A-Z]+)\.'))[1]
+                    WHEN trip_id ~ '^[0-9-]+[A-Z]+\\.' THEN (regexp_match(trip_id, '^[0-9-]+([A-Z]+)\\.'))[1]
+                    WHEN trip_id ~ '^[A-Z]+[0-9]+\\.' THEN (regexp_match(trip_id, '^[A-Z]+([0-9]+)\\.'))[1]
+                    WHEN trip_id ~ '^[A-Z][0-9][A-Z]+\\.' THEN (regexp_match(trip_id, '^[A-Z][0-9]([A-Z]+)\\.'))[1]
                 END AS run_sequence_b,
                 trip_id,
                 NULL AS vehicle_id,
