@@ -1,4 +1,4 @@
-import { LineColours } from "./constants"
+import { LineColours } from "$lib/constants"
 
 export const getSydneyNow = (): number => {
   const sydneyStr = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })
@@ -59,19 +59,25 @@ export const stopDelayColour = (seconds: number): string => {
   else return '#00FF00'
 }
 
-export const getRouteColours = (line: string): Set<string> => {
-  if (LineColours[line]) return new Set([LineColours[line]])
-
-  const route = line.split('_')[0]
-  if (LineColours[route]) return new Set([LineColours[route]])
-
-  const found: Set<string> = new Set()
-  for (let i = 1; i < route.length; i++) {
-    const key = route[0] + route[i]
-    if (LineColours[key] && !found.has(LineColours[key])) {
-      found.add(LineColours[key])
-    }
+export const getRouteColours = (lines: string[]): string[] => {
+  const routeColours = []
+  for (const line of lines) {
+    if (LineColours[line]) routeColours.push(LineColours[line])
   }
 
-  return found.size ? found : new Set(['#000000'])
+  return routeColours
+  // if (LineColours[line]) return new Set([LineColours[line]])
+
+  // const route = line.split('_')[0]
+  // if (LineColours[route]) return new Set([LineColours[route]])
+
+  // const found: Set<string> = new Set()
+  // for (let i = 1; i < route.length; i++) {
+  //   const key = route[0] + route[i]
+  //   if (LineColours[key] && !found.has(LineColours[key])) {
+  //     found.add(LineColours[key])
+  //   }
+  // }
+
+  // return found.size ? found : new Set(['#000000'])
 }

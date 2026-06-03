@@ -17,23 +17,6 @@ func NewStopTimeRepository(db *pgxpool.Pool) *StopTimeRepository {
 	return &StopTimeRepository{DB: db}
 }
 
-func (r *StopTimeRepository) WarmCache() error {
-	prewarmQueries := []string{
-		`SELECT pg_prewarm('active_stop_departures')`,
-		`SELECT pg_prewarm('idx_asd_parent_stop_time')`,
-		`SELECT pg_prewarm('idx_asd_unique')`,
-	}
-
-	for _, q := range prewarmQueries {
-		if _, err := r.DB.Exec(context.Background(), q); err != nil {
-			return fmt.Errorf("prewarm query failed: %w", err)
-		}
-	}
-
-	log.Println("cache warmup complete")
-	return nil
-}
-
 // func (r *StopTimeRepository) GetStaticStopTimes(stopId string, tripId string) ([]models.StaticStopTime, error) {
 // 	baseQuery := "SELECT st.trip_id, st.arrival_time, st.departure_time, st.stop_id, st.stop_sequence, st.pickup_type, st.drop_off_type, st.shape_dist_travelled, st.timepoint, st.stop_note, st.route_type, t.trip_headsign AS stop_headsign FROM stop_times st JOIN trips t ON st.trip_id = t.trip_id"
 // 	args := []any{}
@@ -941,6 +924,8 @@ func (r *StopTimeRepository) GetStopRealtimeStopTimesV2(stopId string, direction
 		`
 	}
 
+	log.Println(query, args)
+
 	rows, err := r.DB.Query(context.Background(), query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("GetStopRealtimeStopTimes querying failed: %w", err)
@@ -1165,7 +1150,7 @@ func (r *StopTimeRepository) GetTripRealtimeStopTimesV2(vehicleId string, vehicl
 
 	args := []any{vehicleId, vehicleLon, vehicleLat}
 
-	log.Println(query, args)
+	// log.Println(query, args)
 
 	rows, err := r.DB.Query(context.Background(), query, args...)
 	if err != nil {

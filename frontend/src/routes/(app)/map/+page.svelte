@@ -3,7 +3,7 @@
   import type { PageData } from "./$types";
   import { transportDataStore } from "$lib/stores.svelte";
   import Map from '$lib/components/Map/Map.svelte';
-  import { vehiclesApi } from "$lib/api/vehicles";
+  import { vehiclesApi } from "$lib/api/client.api";
 
   let { data }: { data: PageData } = $props()
 
@@ -24,12 +24,12 @@
     console.log("Stops: ", $state.snapshot(transportDataStore.stops))
     console.log("Initial vehicles: ", $state.snapshot(transportDataStore.vehicles))
 
-    const interval = setInterval(async () => {
-      transportDataStore.vehicles = await vehiclesApi.getAll()
-      console.log("Refreshed vehicles: ", $state.snapshot(transportDataStore.vehicles))
-    }, 10000)
+    // const interval = setInterval(async () => {
+    //   transportDataStore.vehicles = await vehiclesApi.getAll()
+    //   console.log("Refreshed vehicles: ", $state.snapshot(transportDataStore.vehicles))
+    // }, 10000)
 
-    return () => clearInterval(interval)
+    // return () => clearInterval(interval)
   })
 </script>
 

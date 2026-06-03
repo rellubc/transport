@@ -2,7 +2,8 @@ package tasks
 
 import (
 	"TransportRealtime/config"
-	"TransportRealtime/realtime"
+	"TransportRealtime/ingest"
+	"context"
 
 	pb "TransportRealtime/proto"
 
@@ -10,40 +11,159 @@ import (
 )
 
 type FeedTask struct {
-	Name     string
-	Mode     config.TransportMode
-	Version  string
-	Feed     config.FeedType
-	FetchFn  func(config.TransportMode, string) (*pb.FeedMessage, error)
-	InsertFn func(*pb.FeedMessage, *pgxpool.Pool) error
-	DB       *pgxpool.Pool
+	Name          string
+	FeedVersion   config.FeedVersion
+	FeedType      config.FeedType
+	TransportMode config.TransportMode
+	FetchFn       func(context.Context, string, config.FeedVersion, config.TransportMode) (*pb.FeedMessage, error)
+	InsertFn      func(context.Context, *pb.FeedMessage, *pgxpool.Pool) error
 }
 
-func GetRealtimeTasks() []FeedTask {
+func RealtimeTasks() []FeedTask {
 	return []FeedTask{
-		{"Metro TripUpdates", config.Metro, config.V2, config.TripUpdates, realtime.FetchTripUpdatesV2, realtime.InsertTripUpdatesV2, nil},
-		{"Metro VehiclePositions", config.Metro, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
-		{"SydneyTrains TripUpdates", config.SydneyTrains, config.V2, config.TripUpdates, realtime.FetchTripUpdatesV2, realtime.InsertTripUpdatesV2, nil},
-		{"SydneyTrains VehiclePositions", config.SydneyTrains, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
-		{"Innerwest Lightrail TripUpdates", config.InnerwestLightrail, config.V2, config.TripUpdates, realtime.FetchTripUpdatesV2, realtime.InsertTripUpdatesV2, nil},
-		{"Innerwest Lightrail VehiclePositions", config.InnerwestLightrail, config.V2, config.VehiclePositions, realtime.FetchVehiclePositionsV2, realtime.InsertVehiclePositionsV2, nil},
-
-		{"NSWTrains TripUpdates", config.NSWTrains, config.V1, config.TripUpdates, realtime.FetchTripUpdatesV1, realtime.InsertTripUpdatesV1, nil},
-		{"NSWTrains VehiclePositions", config.NSWTrains, config.V1, config.VehiclePositions, realtime.FetchVehiclePositionsV1, realtime.InsertVehiclePositionsV1, nil},
-
-		{"CBDSouthEast Lightrail TripUpdates", config.CBDSouthEast, config.V1, config.TripUpdates, realtime.FetchTripUpdatesV1, realtime.InsertTripUpdatesV1, nil},
-		{"CBDSouthEast Lightrail VehiclePositions", config.CBDSouthEast, config.V1, config.VehiclePositions, realtime.FetchVehiclePositionsV1, realtime.InsertVehiclePositionsV1, nil},
-		{"Newcastle Lightrail TripUpdates", config.Newcastle, config.V1, config.TripUpdates, realtime.FetchTripUpdatesV1, realtime.InsertTripUpdatesV1, nil},
-		{"Newcastle Lightrail VehiclePositions", config.Newcastle, config.V1, config.VehiclePositions, realtime.FetchVehiclePositionsV1, realtime.InsertVehiclePositionsV1, nil},
-		{"Parramatta Lightrail TripUpdates", config.Parramatta, config.V1, config.TripUpdates, realtime.FetchTripUpdatesV1, realtime.InsertTripUpdatesV1, nil},
-		{"Parramatta Lightrail VehiclePositions", config.Parramatta, config.V1, config.VehiclePositions, realtime.FetchVehiclePositionsV1, realtime.InsertVehiclePositionsV1, nil},
-
-		{"SydneyFerries TripUpdates", config.SydneyFerries, config.V1, config.TripUpdates, realtime.FetchTripUpdatesV1, realtime.InsertTripUpdatesV1, nil},
-		{"SydneyFerries VehiclePositions", config.SydneyFerries, config.V1, config.VehiclePositions, realtime.FetchVehiclePositionsV1, realtime.InsertVehiclePositionsV1, nil},
-		{"MFFerries TripUpdates", config.MFFerries, config.V1, config.TripUpdates, realtime.FetchTripUpdatesV1, realtime.InsertTripUpdatesV1, nil},
-		{"MFFerries VehiclePositions", config.MFFerries, config.V1, config.VehiclePositions, realtime.FetchVehiclePositionsV1, realtime.InsertVehiclePositionsV1, nil},
-
-		// {"Buses TripUpdates", config.Buses, config.V1, config.TripUpdates, realtime.FetchTripUpdatesV1, realtime.InsertTripUpdatesV1, nil},
-		// {"Buses VehiclePositions", config.Buses, config.V1, config.VehiclePositions, realtime.FetchVehiclePositionsV1, realtime.InsertVehiclePositionsV1, nil},
+		{
+			Name:          "Metro TripUpdates",
+			FeedVersion:   config.V2,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.Metro,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "Metro VehiclePositions",
+			FeedVersion:   config.V2,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.Metro,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
+		{
+			Name:          "SydneyTrains TripUpdates",
+			FeedVersion:   config.V2,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.SydneyTrains,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "SydneyTrains VehiclePositions",
+			FeedVersion:   config.V2,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.SydneyTrains,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
+		{
+			Name:          "Innerwest Lightrail TripUpdates",
+			FeedVersion:   config.V2,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.InnerwestLightrail,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "Innerwest Lightrail VehiclePositions",
+			FeedVersion:   config.V2,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.InnerwestLightrail,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
+		{
+			Name:          "NSWTrains TripUpdates",
+			FeedVersion:   config.V1,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.NSWTrains,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "NSWTrains VehiclePositions",
+			FeedVersion:   config.V1,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.NSWTrains,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
+		{
+			Name:          "CBDSouthEast Lightrail TripUpdates",
+			FeedVersion:   config.V1,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.CBDSouthEast,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "CBDSouthEast Lightrail VehiclePositions",
+			FeedVersion:   config.V1,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.CBDSouthEast,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
+		{
+			Name:          "Newcastle Lightrail TripUpdates",
+			FeedVersion:   config.V1,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.Newcastle,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "Newcastle Lightrail VehiclePositions",
+			FeedVersion:   config.V1,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.Newcastle,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
+		{
+			Name:          "Parramatta Lightrail TripUpdates",
+			FeedVersion:   config.V1,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.Parramatta,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "Parramatta Lightrail VehiclePositions",
+			FeedVersion:   config.V1,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.Parramatta,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
+		{
+			Name:          "SydneyFerries TripUpdates",
+			FeedVersion:   config.V1,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.SydneyFerries,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "SydneyFerries VehiclePositions",
+			FeedVersion:   config.V1,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.SydneyFerries,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
+		{
+			Name:          "MFFerries TripUpdates",
+			FeedVersion:   config.V1,
+			FeedType:      config.TripUpdates,
+			TransportMode: config.MFFerries,
+			FetchFn:       ingest.FetchTripUpdates,
+			InsertFn:      ingest.InsertTripUpdates,
+		},
+		{
+			Name:          "MFFerries VehiclePositions",
+			FeedVersion:   config.V1,
+			FeedType:      config.VehiclePositions,
+			TransportMode: config.MFFerries,
+			FetchFn:       ingest.FetchVehiclePositions,
+			InsertFn:      ingest.InsertVehiclePositions,
+		},
 	}
 }

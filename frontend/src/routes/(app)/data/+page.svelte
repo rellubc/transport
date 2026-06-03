@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { stopsApi, stopTimesApi, vehiclesApi } from "$lib/api/client.api.js";
-  import StopSidebarBodyV2 from "$lib/components/Sidebar/StopSidebarBodyV2.svelte";
-  import StopSidebarHeaderV2 from "$lib/components/Sidebar/StopSidebarHeaderV2.svelte";
-  import VehicleSidebarBodyV2 from "$lib/components/Sidebar/VehicleSidebarBodyV2.svelte";
-  import VehicleSidebarHeaderV2 from "$lib/components/Sidebar/VehicleSidebarHeaderV2.svelte";
+  import { stopsApi, stopTimesApi, vehiclesApi } from "$lib/api/client.api";
+  import StopSidebarHeader from '$lib/components/Sidebar/StopSidebarHeader.svelte'
+  import StopSidebarBody from '$lib/components/Sidebar/StopSidebarBody.svelte';
+  import VehicleSidebarHeader from '$lib/components/Sidebar/VehicleSidebarHeader.svelte';
+  import VehicleSidebarBody from '$lib/components/Sidebar/VehicleSidebarBody.svelte';
   import { ModeLabels } from "$lib/constants";
-  import { getSydneyNow, secondsToTime, stopDelayColour, stopDelayText } from "$lib/helpers";
+  import { getSydneyNow } from "$lib/helpers";
   import { transportDataStore } from "$lib/stores.svelte";
   import type { Stop } from "$lib/types/stops.types";
   import type { StopStopTime, VehicleStopTime } from "$lib/types/stoptimes.types";
@@ -248,17 +248,17 @@
   <!-- SIDEBAR -->
   {#if activeItem && isStop(activeItem) && isStopStopTime(activeStopTimes) && !loading}
     <div bind:this={sidebarElement} class="absolute top-4 left-4 bg-white w-md h-[calc(100vh-2rem)] flex flex-col p-8 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)]">
-      <StopSidebarHeaderV2 title={activeItem.stopName} id={activeItem.stopId} />
-      <StopSidebarBodyV2 bind:listElement activeStop={activeItem} stopTimes={activeStopTimes} getVehicleInfo={getVehicleInfoByTrip}/>
+      <StopSidebarHeader title={activeItem.stopName} id={activeItem.stopId} />
+      <StopSidebarBody bind:listElement activeStop={activeItem} stopTimes={activeStopTimes} getVehicleInfo={getVehicleInfoByTrip}/>
     </div>
   {:else if activeItem && isVehicle(activeItem) && isVehicleStopTime(activeStopTimes) && !loading}
     <div bind:this={sidebarElement} class="absolute top-4 left-4 bg-white w-md h-[calc(100vh-2rem)] flex flex-col p-8 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)]">
       {#if [...activeStopTimes].find((stopTime) => stopTime.progress === "passed")}
-        <VehicleSidebarHeaderV2 title={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.tripHeadsign} id={activeItem.vehicleId} routeShortName={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.routeShortName} routeColour={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.routeColour} />
+        <VehicleSidebarHeader title={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.tripHeadsign} id={activeItem.vehicleId} routeShortName={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.routeShortName} routeColour={[...activeStopTimes].reverse().find((stopTime) => stopTime.progress === "passed")?.routeColour} />
       {:else}
-        <VehicleSidebarHeaderV2 title={activeStopTimes[0].tripHeadsign} id={activeItem.vehicleId} routeShortName={activeStopTimes[0].routeShortName} routeColour={activeStopTimes[0].routeColour} />
+        <VehicleSidebarHeader title={activeStopTimes[0].tripHeadsign} id={activeItem.vehicleId} routeShortName={activeStopTimes[0].routeShortName} routeColour={activeStopTimes[0].routeColour} />
       {/if}
-      <VehicleSidebarBodyV2 stopTimes={activeStopTimes} getStopInfo={getStopInfo} />
+      <VehicleSidebarBody stopTimes={activeStopTimes} getStopInfo={getStopInfo} />
     </div>
   {/if}
 </div>

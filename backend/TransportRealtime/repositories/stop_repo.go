@@ -16,10 +16,36 @@ func NewStopRepository(db *pgxpool.Pool) *StopRepository {
 }
 
 func (r *StopRepository) GetStops() (map[int][]models.Stop, error) {
+	// query := `
+	// 	SELECT stop_id, stop_name, stop_lat, stop_lon, stop_parent_station, stop_wheelchair_boarding, route_type
+	// 	FROM stops
+	// 	ORDER BY stop_name
+	// `
+
 	query := `
-		SELECT stop_id, stop_name, stop_lat, stop_lon, stop_parent_station, stop_wheelchair_boarding, route_type
-		FROM stops
-		ORDER BY stop_name
+		SELECT s.stop_id, s.stop_name, s.stop_lat, s.stop_lon, s.stop_parent_station, s.stop_wheelchair_boarding, s.route_type
+		FROM stops s
+		WHERE
+			(
+				s.stop_parent_station IS NOT NULL
+				AND EXISTS (
+					SELECT 1
+					FROM stop_times st
+					WHERE st.stop_id = s.stop_id
+				)
+			)
+			OR
+			(
+				s.stop_parent_station IS NULL
+				AND EXISTS (
+					SELECT 1
+					FROM stops child
+					JOIN stop_times st
+						ON st.stop_id = child.stop_id
+					WHERE child.stop_parent_station = s.stop_id
+				)
+			)
+		ORDER BY s.stop_name;
 	`
 
 	rows, err := r.DB.Query(context.Background(), query)

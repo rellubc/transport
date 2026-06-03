@@ -83,6 +83,7 @@ export const LineColours: Record<string, string> = {
   'T7': '#6F818E',
   'T8': '#00954C',
   'T9': '#D11F2F',
+  'XX': '#00000000',
 
   'L1': '#BE1622',
   'L2': '#DD1E25',
