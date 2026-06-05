@@ -93,9 +93,8 @@
     selectionStore.activeItem
 
     if (!map || !map.isStyleLoaded()) return
-    if (!selectionStore.activeItem) return
-    console.log("activeItem", selectionStore.activeItem)
-    updateVehicleHighlight(map, (selectionStore.activeItem as Vehicle).vehicleId)
+    if (!selectionStore.activeItem) updateVehicleHighlight(map, "")
+    else updateVehicleHighlight(map, (selectionStore.activeItem as Vehicle).vehicleId)
   })
 
   $effect(() => {
