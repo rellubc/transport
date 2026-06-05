@@ -27,6 +27,10 @@
     return mappings
   })
 
+  $effect(() => {
+    console.log($state.snapshot(overviewMappings))
+  })
+
 </script>
 
 {#if page === "overview"}
@@ -36,7 +40,7 @@
       {#if Object.keys(overviewMappings).length === 0}
         <p>This {activeStop.stopParentStation ? "platform" : "station"} has no upcoming departures for the rest of today.</p>
       {:else}
-        <p>This {activeStop.stopParentStation ? "platform" : "station"} has upcoming departures terminating at:</p>
+        <p>This {activeStop.stopParentStation ? "platform" : "station"} has upcoming departures for:</p>
         <ul class="list-disc pl-4">
           {#each Object.keys(overviewMappings) as headsign}
             <li>{headsign}</li>

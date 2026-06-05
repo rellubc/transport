@@ -101,7 +101,6 @@ MAPPINGS = {
         "shape_geom": "shape_geom",
         "shape_pt_sequence": "shape_pt_sequence",
         "shape_dist_travelled": "shape_dist_travelled",
-        "route_type": "route_type",
     }),
     "stops.txt": ("stops", {
         "stop_id": "stop_id",
@@ -329,25 +328,34 @@ def insert_shapes(conn):
     shapes_folder = f"{os.getcwd()}/._shapes"
     conflict_key = ["shape_id", "shape_pt_sequence"]
 
-    for [mode_string, mode_num] in V1_MODES.items():
-        mode_path = f"{shapes_folder}/{mode_string}"
-        if not os.path.isdir(mode_path):
+    for filename in os.listdir(shapes_folder):
+        path = os.path.join(shapes_folder, filename)
+        if not os.path.isfile(path):
             continue
 
-        for filename in os.listdir(mode_path):
-            print(f"[PROCESS] Loading {filename}...")
-            with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
-                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_num)
+        print(f"[PROCESS] Loading {filename}...")
+        with open(path, "rb") as file:
+            load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, None)
 
-    for [mode_string, mode_num] in V2_MODES.items():
-        mode_path = f"{shapes_folder}/{mode_string}"
-        if not os.path.isdir(mode_path):
-            continue
+    # for [mode_string, _] in V1_MODES.items():
+    #     mode_path = f"{shapes_folder}/{mode_string}"
+    #     if not os.path.isdir(mode_path):
+    #         continue
 
-        for filename in os.listdir(mode_path):
-            print(f"[PROCESS] Loading {filename}...")
-            with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
-                load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key, mode_num)
+    #     for filename in os.listdir(mode_path):
+    #         print(f"[PROCESS] Loading {filename}...")
+    #         with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
+    #             load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key)
+
+    # for [mode_string, _] in V2_MODES.items():
+    #     mode_path = f"{shapes_folder}/{mode_string}"
+    #     if not os.path.isdir(mode_path):
+    #         continue
+
+    #     for filename in os.listdir(mode_path):
+    #         print(f"[PROCESS] Loading {filename}...")
+    #         with open(f"{shapes_folder}/{mode_string}/{filename}", "rb") as file:
+    #             load(conn, file, MAPPINGS["shapes.txt"][0], MAPPINGS["shapes.txt"][1], conflict_key)
 
 def refresh_materialised_views(conn):
     print("[PROCESS] Refreshing...")
@@ -399,48 +407,46 @@ def clean_data(conn):
     print("[PROCESS] Cleaning data...")
     with conn.cursor() as cur:
 
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.2%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.4%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.6%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.2%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.4%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.2%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.3%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.4%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.5%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.6%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.7%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.4%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.5%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.6%' AND r.route_type = 2;
-        # DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.7%' AND r.route_type = 2;
+        # DELETE FROM trips WHERE route_id LIKE 'CTY%';
+        # DELETE FROM trips WHERE route_id LIKE 'SHL%';
+        # WITH bounds AS (
+        #     SELECT
+        #         trip_id,
+        #         MIN(stop_sequence) AS first_seq,
+        #         MAX(stop_sequence) AS last_seq
+        #     FROM stop_times
+        #     GROUP BY trip_id
+        # )
+        # UPDATE stop_times st
+        # SET
+        #     drop_off_type = CASE
+        #         WHEN st.stop_sequence = b.first_seq THEN 1
+        #         ELSE st.drop_off_type
+        #     END,
+        #     pickup_type = CASE
+        #         WHEN st.stop_sequence = b.last_seq THEN 1
+        #         ELSE st.pickup_type
+        #     END
+        # FROM bounds b
+        # WHERE st.trip_id = b.trip_id;
+        # UPDATE stops SET stop_parent_station = '200060' WHERE stop_id = '2000257'
+        # ;
         cur.execute("""
-            DELETE FROM trips WHERE route_id LIKE 'CTY%';
-            DELETE FROM trips WHERE route_id LIKE 'SHL%';
-
-            WITH bounds AS (
-                SELECT
-                    trip_id,
-                    MIN(stop_sequence) AS first_seq,
-                    MAX(stop_sequence) AS last_seq
-                FROM stop_times
-                GROUP BY trip_id
-            )
-            UPDATE stop_times st
-            SET
-                drop_off_type = CASE
-                    WHEN st.stop_sequence = b.first_seq THEN 1
-                    ELSE st.drop_off_type
-                END,
-                pickup_type = CASE
-                    WHEN st.stop_sequence = b.last_seq THEN 1
-                    ELSE st.pickup_type
-                END
-            FROM bounds b
-            WHERE st.trip_id = b.trip_id;
-            UPDATE stops SET stop_parent_station = '200060' WHERE stop_id = '2000257'
-            ;
-
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.2%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%N.6%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.2%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%J.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.2%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.3%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.5%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.6%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%P.7%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.4%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.5%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.6%' AND r.route_type = 2;
+            DELETE FROM trips t USING routes r WHERE t.route_id = r.route_id AND t.trip_id LIKE '%X.7%' AND r.route_type = 2;
             WITH numbered AS (
                 SELECT
                     stop_id,
@@ -454,96 +460,32 @@ def clean_data(conn):
                 AND stop_location_type = 0
             )
             UPDATE stops s
-            SET stop_name =
-                numbered.stop_name ||
-                ', Platform ' ||
-                numbered.platform_number
+            SET stop_name = numbered.stop_name || ', Platform ' || numbered.platform_number
             FROM numbered
             WHERE s.stop_id = numbered.stop_id
             ;
 
-            INSERT INTO runs (
-                run_sequence_a,
-                run_sequence_b,
-                trip_id,
-                vehicle_id,
-                arrival_time
-            )
-            WITH now_sydney AS MATERIALIZED (
-                SELECT
-                    CASE
-                        WHEN EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time) < 14400
-                        THEN ((NOW() AT TIME ZONE 'Australia/Sydney')::date - INTERVAL '1 day')::date
-                        ELSE (NOW() AT TIME ZONE 'Australia/Sydney')::date
-                    END AS now_date,
+            UPDATE stop_times st
+            SET pickup_type = 1
+            FROM (
+                SELECT trip_id, MAX(stop_sequence) AS max_stop_sequence
+                FROM stop_times
+                WHERE route_type = 100 OR route_type = 106
+                GROUP BY trip_id
+            ) last_stops
+            WHERE st.trip_id = last_stops.trip_id
+            AND st.stop_sequence = last_stops.max_stop_sequence;
 
-                    CASE
-                        WHEN EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time) < 14400
-                        THEN EXTRACT(DOW FROM (NOW() AT TIME ZONE 'Australia/Sydney') - INTERVAL '1 day')::int
-                        ELSE EXTRACT(DOW FROM (NOW() AT TIME ZONE 'Australia/Sydney'))::int
-                    END AS now_dow,
-
-                    CASE 
-                        WHEN EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time) < 14400
-                        THEN EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time)::int + 86400
-                        ELSE EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Australia/Sydney')::time)::int
-                    END AS now_sec
-            ),
-            active_services AS MATERIALIZED (
-                SELECT c.service_id
-                FROM calendars c
-                CROSS JOIN now_sydney ns
-                WHERE c.start_date <= ns.now_date
-                    AND c.end_date   >= ns.now_date
-                    AND CASE ns.now_dow
-                        WHEN 0 THEN c.sunday
-                        WHEN 1 THEN c.monday
-                        WHEN 2 THEN c.tuesday
-                        WHEN 3 THEN c.wednesday
-                        WHEN 4 THEN c.thursday
-                        WHEN 5 THEN c.friday
-                        WHEN 6 THEN c.saturday
-                    END
-            ),
-            active_trips AS MATERIALIZED (
-                SELECT DISTINCT t.trip_id
-                FROM trips t
-                JOIN active_services ac ON ac.service_id = t.service_id
-            ),
-            last_stops AS MATERIALIZED (
-                SELECT DISTINCT ON (at.trip_id)
-                    at.trip_id,
-                    st.arrival_time + COALESCE(stu.stop_arrival_delay, 0) AS arrival_time
-                FROM active_trips at
-                LEFT JOIN stop_times st ON at.trip_id = st.trip_id
-                LEFT JOIN stop_time_updates stu ON st.stop_id = stu.stop_id AND st.trip_id = stu.trip_id
-                ORDER BY at.trip_id, st.stop_sequence DESC
-            ),
-            parsed AS MATERIALIZED (
-                SELECT
-                CASE
-                    WHEN trip_id ~ '^[0-9-]+[A-Z]+\\.' THEN (regexp_match(trip_id, '^([0-9-]+)[A-Z]+\\.'))[1]
-                    WHEN trip_id ~ '^[A-Z]+[0-9]+\\.' THEN (regexp_match(trip_id, '^([A-Z]+)[0-9]+\\.'))[1]
-                    WHEN trip_id ~ '^[A-Z][0-9][A-Z]+\\.' THEN (regexp_match(trip_id, '^([A-Z][0-9])[A-Z]+\\.'))[1]
-                END AS run_sequence_a,
-                CASE
-                    WHEN trip_id ~ '^[0-9-]+[A-Z]+\\.' THEN (regexp_match(trip_id, '^[0-9-]+([A-Z]+)\\.'))[1]
-                    WHEN trip_id ~ '^[A-Z]+[0-9]+\\.' THEN (regexp_match(trip_id, '^[A-Z]+([0-9]+)\\.'))[1]
-                    WHEN trip_id ~ '^[A-Z][0-9][A-Z]+\\.' THEN (regexp_match(trip_id, '^[A-Z][0-9]([A-Z]+)\\.'))[1]
-                END AS run_sequence_b,
-                trip_id,
-                NULL AS vehicle_id,
-                arrival_time
-                FROM last_stops
-            )
-            SELECT * FROM parsed
-            WHERE run_sequence_a IS NOT NULL
-                AND run_sequence_b IS NOT NULL
-            ON CONFLICT (run_sequence_a, run_sequence_b)
-            DO UPDATE SET
-                trip_id = EXCLUDED.trip_id,
-                arrival_time = EXCLUDED.arrival_time
-            ;
+            UPDATE stop_times st
+            SET drop_off_type = 1
+            FROM (
+                SELECT trip_id, MIN(stop_sequence) AS max_stop_sequence
+                FROM stop_times
+                WHERE route_type = 100 OR route_type = 106
+                GROUP BY trip_id
+            ) last_stops
+            WHERE st.trip_id = last_stops.trip_id
+            AND st.stop_sequence = last_stops.max_stop_sequence;
         """)
     conn.commit()
 

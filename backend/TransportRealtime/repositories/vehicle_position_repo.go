@@ -126,6 +126,8 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string, tripId 
 		args = append(args, tripId)
 	}
 
+	log.Println(query, args)
+
 	row := r.DB.QueryRow(context.Background(), query, args...)
 
 	var vp models.VehiclePosition
@@ -184,7 +186,9 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string, tripId 
 			JOIN routes r ON vp.trip_route_id = r.route_id
 		`
 
-		row = r.DB.QueryRow(context.Background(), query, tripId)
+		log.Println(query, args)
+
+		row = r.DB.QueryRow(context.Background(), query, args...)
 		err = row.Scan(
 			&vp.TripId,
 			&vp.RouteId,
@@ -202,6 +206,10 @@ func (r *VehiclePositionRepository) GetVehiclePosition(vehicleId string, tripId 
 		)
 
 		log.Println(err)
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.VehiclePosition{}, nil
+		}
 
 		if err != nil {
 			return models.VehiclePosition{}, err

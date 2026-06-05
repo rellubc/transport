@@ -1,4 +1,26 @@
+import metroImg from '$lib/assets/metro.png'
+import sydneytrainsImg from '$lib/assets/sydneytrains.png'
+import lightrailImg from '$lib/assets/lightrail.png'
+import nswtrainsImg from '$lib/assets/nswtrains.png'
+import busImg from '$lib/assets/bus.png'
+import ferryImg from '$lib/assets/ferry.png'
+import schoolbusImg from '$lib/assets/schoolbus.png'
+import coachImg from '$lib/assets/coach.png'
+
+import type { ModeIcon } from './types/general.type'
+
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+export const icons: ModeIcon[] = [
+  { name: 'sydneytrains-icon', url: sydneytrainsImg },
+  { name: 'metro-icon', url: metroImg },
+  { name: 'lightrail-icon', url: lightrailImg },
+  { name: 'nswtrains-icon', url: nswtrainsImg },
+  { name: 'bus-icon', url: busImg },
+  { name: 'ferry-icon', url: ferryImg },
+  { name: 'schoolbus-icon', url: schoolbusImg },
+  { name: 'coach-icon', url: coachImg }
+]
 
 export const ModeType = {
   LIGHT_RAIL: 0,
@@ -83,6 +105,7 @@ export const LineColours: Record<string, string> = {
   'T7': '#6F818E',
   'T8': '#00954C',
   'T9': '#D11F2F',
+  'XX': '#00000000',
 
   'L1': '#BE1622',
   'L2': '#DD1E25',

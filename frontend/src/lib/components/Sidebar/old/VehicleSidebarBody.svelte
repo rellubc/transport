@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { getSydneyNowSeconds, secondsToTime, stopDelayColour, stopDelayText, timeFromNow } from "$lib/helpers";
+  import { secondsToTime, stopDelayColour, stopDelayText } from "$lib/helpers";
   import type { VehicleStopTime } from "$lib/types/stoptimes.types";
-  import type { Vehicle } from "$lib/types/vehicles.types";
 
   const BUFFER_PX = 32
 

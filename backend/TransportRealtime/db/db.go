@@ -2,27 +2,21 @@ package db
 
 import (
 	"context"
-	"log"
-	"os"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func Connect() *pgxpool.Pool {
-	dbURL := os.Getenv("DB_URL")
-
-	config, err := pgxpool.ParseConfig(dbURL)
+func Connect(DBUrl string) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(DBUrl)
 	if err != nil {
-		log.Fatalf("Unable to parse DB URL: %v", err)
+		return nil, fmt.Errorf("Unable to parse DB URL: %v", err)
 	}
-	config.MaxConns = 20
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		log.Fatalf("Unable to connect to DB: %v", err)
+		return nil, fmt.Errorf("Unable to connect to DB: %v", err)
 	}
 
-	log.Println("Connected to PostgreSQL")
-
-	return pool
+	return pool, err
 }

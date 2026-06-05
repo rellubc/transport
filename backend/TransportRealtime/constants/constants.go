@@ -1,5 +1,7 @@
 package constants
 
+import "time"
+
 type ModeType int
 
 const (
@@ -70,3 +72,6 @@ var RoutesLookup = map[string]string{
 	"F9":  "F9",
 	"F10": "F10",
 }
+
+const BaseUrl = "https://api.transport.nsw.gov.au"
+const FeedInterval = time.Second * 30
