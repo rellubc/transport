@@ -1,12 +1,12 @@
 <script lang="ts">
   import { secondsToTime, stopDelayColour, stopDelayText } from "$lib/helpers";
-  import { selectStop } from "$lib/stores/map-selection.store.svelte";
   import type { VehicleStopTime } from "$lib/types/stoptimes.types";
 
   const BUFFER_PX = 32
 
-  let { stopTimes }: {
+  let { stopTimes, getStopInfo }: {
     stopTimes: VehicleStopTime[]
+    getStopInfo: (stopId: string) => void
   } = $props();
 
   let barSegmentHeight = $state<number>(60)
@@ -16,7 +16,7 @@
 <div style:scrollbar-width="none" class="w-full h-full flex flex-col overflow-y-scroll">
   <div class="w-full">
     {#each stopTimes as stopTime, index}
-      <button onclick={() => selectStop(stopTime.stopId)} class="w-full flex flex-row gap-2 cursor-pointer">
+      <button onclick={() => getStopInfo(stopTime.stopId)} class="w-full flex flex-row gap-2 cursor-pointer">
         <div class="relative w-4 flex flex-col justify-center items-center">
           {#if index !== stopTimes.length - 1}
             <div style:height={`${barSegmentHeight}px`} style:background-color={`#${stopTimes[0].routeColour}`} class="absolute top-7.5 left-1.5 w-1 z-10"></div>

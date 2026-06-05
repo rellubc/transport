@@ -1,14 +1,11 @@
 <script lang="ts">
-  import { transportDataStore } from "$lib/stores.svelte";
+  import { transportDataStore } from "$lib/stores/map-data.store.svelte";
+  import { selectStop } from "$lib/stores/map-selection.store.svelte";
   import type { Stop } from "$lib/types/stops.types";
   import { Search } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { handlers } from "svelte/legacy";
 
-  let { searchElement = $bindable(), getStopInfo }: { 
-    searchElement: HTMLElement | null
-    getStopInfo: (stopId: string) => Promise<void>
-  } = $props()
+  let { searchElement = $bindable() }: { searchElement: HTMLElement | null } = $props()
 
   let active = $state<boolean>(false)
   let stopQuery = $state<string>('')
@@ -38,7 +35,7 @@
   })
 
   const handleClick = (stopId: string, stopName: string) => {
-    getStopInfo(stopId)
+    selectStop(stopId)
     stopQuery = stopName
     active = false
   }
@@ -54,7 +51,7 @@
   }
 }}/>
 
-<div bind:this={searchElement} class="absolute bg-white w-md h-fit flex flex-col p-2 rounded-2xl shadow-[0px_0px_20px_10px_rgba(0,0,0,0.3)] z-40">
+<div bind:this={searchElement} class="absolute bg-white w-md h-fit flex flex-col p-2 rounded-2xl shadow-[0px_0px_10px_5px_rgba(0,0,0,0.3)] z-40">
   <div class="flex flex-row items-center gap-4 pl-1 pr-3">
     <Search />
     <input

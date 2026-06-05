@@ -6,7 +6,7 @@
   import VehicleSidebarBody from '$lib/components/Sidebar/VehicleSidebarBody.svelte';
   import { ModeLabels } from "$lib/constants";
   import { getSydneyNow } from "$lib/helpers";
-  import { transportDataStore } from "$lib/stores.svelte";
+  import { transportDataStore } from "$lib/stores/map-data.store.svelte.js";
   import type { Stop } from "$lib/types/stops.types";
   import type { StopStopTime, VehicleStopTime } from "$lib/types/stoptimes.types";
   import type { Vehicle } from "$lib/types/vehicles.types";

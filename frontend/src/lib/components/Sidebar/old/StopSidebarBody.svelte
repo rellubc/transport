@@ -1,15 +1,15 @@
 <script lang="ts">
   import { getSydneyNowSeconds, secondsToTime, stopDelayColour, stopDelayText, timeFromNow } from "$lib/helpers";
-  import { selectVehicleByTripId } from "$lib/stores/map-selection.store.svelte";
   import type { Stop } from "$lib/types/stops.types";
   import type { StopStopTime } from "$lib/types/stoptimes.types";
 
   const BUFFER_PX = 32
 
-  let { listElement = $bindable(), activeStop, stopTimes }: {
+  let { listElement = $bindable(), activeStop, stopTimes, getVehicleInfo }: {
     listElement: HTMLElement | null
     activeStop: Stop
     stopTimes: StopStopTime[]
+    getVehicleInfo: (tripId: string) => void
   } = $props();
 
   let page = $state<string>("overview")
@@ -55,7 +55,7 @@
           <p class="font-bold">{headsign}</p>
           <ul class="flex flex-col gap-2">
             {#each stopTimes.slice(0, 5) as stopTime}
-              <button onclick={() => { selectVehicleByTripId(stopTime.tripId); page = "vehicle" }} class="flex flex-row gap-2 cursor-pointer">
+              <button onclick={() => { getVehicleInfo(stopTime.tripId); page = "vehicle" }} class="flex flex-row gap-2 cursor-pointer">
                 <div style:background-color={`#${stopTime.routeColour}`} class="w-10 h-6 flex flex-row justify-center items-center rounded-md">
                   <p class="text-white text-xs font-bold">{stopTime.routeShortName ? stopTime.routeShortName : "NR"}</p>
                 </div>
@@ -73,7 +73,7 @@
     <div class="min-h-screen">
       <div style:height={`${BUFFER_PX}px`} class="w-full shrink-0"></div>
       {#each stopTimes as stopTime, index}
-        <button onclick={() => { selectVehicleByTripId(stopTime.tripId); page = "vehicle" }} style:opacity={stopTime.stopType === 'pass' || getSydneyNowSeconds() > stopTime.effectiveDepartureTime ? 0.5 : 1} class="w-full flex flex-row justify-between items-center py-2 cursor-pointer">
+        <button onclick={() => { getVehicleInfo(stopTime.tripId); page = "vehicle" }} style:opacity={stopTime.stopType === 'pass' || getSydneyNowSeconds() > stopTime.effectiveDepartureTime ? 0.5 : 1} class="w-full flex flex-row justify-between items-center py-2 cursor-pointer">
           <div class="flex flex-row items-center gap-4">
             <div style:background-color={`#${stopTime.routeColour}`} class="w-12 h-6 flex flex-row justify-center items-center rounded-md">
               <p class="text-white font-bold">{stopTime.routeShortName ? stopTime.routeShortName : "NR"}</p>

@@ -869,7 +869,7 @@ func (r *StopTimeRepository) GetStopRealtimeStopTimesV2(stopId string, direction
 					WHEN st.pickup_type = 1 AND st.drop_off_type = 0 AND (st.route_type = 100 OR st.departure_time - st.arrival_time >= 300) THEN 'terminate'
 					WHEN st.pickup_type = 1 AND st.drop_off_type = 0 AND st.departure_time - st.arrival_time < 300 THEN 'continues'
 					WHEN st.pickup_type = 0 AND st.drop_off_type = 1 THEN 'depart'
-					ELSE 'stop'
+					ELSE 'stop' 
 				END AS stop_type,
 				CASE
 					WHEN st.pickup_type = 1 AND st.drop_off_type = 0 THEN st.arrival_time + COALESCE(stu.stop_arrival_delay, 0)
@@ -897,7 +897,7 @@ func (r *StopTimeRepository) GetStopRealtimeStopTimesV2(stopId string, direction
 	case "next":
 		query = baseQuery + `
 			SELECT * FROM candidates
-			WHERE display_time > $2
+			WHERE display_time > $2 AND (stop_type = 'depart' OR stop_type = 'stop' OR stop_type = 'terminate')
 			ORDER BY display_time ASC, trip_id ASC
 			LIMIT 20
 		`
@@ -907,7 +907,7 @@ func (r *StopTimeRepository) GetStopRealtimeStopTimesV2(stopId string, direction
 		query = baseQuery + `
 			SELECT * FROM (
 				SELECT * FROM candidates
-				WHERE display_time < $2
+				WHERE display_time < $2 AND (stop_type = 'depart' OR stop_type = 'stop' OR stop_type = 'terminate')
 				ORDER BY display_time DESC, trip_id DESC
 				LIMIT 20
 			) sub
@@ -918,7 +918,7 @@ func (r *StopTimeRepository) GetStopRealtimeStopTimesV2(stopId string, direction
 	default:
 		query = baseQuery + `
 			SELECT * FROM candidates
-			WHERE display_time >= (SELECT now_sec FROM now_sydney)
+			WHERE display_time >= (SELECT now_sec FROM now_sydney) AND (stop_type = 'depart' OR stop_type = 'stop' OR stop_type = 'terminate')
 			ORDER BY display_time ASC, trip_id ASC
 			LIMIT 20
 		`
