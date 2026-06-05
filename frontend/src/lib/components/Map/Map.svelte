@@ -3,7 +3,7 @@
   import { onMount, tick } from "svelte";
   import { refreshStopStopTimes, refreshVehicleStopTimes, selectionStore, selectStop, selectVehicleByVehicleId } from "$lib/stores/map-selection.store.svelte";
   import { transportDataStore } from "$lib/stores/map-data.store.svelte";
-  import { addShapes, addStops, addVehicles, getStoredView, isStop, isStopStopTime, isVehicle, isVehicleStopTime, loadIcons, saveView, updateVehicleHighlight } from "./map.helper";
+  import { addShapes, addStops, addVehicles, closeSidebar, getStoredView, isStop, isStopStopTime, isVehicle, isVehicleStopTime, loadIcons, saveView, updateVehicleHighlight } from "./map.helper";
   import Search from "./Search.svelte";
   import StopSidebarHeader from "../Sidebar/StopSidebarHeader.svelte";
   import StopSidebarBody from "../Sidebar/StopSidebarBody.svelte";
@@ -93,6 +93,7 @@
     selectionStore.activeItem
 
     if (!map || !map.isStyleLoaded()) return
+    if (!selectionStore.activeItem) return
     console.log("activeItem", selectionStore.activeItem)
     updateVehicleHighlight(map, (selectionStore.activeItem as Vehicle).vehicleId)
   })
@@ -161,9 +162,7 @@
   const path = e.composedPath();
   if (sidebarElement && !path.includes(sidebarElement)) {
     if (searchElement && !path.includes(searchElement)) {
-      selectionStore.activeItem = null
-      selectionStore.activeTrip = ''
-      selectionStore.activeStopTimes = []
+      closeSidebar()
     }
   }
 }}/>

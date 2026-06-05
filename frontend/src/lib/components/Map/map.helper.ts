@@ -1,5 +1,6 @@
 import { icons, LineColours, ModeLabels } from "$lib/constants"
 import { getRouteColours } from "$lib/helpers"
+import { selectionStore } from "$lib/stores/map-selection.store.svelte"
 import type { ShapeCoord, Shapes } from "$lib/types/shapes.types"
 import type { Stop, Stops } from "$lib/types/stops.types"
 import type { StopStopTime, VehicleStopTime } from "$lib/types/stoptimes.types"
@@ -323,4 +324,12 @@ export const updateVehicleHighlight = (map: maplibregl.Map, vehicleId: string) =
       vehicleId ?? ""
     ]);
   }
+}
+
+export const closeSidebar = () => {
+  selectionStore.activeItem = null
+  selectionStore.activeTrip = ''
+  selectionStore.activeStopTimes = []
+
+  console.log(selectionStore)
 }
